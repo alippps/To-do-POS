@@ -234,6 +234,15 @@ export default function TransactionManager({ transactions = [] }) {
                           >
                             Detail
                           </button>
+                          {/* Membuka halaman struk khusus supaya hanya struknya yang tercetak */}
+                          <a
+                            href={`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                          >
+                            Cetak
+                          </a>
                           <button
                             type="button"
                             onClick={() => setDeleting(t)}
@@ -281,6 +290,14 @@ export default function TransactionManager({ transactions = [] }) {
                   >
                     Detail
                   </button>
+                  <a
+                    href={`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 rounded-lg border border-slate-200 py-2 text-center text-xs font-semibold text-slate-600"
+                  >
+                    Cetak
+                  </a>
                   <button
                     type="button"
                     onClick={() => handleStatus(t, t.status === 'paid' ? 'pending' : 'paid')}

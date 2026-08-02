@@ -3,21 +3,42 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', 'Plus Jakarta Sans', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-white text-slate-700 antialiased;
+    @apply bg-slate-50 text-slate-600 antialiased;
     font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-slate-900;
+    letter-spacing: -0.02em;
   }
 
   ::selection {
     @apply bg-brand-600 text-white;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -27,13 +48,23 @@
   }
 
   .card {
-    @apply rounded-2xl border border-slate-200/80 bg-white shadow-card;
+    @apply rounded-2xl border border-slate-200/70 bg-white shadow-card;
+  }
+
+  /* Kartu dengan aksen garis atas tipis — dipakai panel penting. */
+  .card-accent {
+    @apply card relative overflow-hidden;
+  }
+  .card-accent::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-600 to-brand-400;
   }
 
   .input-base {
     @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800
            placeholder:text-slate-400 outline-none transition
-           focus:border-brand-500 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50;
+           focus:border-brand-500 focus:ring-4 focus:ring-brand-100
+           disabled:cursor-not-allowed disabled:bg-slate-50;
   }
 
   .label-base {
@@ -43,6 +74,28 @@
   .link-muted {
     @apply text-slate-500 transition hover:text-brand-600;
   }
+
+  /* Label kecil huruf kapital — eyebrow section & judul kolom. */
+  .eyebrow {
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-brand-200/70 bg-brand-50
+           px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-brand-700;
+  }
+
+  /* Latar hangat untuk section pemisah. */
+  .surface-warm {
+    @apply bg-gradient-to-b from-brand-50/60 via-slate-50 to-slate-50;
+  }
+
+  .skeleton {
+    @apply animate-shimmer rounded-lg;
+    background-image: linear-gradient(
+      90deg,
+      theme('colors.slate.100') 0%,
+      theme('colors.slate.50') 50%,
+      theme('colors.slate.100') 100%
+    );
+    background-size: 200% 100%;
+  }
 }
 
 /* Scrollbar halus untuk panel kasir & tabel admin */
@@ -51,9 +104,71 @@
   height: 8px;
 }
 .scroll-slim::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: theme('colors.slate.300');
   border-radius: 999px;
 }
 .scroll-slim::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ============================================================
+   CETAK STRUK
+   Aturan di bawah membuat printer hanya mengeluarkan struknya,
+   bukan seluruh halaman web. Elemen non-struk diberi kelas
+   `.no-print`, sedangkan kertas struk memakai `.receipt-paper`.
+   ============================================================ */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Struk = kertas thermal 80mm, tanpa bayangan/border layar. */
+  .receipt-paper {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  .receipt-paper * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+
+  /* Hindari satu baris item terpotong di antara dua halaman. */
+  .receipt-paper li,
+  .receipt-paper tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/*
+  Ukuran kertas @page tidak ditaruh di sini karena aturan @page berlaku
+  untuk SELURUH situs. Ukuran 80mm hanya dipasang di halaman struk
+  (src/app/struk/[invoice]/page.jsx) lewat <style> khusus halaman itu.
+*/

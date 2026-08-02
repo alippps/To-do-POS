@@ -46,7 +46,7 @@ function sanitize(input) {
 function revalidateAll() {
   revalidatePath('/admin/produk');
   revalidatePath('/admin');
-  revalidatePath('/fitur');
+  revalidatePath('/menu');
   revalidatePath('/');
 }
 

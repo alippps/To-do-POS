@@ -90,10 +90,10 @@ export default function KontakPage() {
               <Card className="bg-slate-900 text-white">
                 <h2 className="text-lg font-bold">Ingin coba dulu?</h2>
                 <p className="mt-2 text-sm text-slate-300">
-                  Buka halaman Fitur Utama dan rasakan sendiri alur pemesanannya — data yang Anda buat
+                  Buka halaman Menu dan rasakan sendiri alur pemesanannya — data yang Anda buat
                   langsung tersimpan di sistem.
                 </p>
-                <Button href="/fitur" className="mt-5 w-full">
+                <Button href="/menu" className="mt-5 w-full">
                   Coba Sistem Sekarang
                 </Button>
               </Card>

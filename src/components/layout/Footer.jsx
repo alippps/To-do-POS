@@ -7,22 +7,22 @@ const COLUMNS = [
     title: 'Halaman',
     links: [
       { href: '/', label: 'Home' },
-      { href: '/fitur', label: 'Fitur Utama' },
+      { href: '/menu', label: 'Menu (Fitur Utama)' },
       { href: '/about', label: 'About' },
       { href: '/kontak', label: 'Kontak' },
     ],
   },
   {
-    title: 'Produk',
+    title: 'Pesan tanpa login',
     links: [
-      { href: '/fitur', label: 'Pesan Online' },
-      { href: '/#layanan', label: 'Layanan' },
-      { href: '/#portfolio', label: 'Portfolio' },
+      { href: '/meja', label: 'Ketersediaan Meja' },
+      { href: '/menu', label: 'Pesan Online' },
+      { href: '/#qr', label: 'QR Ordering' },
       { href: '/#faq', label: 'FAQ' },
     ],
   },
   {
-    title: 'Akun',
+    title: 'Staf & Admin',
     links: [
       { href: '/login', label: 'Masuk' },
       { href: '/register', label: 'Daftar' },

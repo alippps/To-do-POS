@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductCard from './ProductCard';
 import CartPanel from './CartPanel';
 import ReceiptModal from './ReceiptModal';
 import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
-import { createOrder } from '@/app/(site)/fitur/actions';
+import { rupiah } from '@/lib/format';
+import { createOrder } from '@/app/(site)/menu/actions';
 
 const SORTS = [
   { value: 'name-asc', label: 'Nama A–Z' },
@@ -15,7 +16,7 @@ const SORTS = [
   { value: 'price-desc', label: 'Harga termahal' },
 ];
 
-export default function PosClient({ products = [], categories = [], defaultTable = '' }) {
+export default function PosClient({ products = [], categories = [], tables = [], defaultTable = '' }) {
   const router = useRouter();
 
   const [keyword, setKeyword] = useState('');
@@ -34,12 +35,22 @@ export default function PosClient({ products = [], categories = [], defaultTable
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [receiptItems, setReceiptItems] = useState([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Keranjang tampil sebagai bottom sheet di HP — kunci scroll latar saat terbuka.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sheetOpen]);
 
   /** SEARCH + FILTER + SORT (dijalankan di sisi client, instan tanpa reload) */
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
 
-    let list = products.filter((p) => {
+    const list = products.filter((p) => {
       const cocokKategori = category === 'Semua' || p.category === category;
       const cocokKata =
         !q ||
@@ -49,13 +60,11 @@ export default function PosClient({ products = [], categories = [], defaultTable
       return cocokKategori && cocokKata;
     });
 
-    list = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       if (sort === 'price-asc') return a.price - b.price;
       if (sort === 'price-desc') return b.price - a.price;
       return a.name.localeCompare(b.name);
     });
-
-    return list;
   }, [products, keyword, category, sort]);
 
   function handleAdd(product) {
@@ -122,10 +131,29 @@ export default function PosClient({ products = [], categories = [], defaultTable
     setReceiptItems(cart);
     setCart([]);
     setForm((prev) => ({ ...prev, note: '' }));
+    setSheetOpen(false);
     router.refresh();
   }
 
   const qtyOf = (id) => cart.find((i) => i.product_id === id)?.qty || 0;
+  const totalQty = cart.reduce((a, i) => a + i.qty, 0);
+  const totalPrice = cart.reduce((a, i) => a + i.price * i.qty, 0);
+
+  const cartPanel = (
+    <CartPanel
+      items={cart}
+      form={form}
+      tables={tables}
+      onFormChange={handleFormChange}
+      onAdd={handleAdd}
+      onRemove={handleRemove}
+      onClear={() => setCart([])}
+      onSubmit={handleSubmit}
+      onCloseSheet={() => setSheetOpen(false)}
+      loading={loading}
+      error={error}
+    />
+  );
 
   return (
     <>
@@ -143,6 +171,7 @@ export default function PosClient({ products = [], categories = [], defaultTable
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
+                aria-label="Urutkan menu"
                 className="input-base cursor-pointer sm:w-52"
               >
                 {SORTS.map((s) => (
@@ -201,18 +230,41 @@ export default function PosClient({ products = [], categories = [], defaultTable
           )}
         </div>
 
-        <CartPanel
-          items={cart}
-          form={form}
-          onFormChange={handleFormChange}
-          onAdd={handleAdd}
-          onRemove={handleRemove}
-          onClear={() => setCart([])}
-          onSubmit={handleSubmit}
-          loading={loading}
-          error={error}
-        />
+        {/* Keranjang menempel di samping — hanya layar besar */}
+        <div className="hidden lg:block">{cartPanel}</div>
       </div>
+
+      {/* ---------- Keranjang versi HP: bilah melayang + bottom sheet ---------- */}
+      {totalQty > 0 && !sheetOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur-md lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="flex w-full items-center justify-between gap-3 rounded-xl bg-brand-600 px-4 py-3.5 text-white shadow-pop transition active:scale-[.99]"
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-7 min-w-7 items-center justify-center rounded-lg bg-white/20 px-1.5 text-sm font-bold">
+                {totalQty}
+              </span>
+              <span className="text-sm font-semibold">Lihat keranjang</span>
+            </span>
+            <span className="text-base font-extrabold">{rupiah(totalPrice)}</span>
+          </button>
+        </div>
+      )}
+
+      {sheetOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 animate-fade-in bg-slate-950/50 backdrop-blur-sm"
+            onClick={() => setSheetOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] animate-fade-up overflow-hidden rounded-t-3xl bg-white shadow-lift">
+            {cartPanel}
+          </div>
+        </div>
+      )}
 
       <ReceiptModal
         open={Boolean(receipt)}

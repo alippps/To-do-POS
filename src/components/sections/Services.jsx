@@ -47,8 +47,8 @@ export default function Services() {
       <Container>
         <SectionHeading
           eyebrow="Layanan Utama"
-          title="Semua yang dibutuhkan kedai Anda"
-          description="Dari secangkir kopi di meja pelanggan sampai laporan penjualan di layar pemilik — satu sistem, semua beres."
+          title="Semua yang dibutuhkan UMKM kuliner"
+          description="Dari secangkir kopi di meja pelanggan sampai laporan penjualan di layar pemilik — satu sistem, semua beres. Tanpa biaya lisensi mahal dan tanpa perlu tim IT."
         />
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

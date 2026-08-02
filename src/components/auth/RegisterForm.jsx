@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { createClient } from '@/lib/supabase/client';
+import { authErrorMessage } from '@/lib/authErrors';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -53,13 +54,13 @@ export default function RegisterForm() {
     setLoading(false);
 
     if (error) {
-      setMessage({ ok: false, text: error.message });
+      setMessage({ ok: false, text: authErrorMessage(error) });
       return;
     }
 
     // Jika konfirmasi email dimatikan, session langsung aktif
     if (data.session) {
-      router.push('/fitur');
+      router.push('/menu');
       router.refresh();
       return;
     }
@@ -72,8 +73,11 @@ export default function RegisterForm() {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Buat akun baru</h1>
-      <p className="mt-2 text-sm text-slate-500">Gratis, tanpa kartu kredit. Cukup 30 detik.</p>
+      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Buat akun staf</h1>
+      <p className="mt-2 text-sm text-slate-500">
+        Akun baru dibuat dengan role <span className="font-semibold text-slate-700">user</span>.
+        Akses admin diberikan oleh admin yang sudah ada lewat halaman Hak Akses.
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
         <Input

@@ -4,8 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * Checkout: membuat transaksi + item + memotong stok lewat RPC `create_order`.
- * Dipanggil dari komponen client PosClient.
+ * Checkout pesanan — membuat transaksi + item + memotong stok lewat RPC `create_order`.
+ *
+ * RPC-nya SECURITY DEFINER, jadi PELANGGAN TIDAK PERLU LOGIN untuk memesan.
+ * Pesanan tamu masuk dengan status `pending` dan menandai mejanya "terisi";
+ * kasir yang nanti menandainya lunas dari /admin/transaksi.
  */
 export async function createOrder(payload) {
   const supabase = createClient();
@@ -30,10 +33,12 @@ export async function createOrder(payload) {
     return { ok: false, error: error.message };
   }
 
-  revalidatePath('/fitur');
+  revalidatePath('/menu');
+  revalidatePath('/meja');
   revalidatePath('/admin');
   revalidatePath('/admin/transaksi');
   revalidatePath('/admin/produk');
+  revalidatePath('/admin/meja');
 
   return { ok: true, transaction: data };
 }

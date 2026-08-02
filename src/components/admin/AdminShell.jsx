@@ -31,12 +31,35 @@ const MENU = [
     ),
   },
   {
+    href: '/admin/meja',
+    label: 'Denah Meja',
+    icon: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </>
+    ),
+  },
+  {
     href: '/admin/transaksi',
     label: 'Daftar Transaksi',
     icon: (
       <>
         <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z" strokeLinejoin="round" />
         <path d="M9 7h6M9 11h6M9 15h3" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    href: '/admin/akses',
+    label: 'Hak Akses',
+    icon: (
+      <>
+        <rect x="4" y="10" width="16" height="11" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+        <circle cx="12" cy="15.5" r="1.5" />
       </>
     ),
   },

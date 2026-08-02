@@ -15,12 +15,19 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   const supabase = createClient();
 
-  const { data: products } = await supabase
-    .from('products')
-    .select('id, name, category, price, stock, description, image_url')
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .limit(4);
+  const [productsRes, tablesRes] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, name, category, price, stock, description, image_url')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(4),
+    supabase
+      .from('cafe_tables')
+      .select('id, table_no, label, area, capacity, status')
+      .eq('is_active', true)
+      .order('table_no', { ascending: true }),
+  ]);
 
   return (
     <>
@@ -28,10 +35,10 @@ export default async function HomePage() {
       <About />
       <Services />
       <Advantages />
-      <BestSeller products={products || []} />
+      <BestSeller products={productsRes.data || []} />
       <Portfolio />
       <Testimonials />
-      <QrOrder />
+      <QrOrder tables={tablesRes.data || []} />
       <Faq />
       <CtaWhatsapp />
     </>

@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: 'Bagaimana cara pelanggan memesan lewat QR?',
-    a: 'Setiap meja ditempel QR yang mengarah ke halaman Fitur Utama. Pelanggan scan, memilih menu, mengisi nama dan nomor meja, lalu memesan. Pesanan langsung muncul di Daftar Transaksi admin.',
+    a: 'Setiap meja ditempel QR yang mengarah ke halaman Ketersediaan Meja. Pelanggan scan, melihat meja mana yang masih kosong, memilih menu, lalu memesan — semuanya tanpa perlu membuat akun. Pesanan langsung muncul di Daftar Transaksi admin.',
   },
   {
     q: 'Apakah data penjualan saya aman?',

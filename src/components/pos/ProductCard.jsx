@@ -47,29 +47,34 @@ export default function ProductCard({ product, qty = 0, onAdd, onRemove }) {
           {product.description || 'Menu pilihan barista kami.'}
         </p>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div>
+        {/*
+          Harga dan tombol sengaja ditumpuk (bukan bersebelahan) supaya tidak
+          berdesakan saat kartu menyempit — harga panjang seperti "Rp 38.000"
+          tetap punya ruang, dan tombolnya jadi lebar & mudah ditekan di HP.
+        */}
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <div className="flex items-baseline justify-between gap-3">
             <p className="text-lg font-extrabold text-brand-700">{rupiah(product.price)}</p>
-            <p className="text-[11px] text-slate-400">Tersisa {product.stock}</p>
+            <p className="shrink-0 text-[11px] text-slate-400">Tersisa {product.stock}</p>
           </div>
 
           {qty > 0 ? (
-            <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-brand-50 p-1">
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-brand-200 bg-brand-50 p-1.5">
               <button
                 type="button"
                 onClick={() => onRemove(product)}
                 aria-label={`Kurangi ${product.name}`}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-700 transition hover:bg-brand-100"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-lg text-brand-700 transition hover:bg-brand-100"
               >
                 −
               </button>
-              <span className="w-6 text-center text-sm font-bold text-brand-800">{qty}</span>
+              <span className="text-sm font-bold text-brand-800">{qty} di keranjang</span>
               <button
                 type="button"
                 onClick={() => onAdd(product)}
                 disabled={qty >= product.stock}
                 aria-label={`Tambah ${product.name}`}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-lg text-white transition hover:bg-brand-700 disabled:opacity-40"
               >
                 +
               </button>
@@ -79,9 +84,9 @@ export default function ProductCard({ product, qty = 0, onAdd, onRemove }) {
               type="button"
               onClick={() => onAdd(product)}
               disabled={habis}
-              className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="mt-3 w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Tambah
+              {habis ? 'Stok habis' : 'Tambah ke keranjang'}
             </button>
           )}
         </div>

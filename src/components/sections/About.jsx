@@ -59,7 +59,7 @@ export default function About() {
               align="left"
               eyebrow="Tentang Kami"
               title="Coffee shop yang juga software house"
-              description="To Do lahir dari satu keresahan sederhana: mengelola kedai kopi seharusnya tidak serumit itu. Kami membangun sistem Point of Sale sendiri untuk outlet kami — mulai dari pemesanan lewat QR di meja, kasir digital, sampai laporan penjualan otomatis."
+              description="To Do lahir dari satu keresahan sederhana: mengelola kedai kopi seharusnya tidak serumit itu, dan digitalisasi seharusnya terjangkau untuk UMKM. Kami membangun sistem Point of Sale sendiri untuk outlet kami — mulai dari pemesanan lewat QR di meja, kasir digital, sampai laporan penjualan otomatis — lalu membukanya untuk pelaku UMKM kuliner lain."
             />
 
             <div className="mt-8 space-y-4">

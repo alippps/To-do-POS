@@ -1,6 +1,21 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
 import { waLink } from '@/lib/site';
 
+/**
+ * Halaman transaksi pelanggan disembunyikan dari tombol ini karena dua alasan:
+ * 1. Bilah keranjang di /menu juga `fixed bottom-0`, jadi keduanya bertabrakan di HP.
+ * 2. CTA "Konsultasi Gratis" ditujukan untuk calon klien software, bukan untuk
+ *    pelanggan yang sedang memesan kopi.
+ */
+const HIDDEN_ON = ['/menu', '/meja'];
+
 export default function WhatsappFloat() {
+  const pathname = usePathname();
+
+  if (HIDDEN_ON.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
+
   return (
     <a
       href={waLink()}

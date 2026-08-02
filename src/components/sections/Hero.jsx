@@ -15,7 +15,7 @@ export default function Hero() {
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-brand-100/60 blur-3xl" />
         <div className="absolute -right-24 top-24 h-[360px] w-[360px] rounded-full bg-brand-50 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0ebe4_1px,transparent_1px),linear-gradient(to_bottom,#f0ebe4_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
       </div>
 
       <Container className="grid items-center gap-14 py-16 lg:grid-cols-2 lg:py-24">
@@ -25,7 +25,7 @@ export default function Hero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-600" />
             </span>
-            Sistem POS + Coffee Shop dalam satu platform
+            UMKM Goes Digital — POS + Coffee Shop dalam satu platform
           </span>
 
           <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
@@ -44,9 +44,9 @@ export default function Hero() {
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
-            <strong className="font-semibold text-slate-700">To Do</strong> menyatukan pemesanan via QR,
-            kasir digital, manajemen produk, dan laporan penjualan real-time — semuanya rapi dalam satu
-            dashboard yang ringan dan mudah dipakai.
+            <strong className="font-semibold text-slate-700">To Do</strong> membantu UMKM kuliner naik
+            kelas ke digital: pemesanan via QR, kasir digital, manajemen produk, dan laporan penjualan
+            real-time — semuanya rapi dalam satu dashboard yang ringan, murah, dan mudah dipakai.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -56,7 +56,7 @@ export default function Hero() {
               </svg>
               Konsultasi Gratis via WhatsApp
             </Button>
-            <Button href="/fitur" variant="secondary" size="lg">
+            <Button href="/menu" variant="secondary" size="lg">
               Coba Pesan Sekarang
             </Button>
           </div>

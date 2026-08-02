@@ -6,6 +6,7 @@ const POINTS = [
   'Kasir digital & pemesanan QR dalam satu sistem',
   'CRUD produk lengkap dengan pencarian instan',
   'Laporan penjualan real-time untuk pemilik outlet',
+  'Kelola denah meja & hak akses staf dari satu tempat',
 ];
 
 export default function AuthLayout({ children }) {
@@ -52,7 +53,26 @@ export default function AuthLayout({ children }) {
             <Logo />
           </div>
           {children}
-          <p className="mt-8 text-center text-sm">
+
+          {/*
+            Penegasan penting: login ini untuk STAF/ADMIN.
+            Pelanggan yang cuma mau memesan sama sekali tidak butuh akun.
+          */}
+          <div className="mt-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-4 text-center">
+            <p className="text-sm font-semibold text-slate-800">Cuma mau pesan kopi?</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Pelanggan <span className="font-semibold">tidak perlu akun</span>. Langsung pilih meja
+              dan pesan dari halaman menu.
+            </p>
+            <Link
+              href="/meja"
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+            >
+              Pesan tanpa login →
+            </Link>
+          </div>
+
+          <p className="mt-6 text-center text-sm">
             <Link href="/" className="link-muted">
               ← Kembali ke beranda
             </Link>

@@ -49,7 +49,7 @@ export default function AboutPage() {
               tenang: sistem yang cepat, data yang rapi, dan laporan yang bisa dipercaya.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href="/fitur">Lihat Menu Kami</Button>
+              <Button href="/menu">Lihat Menu Kami</Button>
               <Button href="/kontak" variant="secondary">
                 Hubungi Tim
               </Button>

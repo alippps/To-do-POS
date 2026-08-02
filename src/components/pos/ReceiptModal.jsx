@@ -3,19 +3,25 @@
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { rupiah, formatDate } from '@/lib/format';
-
-const PAYMENT_LABEL = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer Bank' };
+import { PAYMENT_LABEL } from '@/lib/tables';
 
 export default function ReceiptModal({ open, onClose, transaction, items }) {
   if (!transaction) return null;
 
+  const strukUrl = `/struk/${encodeURIComponent(transaction.invoice_no)}`;
+
   return (
-    <Modal open={open} onClose={onClose} title="Pesanan berhasil dibuat 🎉" description="Tunjukkan struk ini ke kasir kami.">
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5">
-        <div className="flex items-center justify-between text-sm">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Pesanan berhasil dibuat 🎉"
+      description="Pesananmu sudah masuk ke barista. Tunjukkan struk ini ke kasir saat membayar."
+    >
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+        <div className="flex items-center justify-between gap-3 text-sm">
           <span className="font-bold text-slate-900">{transaction.invoice_no}</span>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-            {transaction.status === 'paid' ? 'Lunas' : transaction.status}
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+            Menunggu kasir
           </span>
         </div>
 
@@ -57,18 +63,27 @@ export default function ReceiptModal({ open, onClose, transaction, items }) {
         </div>
 
         {transaction.note && (
-          <p className="mt-3 rounded-xl bg-white p-3 text-xs text-slate-500">Catatan: {transaction.note}</p>
+          <div className="mt-4 border-t border-slate-200 pt-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Catatan</p>
+            <p className="mt-1 text-xs text-slate-600">{transaction.note}</p>
+          </div>
         )}
       </div>
 
-      <div className="mt-5 flex gap-3">
-        <Button variant="secondary" className="flex-1" onClick={() => window.print()}>
-          Cetak Struk
+      {/*
+        Tidak ada tombol cetak di sini: mencetak struk adalah wewenang kasir.
+        Pelanggan cukup menyimpan bukti pesanan digitalnya.
+      */}
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Button href={strukUrl} variant="secondary">
+          Lihat Bukti Pesanan
         </Button>
-        <Button className="flex-1" onClick={onClose}>
-          Selesai
-        </Button>
+        <Button onClick={onClose}>Selesai</Button>
       </div>
+
+      <p className="mt-3 text-center text-[11px] leading-snug text-slate-400">
+        Struk resmi dicetak oleh kasir setelah pembayaran diterima.
+      </p>
     </Modal>
   );
 }

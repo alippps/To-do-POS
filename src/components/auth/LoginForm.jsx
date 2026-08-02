@@ -6,11 +6,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { createClient } from '@/lib/supabase/client';
+import { authErrorMessage } from '@/lib/authErrors';
+
+/**
+ * Hanya izinkan tujuan redirect yang berada di dalam situs ini.
+ *
+ * Tanpa penyaringan ini, tautan seperti `/login?next=https://situs-jahat.com`
+ * akan melempar pengguna ke luar tepat setelah login berhasil (open redirect).
+ * `//host` juga ditolak karena URL protocol-relative tetap keluar dari situs.
+ */
+function safeNext(value) {
+  if (typeof value !== 'string') return '/';
+  if (!value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/';
+  const next = safeNext(searchParams.get('next'));
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -30,11 +44,7 @@ export default function LoginForm() {
 
     if (authError) {
       setLoading(false);
-      setError(
-        authError.message === 'Invalid login credentials'
-          ? 'Email atau kata sandi salah.'
-          : authError.message
-      );
+      setError(authErrorMessage(authError));
       return;
     }
 
@@ -45,7 +55,7 @@ export default function LoginForm() {
       .eq('id', data.user.id)
       .single();
 
-    const target = next !== '/' ? next : profile?.role === 'admin' ? '/admin' : '/fitur';
+    const target = next !== '/' ? next : profile?.role === 'admin' ? '/admin' : '/menu';
 
     router.push(target);
     router.refresh();
@@ -54,7 +64,9 @@ export default function LoginForm() {
   return (
     <div>
       <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Selamat datang kembali</h1>
-      <p className="mt-2 text-sm text-slate-500">Masuk untuk memesan atau mengelola outlet Anda.</p>
+      <p className="mt-2 text-sm text-slate-500">
+        Masuk untuk mengelola outlet Anda. Pelanggan tidak perlu akun untuk memesan.
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
         <Input

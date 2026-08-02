@@ -16,7 +16,7 @@ export default function BestSeller({ products = [] }) {
             description="Data menu di bawah diambil langsung dari database Supabase — sama persis dengan yang dikelola admin."
             className="max-w-xl"
           />
-          <Button href="/fitur" variant="secondary" className="shrink-0">
+          <Button href="/menu" variant="secondary" className="shrink-0">
             Lihat semua menu →
           </Button>
         </div>
