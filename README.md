@@ -45,13 +45,6 @@ npm install
 
 Buka file `.env.local`, ganti dua baris pertama:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi....
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_WA_NUMBER=6281234567890
-```
-
 > `NEXT_PUBLIC_WA_NUMBER` dipakai tombol **“Konsultasi Gratis via WhatsApp”** — tulis dengan kode negara tanpa tanda `+` (contoh: `628123...`).
 
 ### 5. Jalankan
