@@ -1,0 +1,73 @@
+# ============================================================
+#  To Do — Point of Sale (Next.js + Supabase)
+#  File & folder yang TIDAK ikut di-commit ke git
+# ============================================================
+
+# --- Dependency ---
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# --- Hasil build Next.js ---
+/.next/
+/out/
+/build
+/dist
+
+# --- Environment (RAHASIA — jangan pernah di-commit) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Catatan: .env.local.example SENGAJA ikut di-commit sebagai contoh
+!.env.local.example
+
+# --- Log ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs
+*.log
+
+# --- Testing & coverage ---
+/coverage
+/.nyc_output
+
+# --- Cache & tooling ---
+.eslintcache
+.turbo
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Deployment ---
+.vercel
+.netlify
+
+# --- Supabase CLI (kredensial lokal) ---
+/supabase/.branches
+/supabase/.temp
+/supabase/.env
+# Catatan: supabase/schema.sql WAJIB ikut di-commit
+!/supabase/schema.sql
+
+# --- Editor / IDE ---
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.swp
+*.swo
+
+# --- Sistem operasi ---
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# --- Sertifikat & kunci ---
+*.pem
+*.key
+*.p12
