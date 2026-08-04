@@ -23,13 +23,18 @@ export function Textarea({ label, hint, error, className = '', ...props }) {
   );
 }
 
-export function Select({ label, children, className = '', ...props }) {
+export function Select({ label, hint, error, children, className = '', ...props }) {
   return (
     <label className="block">
       {label && <span className="label-base">{label}</span>}
-      <select className={`input-base cursor-pointer ${className}`} {...props}>
+      <select
+        className={`input-base cursor-pointer ${error ? 'border-rose-300 focus:ring-rose-100' : ''} ${className}`}
+        {...props}
+      >
         {children}
       </select>
+      {hint && !error && <span className="mt-1.5 block text-xs text-slate-400">{hint}</span>}
+      {error && <span className="mt-1.5 block text-xs text-rose-600">{error}</span>}
     </label>
   );
 }

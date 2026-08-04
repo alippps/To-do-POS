@@ -69,7 +69,8 @@ export default function ContactForm() {
         type="email"
         value={form.email}
         onChange={(e) => change('email', e.target.value)}
-        placeholder="nama@email.com"
+        placeholder="nama@contoh.com"
+        hint="Hanya dibaca tim kami untuk membalas. Tidak ditampilkan di website."
         error={errors.email}
       />
 

@@ -71,17 +71,45 @@ export default function ReceiptModal({ open, onClose, transaction, items }) {
       </div>
 
       {/*
+        Pelanggan sering berhenti di sini dan bingung: sudah bayar atau belum?
+        Tiga baris berikut menjawabnya sebelum sempat ditanyakan.
+      */}
+      <div className="mt-5 rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-700">
+          Selanjutnya
+        </p>
+        <ol className="mt-2.5 space-y-2 text-xs leading-snug text-slate-600">
+          <li className="flex gap-2.5">
+            <span className="font-bold text-brand-700">1.</span>
+            <span>Barista mulai meracik pesananmu sekarang.</span>
+          </li>
+          <li className="flex gap-2.5">
+            <span className="font-bold text-brand-700">2.</span>
+            <span>
+              Bayar di kasir sambil menyebut nomor{' '}
+              <span className="font-semibold text-slate-800">{transaction.invoice_no}</span>.
+            </span>
+          </li>
+          <li className="flex gap-2.5">
+            <span className="font-bold text-brand-700">3.</span>
+            <span>Kasir menandai lunas lalu mencetak struk resmimu.</span>
+          </li>
+        </ol>
+      </div>
+
+      {/*
         Tidak ada tombol cetak di sini: mencetak struk adalah wewenang kasir.
         Pelanggan cukup menyimpan bukti pesanan digitalnya.
       */}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Button href={strukUrl} variant="secondary">
-          Lihat Bukti Pesanan
+        <Button variant="secondary" onClick={onClose}>
+          Tutup
         </Button>
-        <Button onClick={onClose}>Selesai</Button>
+        <Button href={strukUrl}>Buka Bukti Pesanan</Button>
       </div>
 
       <p className="mt-3 text-center text-[11px] leading-snug text-slate-400">
+        Bukti pesanan bisa dibuka kapan saja lewat tautan yang sama — simpan atau screenshot.
         Struk resmi dicetak oleh kasir setelah pembayaran diterima.
       </p>
     </Modal>

@@ -107,10 +107,25 @@ export default function TableAvailability({ tables = [], scannedTable = '' }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {visible.map((t) => (
-            <TableCard key={t.id} table={t} highlight={t.table_no === scannedTable} />
-          ))}
+        <div className="space-y-4">
+          {/*
+            Kartu meja di bawah adalah tautan, tapi tampilannya tidak seperti
+            tombol — tanpa kalimat ini pelanggan sering diam menunggu, tidak
+            sadar kartunya bisa ditekan.
+          */}
+          <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3">
+            <span aria-hidden="true" className="text-base leading-none">👆</span>
+            <p className="text-sm leading-snug text-brand-900">
+              <span className="font-bold">Ketuk salah satu kartu meja</span> di bawah untuk lanjut ke
+              daftar menu. Meja bertanda titik hijau berarti masih kosong.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {visible.map((t) => (
+              <TableCard key={t.id} table={t} highlight={t.table_no === scannedTable} />
+            ))}
+          </div>
         </div>
       )}
 

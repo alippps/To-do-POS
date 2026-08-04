@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
+import FlowSteps from '@/components/pos/FlowSteps';
 import PosClient from '@/components/pos/PosClient';
 import { createClient } from '@/lib/supabase/server';
 
@@ -40,9 +41,11 @@ export default async function MenuPage({ searchParams }) {
   return (
     <div className="bg-slate-50 pb-28 pt-8 sm:pt-12 lg:pb-14">
       <Container>
+        <FlowSteps current="menu" tableNo={defaultTable} className="mb-8" />
+
         <header className="mb-8">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="eyebrow">Fitur Utama — Jual Beli</span>
+            <span className="eyebrow">Langkah 2 dari 3 · Fitur Utama</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
@@ -73,8 +76,12 @@ export default async function MenuPage({ searchParams }) {
                 </span>
               </span>
             ) : (
-              <span className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-500 shadow-card">
-                Belum memilih meja — pilih dulu supaya pesanan tidak tertukar.
+              <span className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 shadow-card">
+                <span aria-hidden="true" className="text-base leading-none">📍</span>
+                <span>
+                  <span className="font-bold">Kamu belum memilih meja.</span> Bisa dipilih nanti di
+                  keranjang, atau lihat dulu meja yang kosong di sebelah.
+                </span>
               </span>
             )}
 

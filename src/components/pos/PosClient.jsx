@@ -16,6 +16,17 @@ const SORTS = [
   { value: 'price-desc', label: 'Harga termahal' },
 ];
 
+/**
+ * Panduan singkat yang selalu tampil di atas daftar menu.
+ * Pelanggan yang baru pertama kali men-scan QR tidak tahu bahwa nama & nomor
+ * meja diisi di dalam keranjang — tiga baris ini yang memberitahunya.
+ */
+const CARA_PESAN = [
+  { title: 'Tambah menu', text: 'Tekan “Tambah ke keranjang” pada menu yang kamu mau.' },
+  { title: 'Isi nama & meja', text: 'Dua kolom itu ada di keranjang dan wajib diisi.' },
+  { title: 'Tekan “Pesan Sekarang”', text: 'Bukti pesanan langsung terbit — bayar di kasir.' },
+];
+
 export default function PosClient({ products = [], categories = [], tables = [], defaultTable = '' }) {
   const router = useRouter();
 
@@ -108,12 +119,27 @@ export default function PosClient({ products = [], categories = [], tables = [],
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  /**
+   * Kolom wajib yang belum diisi. Dipakai dua kali: sebagai pengingat yang
+   * tampil terus di keranjang, dan sebagai penjaga sebelum pesanan dikirim —
+   * tanpa ini pesanan bisa masuk atas nama "Guest" tanpa meja, dan kasir yang
+   * kebingungan mencari pemiliknya.
+   */
+  const missing = [];
+  if (!form.customerName.trim()) missing.push('nama pemesan');
+  if (!form.tableNo) missing.push('nomor meja');
+
   async function handleSubmit() {
+    if (missing.length > 0) {
+      setError(`Lengkapi dulu ${missing.join(' dan ')} di bawah, baru pesanan bisa dikirim.`);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     const result = await createOrder({
-      customerName: form.customerName,
+      customerName: form.customerName.trim(),
       tableNo: form.tableNo,
       paymentMethod: form.paymentMethod,
       note: form.note,
@@ -152,6 +178,7 @@ export default function PosClient({ products = [], categories = [], tables = [],
       onCloseSheet={() => setSheetOpen(false)}
       loading={loading}
       error={error}
+      missing={missing}
     />
   );
 
@@ -159,6 +186,36 @@ export default function PosClient({ products = [], categories = [], tables = [],
     <>
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         <div>
+          {/* Panduan 3 langkah — supaya pelanggan tidak menebak-nebak urutannya */}
+          <div className="card mb-6 p-4 sm:p-5">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-brand-600">
+              Cara memesan
+            </p>
+
+            <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+              {CARA_PESAN.map((s, i) => (
+                <li key={s.title} className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700"
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">{s.title}</p>
+                    <p className="mt-0.5 text-xs leading-snug text-slate-500">{s.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            {/* Di HP keranjang tersembunyi sampai ada isinya — perlu disebut. */}
+            <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-400 lg:hidden">
+              Di HP, keranjang muncul sebagai tombol di bagian bawah layar setelah kamu menambah
+              menu pertama.
+            </p>
+          </div>
+
           {/* Toolbar: search + filter kategori + sort */}
           <div className="card mb-6 flex flex-col gap-4 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row">

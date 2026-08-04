@@ -155,6 +155,14 @@ where id = (select id from auth.users where email = 'emailkamu@gmail.com');
 > Jika ingin login langsung tanpa konfirmasi email, matikan **Confirm email** di
 > Supabase → Authentication → Providers → Email.
 
+**Uji coba tanpa email pribadi.** Email di `/register` hanya dipakai sebagai nama pengguna
+untuk masuk ke dashboard — tidak pernah tampil di halaman pelanggan maupun di struk.
+Untuk sesi uji coba atau demo, matikan **Confirm email** lebih dulu (lihat catatan di atas),
+lalu daftar memakai alamat contoh seperti `kasir@todocoffee.id`. Tanpa konfirmasi email,
+alamat itu tidak perlu benar-benar ada dan akunnya langsung bisa dipakai login.
+Kalau **Confirm email** dibiarkan menyala, alamatnya harus asli karena tautan konfirmasi
+dikirim ke sana.
+
 ### 7. Mencoba alur QR dari HP
 
 QR berisi `NEXT_PUBLIC_SITE_URL`, jadi `localhost` tidak bisa dibuka dari HP.

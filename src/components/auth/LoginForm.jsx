@@ -75,7 +75,8 @@ export default function LoginForm() {
           autoComplete="email"
           value={form.email}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-          placeholder="nama@email.com"
+          placeholder="kasir@todocoffee.id"
+          hint="Email akun staf — bukan email pelanggan."
           required
         />
 

@@ -5,6 +5,15 @@ import { Input, Select, Textarea } from '@/components/ui/Field';
 import { rupiah } from '@/lib/format';
 import { tableStatus } from '@/lib/tables';
 
+/** Penanda kolom wajib — dipakai di label supaya terlihat sebelum diisi. */
+function Wajib({ children }) {
+  return (
+    <>
+      {children} <span className="font-bold text-rose-500">*</span>
+    </>
+  );
+}
+
 export default function CartPanel({
   items,
   form,
@@ -17,6 +26,7 @@ export default function CartPanel({
   onCloseSheet,
   loading,
   error,
+  missing = [],
 }) {
   const total = items.reduce((acc, i) => acc + i.price * i.qty, 0);
   const totalQty = items.reduce((acc, i) => acc + i.qty, 0);
@@ -113,7 +123,7 @@ export default function CartPanel({
 
       <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
         <Input
-          label="Nama pemesan"
+          label={<Wajib>Nama pemesan</Wajib>}
           value={form.customerName}
           onChange={(e) => onFormChange('customerName', e.target.value)}
           placeholder="Nama Anda"
@@ -121,7 +131,8 @@ export default function CartPanel({
         />
 
         <Select
-          label="Nomor meja"
+          label={<Wajib>Nomor meja</Wajib>}
+          hint="Supaya pesanan diantar ke tempat yang benar."
           value={form.tableNo}
           onChange={(e) => onFormChange('tableNo', e.target.value)}
         >
@@ -147,6 +158,7 @@ export default function CartPanel({
 
         <Select
           label="Metode pembayaran"
+          hint="Belum ada uang keluar sekarang — semuanya dibayar di kasir."
           value={form.paymentMethod}
           onChange={(e) => onFormChange('paymentMethod', e.target.value)}
         >
@@ -163,6 +175,18 @@ export default function CartPanel({
           className="min-h-[72px]"
         />
 
+        {/*
+          Pengingat kolom wajib muncul lebih dulu, sebelum pelanggan menekan
+          tombol dan kena pesan error — bertanya duluan lebih ramah daripada
+          menyalahkan belakangan.
+        */}
+        {items.length > 0 && missing.length > 0 && !error && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800">
+            Tinggal satu langkah — isi <span className="font-bold">{missing.join(' dan ')}</span> di
+            atas, lalu tekan Pesan Sekarang.
+          </p>
+        )}
+
         {error && (
           <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">
             {error}
@@ -178,9 +202,15 @@ export default function CartPanel({
           {loading ? 'Memproses...' : 'Pesan Sekarang'}
         </Button>
 
-        <p className="text-center text-[11px] leading-snug text-slate-400">
-          Tanpa akun, tanpa login. Pesanan langsung diteruskan ke barista.
-        </p>
+        {items.length === 0 ? (
+          <p className="text-center text-[11px] leading-snug text-slate-400">
+            Tombol aktif setelah ada minimal satu menu di keranjang.
+          </p>
+        ) : (
+          <p className="text-center text-[11px] leading-snug text-slate-400">
+            Tanpa akun, tanpa login. Pesanan langsung diteruskan ke barista.
+          </p>
+        )}
       </div>
     </div>
   );

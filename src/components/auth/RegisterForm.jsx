@@ -79,6 +79,22 @@ export default function RegisterForm() {
         Akses admin diberikan oleh admin yang sudah ada lewat halaman Hak Akses.
       </p>
 
+      {/*
+        Banyak orang ragu menyerahkan email pribadi hanya untuk mencoba sistem.
+        Sebutkan sejak awal ke mana email itu dipakai dan ke mana tidak.
+      */}
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+          Soal email kamu
+        </p>
+        <ul className="mt-2 space-y-1.5 text-xs leading-snug text-slate-500">
+          <li>• Dipakai hanya sebagai nama pengguna untuk masuk ke dashboard.</li>
+          <li>• Tidak pernah muncul di halaman pelanggan maupun di struk.</li>
+          <li>• Tanpa promosi. Satu-satunya kiriman adalah tautan konfirmasi pendaftaran.</li>
+          <li>• Sekadar mencoba? Alamat kerja bersama seperti kasir@namakedaimu.id sudah cukup.</li>
+        </ul>
+      </div>
+
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
         <Input
           label="Nama lengkap *"
@@ -96,7 +112,8 @@ export default function RegisterForm() {
             autoComplete="email"
             value={form.email}
             onChange={(e) => change('email', e.target.value)}
-            placeholder="nama@email.com"
+            placeholder="kasir@todocoffee.id"
+            hint="Hanya untuk masuk ke dashboard. Tidak ditampilkan ke pelanggan."
             error={errors.email}
             required
           />

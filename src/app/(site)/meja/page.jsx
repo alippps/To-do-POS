@@ -1,4 +1,5 @@
 import Container from '@/components/ui/Container';
+import FlowSteps from '@/components/pos/FlowSteps';
 import TableAvailability from '@/components/tables/TableAvailability';
 import { createClient } from '@/lib/supabase/server';
 
@@ -27,8 +28,10 @@ export default async function MejaPage({ searchParams }) {
   return (
     <div className="surface-warm py-10 sm:py-14">
       <Container>
+        <FlowSteps current="meja" tableNo={scannedTable} className="mb-8" />
+
         <header className="mb-8 max-w-2xl">
-          <span className="eyebrow">Tanpa login</span>
+          <span className="eyebrow">Langkah 1 dari 3 · Tanpa login</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             Pilih meja yang masih kosong
           </h1>
