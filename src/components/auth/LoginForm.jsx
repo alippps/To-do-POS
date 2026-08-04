@@ -48,16 +48,24 @@ export default function LoginForm() {
       return;
     }
 
-    // Admin diarahkan ke dashboard, pengguna biasa ke halaman tujuan
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
       .single();
 
-    const target = next !== '/' ? next : profile?.role === 'admin' ? '/admin' : '/menu';
+    /*
+      Hanya admin yang punya tujuan setelah login. Akun ber-role `user` sengaja
+      TIDAK dilempar ke /menu: sisi publik kini tanpa tombol keluar, jadi mereka
+      akan terkunci di sesi yang tidak bisa dipakai apa-apa. Cukup refresh —
+      halaman ini berganti jadi panel sesi yang menjelaskan situasinya.
+    */
+    if (profile?.role !== 'admin') {
+      router.refresh();
+      return;
+    }
 
-    router.push(target);
+    router.push(next !== '/' ? next : '/admin');
     router.refresh();
   }
 

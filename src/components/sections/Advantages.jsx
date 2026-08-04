@@ -2,11 +2,11 @@ import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 
 const ITEMS = [
-  {
-    title: 'Cepat & Ringan',
-    text: 'Dibangun dengan Next.js App Router. Halaman terbuka instan bahkan di jaringan warung sebelah.',
-    icon: '⚡',
-  },
+  // {
+  //   title: 'Cepat & Ringan',
+  //   text: 'Dibangun dengan Next.js App Router. Halaman terbuka instan bahkan di jaringan warung sebelah.',
+  //   icon: '⚡',
+  // },
   {
     title: 'Data Aman',
     text: 'Supabase Auth + Row Level Security memastikan data transaksi hanya bisa diakses yang berhak.',

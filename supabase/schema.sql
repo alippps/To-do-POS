@@ -77,8 +77,16 @@ create table if not exists public.products (
   updated_at  timestamptz not null default now()
 );
 
+-- Kolom tambahan v3 — HARGA PROMO (aman dijalankan pada database yang sudah ada).
+-- Aturannya satu: promo dianggap aktif bila promo_price TIDAK NULL dan lebih kecil
+-- dari price. Tidak ada kolom boolean terpisah supaya tidak mungkin muncul kondisi
+-- ganjil "promo menyala tapi harganya kosong".
+alter table public.products add column if not exists promo_price numeric(12, 2)
+  check (promo_price is null or promo_price >= 0);
+
 create index if not exists products_name_idx on public.products using gin (to_tsvector('simple', name));
 create index if not exists products_category_idx on public.products (category);
+create index if not exists products_promo_idx on public.products (promo_price) where promo_price is not null;
 
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
@@ -244,6 +252,7 @@ declare
   v_item     jsonb;
   v_product  public.products;
   v_qty      integer;
+  v_price    numeric(12, 2);
   v_total    numeric(12, 2) := 0;
   v_invoice  text;
   v_table    public.cafe_tables;
@@ -309,14 +318,26 @@ begin
       raise exception 'Stok % tidak mencukupi (sisa %)', v_product.name, v_product.stock;
     end if;
 
+    /*
+      Harga ditentukan di SERVER, bukan diambil dari keranjang pelanggan.
+      Kalau produknya sedang promo, harga promo yang dipakai — sehingga angka
+      di struk selalu sama dengan yang dijanjikan halaman /promo, dan tidak
+      bisa dimanipulasi dari sisi browser.
+    */
+    v_price := case
+                 when v_product.promo_price is not null and v_product.promo_price < v_product.price
+                   then v_product.promo_price
+                 else v_product.price
+               end;
+
     insert into public.transaction_items (transaction_id, product_id, product_name, price, qty, subtotal)
-    values (v_trx.id, v_product.id, v_product.name, v_product.price, v_qty, v_product.price * v_qty);
+    values (v_trx.id, v_product.id, v_product.name, v_price, v_qty, v_price * v_qty);
 
     update public.products
     set stock = stock - v_qty
     where id = v_product.id;
 
-    v_total := v_total + (v_product.price * v_qty);
+    v_total := v_total + (v_price * v_qty);
   end loop;
 
   update public.transactions set total = v_total where id = v_trx.id returning * into v_trx;
@@ -366,6 +387,73 @@ begin
       'created_at',     v_trx.created_at
     ),
     'items', v_items
+  );
+end;
+$$;
+
+-- 7c. get_table_bill — tagihan berjalan sebuah meja, TANPA login.
+--     Dipakai tombol "Bayar" pada layar yang muncul setelah scan QR meja.
+--
+--     Hanya mengembalikan pesanan berstatus 'pending' (yang belum dibayar);
+--     pesanan yang sudah lunas atau batal tidak ikut, jadi meja yang baru
+--     ditempati tamu berikutnya tidak menampilkan riwayat tamu sebelumnya.
+--
+--     CATATAN PRIVASI: siapa pun yang tahu nomor meja bisa melihat tagihan
+--     berjalan meja itu. Itu memang konsekuensi yang diterima — sama seperti
+--     bon kertas yang tergeletak di atas meja. Karena itu `user_id` tetap
+--     tidak pernah dikembalikan.
+create or replace function public.get_table_bill(p_table_no text)
+returns jsonb
+language plpgsql
+security definer set search_path = public
+stable
+as $$
+declare
+  v_table_no text;
+  v_orders   jsonb;
+  v_total    numeric(12, 2);
+begin
+  v_table_no := nullif(trim(coalesce(p_table_no, '')), '');
+
+  if v_table_no is null then
+    return jsonb_build_object('table_no', null, 'orders', '[]'::jsonb, 'total', 0);
+  end if;
+
+  select
+    coalesce(jsonb_agg(x.pesanan order by x.created_at), '[]'::jsonb),
+    coalesce(sum(x.total), 0)
+  into v_orders, v_total
+  from (
+    select
+      t.created_at,
+      t.total,
+      jsonb_build_object(
+        'invoice_no',     t.invoice_no,
+        'customer_name',  t.customer_name,
+        'payment_method', t.payment_method,
+        'status',         t.status,
+        'note',           t.note,
+        'total',          t.total,
+        'created_at',     t.created_at,
+        'items', (
+          select coalesce(jsonb_agg(jsonb_build_object(
+                   'product_name', ti.product_name,
+                   'price',        ti.price,
+                   'qty',          ti.qty,
+                   'subtotal',     ti.subtotal
+                 ) order by ti.product_name), '[]'::jsonb)
+          from public.transaction_items ti
+          where ti.transaction_id = t.id
+        )
+      ) as pesanan
+    from public.transactions t
+    where t.table_no = v_table_no and t.status = 'pending'
+  ) x;
+
+  return jsonb_build_object(
+    'table_no', v_table_no,
+    'orders',   v_orders,
+    'total',    v_total
   );
 end;
 $$;
@@ -527,6 +615,12 @@ values
   ('French Fries',      'Snack',    24000, 30, 'Kentang goreng renyah dengan saus pilihan.',         'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80'),
   ('Nasi Goreng Kampung','Makanan', 38000, 20, 'Nasi goreng pedas gurih dengan telur mata sapi.',    'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80');
 
+  -- Dua menu contoh dipasang promo supaya halaman /promo tidak kosong saat
+  -- pertama kali dijalankan. Ada di DALAM penjaga seed, jadi menjalankan ulang
+  -- file ini tidak akan menimpa promo yang sudah diatur admin.
+  update public.products set promo_price = round(price * 0.75, 0)
+  where name in ('Kopi Susu Gula Aren', 'Croissant Butter');
+
 end if;
 end
 $seed$;
@@ -545,9 +639,26 @@ values
   ('08', 'Teras depan',    'Outdoor',   4),
   ('09', 'Teras depan',    'Outdoor',   4),
   ('10', 'Taman belakang', 'Outdoor',   6),
-  ('11', 'Ruang kerja',    'Workspace', 1),
-  ('12', 'Ruang kerja',    'Workspace', 1)
+  ('11', 'Workspace / Meeting Room', 'Indoor', 1),
+  ('12', 'Workspace / Meeting Room', 'Indoor', 1)
 on conflict (table_no) do nothing;
+
+/*
+  Area disederhanakan jadi Indoor & Outdoor saja.
+
+  'Workspace' dan 'VIP' bukan area — ruang kerja dan meeting room sama-sama di
+  dalam ruangan. Sifat ruangannya pindah ke kolom `label`, jadi `area` tetap
+  menjawab satu pertanyaan: pelanggan duduk di dalam atau di luar.
+
+  Blok ini perlu karena seed di atas memakai `on conflict do nothing` — meja
+  yang sudah telanjur dibuat dengan area lama tidak akan tersentuh olehnya.
+*/
+update public.cafe_tables set area = 'Indoor'
+where area in ('Workspace', 'VIP');
+
+-- Hanya menimpa label bawaan versi lama; label yang sudah diubah admin dibiarkan.
+update public.cafe_tables set label = 'Workspace / Meeting Room'
+where label in ('Ruang kerja', 'Ruang Kerja');
 
 -- ------------------------------------------------------------
 -- 11. JADIKAN AKUN KAMU ADMIN

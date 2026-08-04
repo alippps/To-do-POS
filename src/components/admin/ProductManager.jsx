@@ -10,6 +10,7 @@ import ProductFormModal from './ProductFormModal';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import { rupiah, formatDateShort } from '@/lib/format';
+import { promoInfo } from '@/lib/promo';
 import { CATEGORIES } from '@/lib/site';
 import {
   createProduct,
@@ -244,7 +245,20 @@ export default function ProductManager({ products = [] }) {
                       <td className="px-5 py-4">
                         <Badge tone="slate">{p.category}</Badge>
                       </td>
-                      <td className="px-5 py-4 font-semibold text-slate-900">{rupiah(p.price)}</td>
+                      <td className="px-5 py-4">
+                        {promoInfo(p).isPromo ? (
+                          <span className="flex flex-col leading-tight">
+                            <span className="font-semibold text-rose-600">
+                              {rupiah(promoInfo(p).finalPrice)}
+                            </span>
+                            <span className="text-xs text-slate-400 line-through">
+                              {rupiah(p.price)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-slate-900">{rupiah(p.price)}</span>
+                        )}
+                      </td>
                       <td className="px-5 py-4">
                         <Badge tone={p.stock === 0 ? 'rose' : p.stock <= 5 ? 'amber' : 'green'}>
                           {p.stock}
@@ -305,9 +319,23 @@ export default function ProductManager({ products = [] }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold text-slate-900">{p.name}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-brand-700">{rupiah(p.price)}</p>
+                    <p className="mt-0.5 flex items-baseline gap-1.5 text-sm">
+                      <span
+                        className={`font-semibold ${
+                          promoInfo(p).isPromo ? 'text-rose-600' : 'text-brand-700'
+                        }`}
+                      >
+                        {rupiah(promoInfo(p).finalPrice)}
+                      </span>
+                      {promoInfo(p).isPromo && (
+                        <span className="text-xs text-slate-400 line-through">{rupiah(p.price)}</span>
+                      )}
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <Badge tone="slate">{p.category}</Badge>
+                      {promoInfo(p).isPromo && (
+                        <Badge tone="rose">Promo −{promoInfo(p).discountPercent}%</Badge>
+                      )}
                       <Badge tone={p.stock === 0 ? 'rose' : p.stock <= 5 ? 'amber' : 'green'}>
                         Stok {p.stock}
                       </Badge>

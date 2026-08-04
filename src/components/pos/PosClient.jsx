@@ -8,6 +8,7 @@ import ReceiptModal from './ReceiptModal';
 import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
 import { rupiah } from '@/lib/format';
+import { promoInfo } from '@/lib/promo';
 import { createOrder } from '@/app/(site)/menu/actions';
 
 const SORTS = [
@@ -91,12 +92,19 @@ export default function PosClient({ products = [], categories = [], tables = [],
       }
       const source = products.find((p) => p.id === id);
       if (!source || source.stock <= 0) return prev;
+
+      // Harga promo dipakai sejak di keranjang supaya total yang dilihat
+      // pelanggan sama dengan yang dihitung `create_order()` di server.
+      const { isPromo, basePrice, finalPrice } = promoInfo(source);
+
       return [
         ...prev,
         {
           product_id: source.id,
           name: source.name,
-          price: Number(source.price),
+          price: finalPrice,
+          basePrice,
+          isPromo,
           stock: source.stock,
           image_url: source.image_url,
           qty: 1,

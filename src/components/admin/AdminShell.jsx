@@ -21,6 +21,18 @@ const MENU = [
     ),
   },
   {
+    // Layar yang paling sering dipakai saat jam sibuk — ditaruh tinggi.
+    href: '/admin/kasir',
+    label: 'Kasir',
+    icon: (
+      <>
+        <rect x="3" y="8" width="18" height="12" rx="2" />
+        <path d="M7 8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" strokeLinecap="round" />
+        <path d="M7 13h4" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
     href: '/admin/produk',
     label: 'Daftar Produk',
     icon: (

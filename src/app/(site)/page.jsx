@@ -8,26 +8,26 @@ import Testimonials from '@/components/sections/Testimonials';
 import Faq from '@/components/sections/Faq';
 import QrOrder from '@/components/sections/QrOrder';
 import CtaWhatsapp from '@/components/sections/CtaWhatsapp';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/server';
 
-export const dynamic = 'force-dynamic';
+/*
+  Landing page tidak lagi menampilkan data yang berubah tiap detik: sejak
+  generator QR pindah ke admin, satu-satunya data dinamis di sini adalah 4 menu
+  favorit. Dipasangkan dengan `createPublicClient()` (tanpa cookie), halaman ini
+  benar-benar ter-cache dan disegarkan tiap 30 detik — bukan lagi query Supabase
+  di setiap kunjungan seperti waktu masih `force-dynamic`.
+*/
+export const revalidate = 30;
 
 export default async function HomePage() {
-  const supabase = createClient();
+  const supabase = createPublicClient();
 
-  const [productsRes, tablesRes] = await Promise.all([
-    supabase
-      .from('products')
-      .select('id, name, category, price, stock, description, image_url')
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(4),
-    supabase
-      .from('cafe_tables')
-      .select('id, table_no, label, area, capacity, status')
-      .eq('is_active', true)
-      .order('table_no', { ascending: true }),
-  ]);
+  const productsRes = await supabase
+    .from('products')
+    .select('id, name, category, price, promo_price, stock, description, image_url')
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .limit(4);
 
   return (
     <>
@@ -38,7 +38,7 @@ export default async function HomePage() {
       <BestSeller products={productsRes.data || []} />
       <Portfolio />
       <Testimonials />
-      <QrOrder tables={tablesRes.data || []} />
+      <QrOrder />
       <Faq />
       <CtaWhatsapp />
     </>

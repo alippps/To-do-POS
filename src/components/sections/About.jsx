@@ -42,14 +42,14 @@ export default function About() {
                   <p className="text-3xl font-extrabold text-slate-900">99,9%</p>
                   <p className="mt-1 text-sm text-slate-500">uptime sistem kasir</p>
                 </div>
-                <div className="h-44 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                {/* <div className="h-44 rounded-2xl border border-slate-200 bg-slate-50 p-6">
                   <p className="text-sm font-semibold text-slate-900">Dibangun dengan</p>
                   <ul className="mt-3 space-y-1.5 text-sm text-slate-500">
                     <li>• Next.js App Router</li>
                     <li>• Supabase (Auth + DB)</li>
                     <li>• Tailwind CSS</li>
                   </ul>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

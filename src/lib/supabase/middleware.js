@@ -32,7 +32,6 @@ export async function updateSession(request) {
 
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith('/admin');
-  const isAuthRoute = pathname === '/login' || pathname === '/register';
 
   if (isAdminRoute && !user) {
     const url = request.nextUrl.clone();
@@ -56,9 +55,15 @@ export async function updateSession(request) {
     }
   }
 
-  if (isAuthRoute && user) {
+  /*
+    Yang sudah masuk tidak perlu melihat form daftar lagi — tapi jangan
+    dilempar ke beranda publik. Sejak sisi publik tidak lagi memuat tombol
+    Keluar, `/login` adalah satu-satunya tempat staf bisa melihat sesinya dan
+    keluar. Melempar mereka ke `/` justru mengunci mereka di dalam sesi.
+  */
+  if (user && pathname === '/register') {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/login';
     url.search = '';
     return NextResponse.redirect(url);
   }

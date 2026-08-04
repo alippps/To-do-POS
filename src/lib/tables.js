@@ -37,6 +37,19 @@ export const TABLE_STATUS = {
 
 export const TABLE_STATUS_LIST = Object.values(TABLE_STATUS);
 
+/**
+ * Area meja — sengaja hanya dua.
+ *
+ * Sebelumnya ada 'Workspace' dan 'VIP' juga, tapi keduanya bukan area: ruang
+ * kerja dan meeting room sama-sama berada di dalam ruangan. Sifat ruangannya
+ * sekarang ditulis di `label` meja (mis. "Workspace / Meeting Room"), sehingga
+ * area tetap menjawab satu pertanyaan saja — pelanggan duduk di dalam atau di
+ * luar.
+ *
+ * Dipakai bersama oleh form admin dan validasi server action.
+ */
+export const TABLE_AREAS = ['Indoor', 'Outdoor'];
+
 export function tableStatus(value) {
   return TABLE_STATUS[value] || TABLE_STATUS.available;
 }

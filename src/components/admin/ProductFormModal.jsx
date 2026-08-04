@@ -10,6 +10,7 @@ const EMPTY = {
   name: '',
   category: CATEGORIES[0],
   price: '',
+  promo_price: '',
   stock: '',
   description: '',
   image_url: '',
@@ -29,6 +30,7 @@ export default function ProductFormModal({ open, onClose, onSubmit, product, loa
             name: product.name || '',
             category: product.category || CATEGORIES[0],
             price: String(product.price ?? ''),
+            promo_price: product.promo_price == null ? '' : String(product.promo_price),
             stock: String(product.stock ?? ''),
             description: product.description || '',
             image_url: product.image_url || '',
@@ -50,6 +52,15 @@ export default function ProductFormModal({ open, onClose, onSubmit, product, loa
       e.price = 'Harga harus angka ≥ 0.';
     if (form.stock === '' || !Number.isInteger(Number(form.stock)) || Number(form.stock) < 0)
       e.stock = 'Stok harus bilangan bulat ≥ 0.';
+
+    // Aturan yang sama juga dijaga di server (admin/produk/actions.js).
+    if (form.promo_price !== '') {
+      const promo = Number(form.promo_price);
+      if (Number.isNaN(promo) || promo < 0) e.promo_price = 'Harga promo harus angka ≥ 0.';
+      else if (promo >= Number(form.price))
+        e.promo_price = 'Harga promo harus lebih kecil dari harga normal.';
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -60,6 +71,8 @@ export default function ProductFormModal({ open, onClose, onSubmit, product, loa
     onSubmit({
       ...form,
       price: Number(form.price),
+      // String kosong dibiarkan apa adanya — server yang menerjemahkannya jadi NULL.
+      promo_price: form.promo_price === '' ? '' : Number(form.promo_price),
       stock: Number(form.stock),
     });
   }
@@ -114,6 +127,19 @@ export default function ProductFormModal({ open, onClose, onSubmit, product, loa
             error={errors.stock}
           />
         </div>
+
+        {/* Promo: satu kolom, tanpa toggle terpisah — isi = promo nyala, kosong = mati. */}
+        <Input
+          label="Harga promo (Rp)"
+          type="number"
+          min="0"
+          step="500"
+          value={form.promo_price}
+          onChange={(e) => change('promo_price', e.target.value)}
+          placeholder="Kosongkan kalau tidak promo"
+          hint="Kalau diisi, menu ini muncul di halaman Promo Hari Ini dan ditagih dengan harga ini."
+          error={errors.promo_price}
+        />
 
         <Input
           label="URL gambar"

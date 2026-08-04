@@ -7,6 +7,7 @@ const COLUMNS = [
     title: 'Halaman',
     links: [
       { href: '/', label: 'Home' },
+      { href: '/katalog', label: 'Katalog Menu' },
       { href: '/menu', label: 'Menu (Fitur Utama)' },
       { href: '/about', label: 'About' },
       { href: '/kontak', label: 'Kontak' },
@@ -21,21 +22,16 @@ const COLUMNS = [
       { href: '/#faq', label: 'FAQ' },
     ],
   },
-  {
-    title: 'Staf & Admin',
-    links: [
-      { href: '/login', label: 'Masuk' },
-      { href: '/register', label: 'Daftar' },
-      { href: '/admin', label: 'Dashboard Admin' },
-    ],
-  },
+  // Kolom "Staf & Admin" sengaja dihapus. Footer sisi publik tidak boleh
+  // memuat tautan ke /login, /register, maupun /admin — lihat catatan
+  // isolasi di src/components/layout/Navbar.jsx.
 ];
 
 export default function Footer() {
   return (
     <footer className="mt-24 border-t border-slate-200 bg-slate-50">
       <div className="container-page py-14">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-500">{site.description}</p>

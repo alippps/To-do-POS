@@ -16,7 +16,7 @@ export default function NotFound() {
           Kembali ke Beranda
         </Link>
         <Link
-          href="/menu"
+          href="/katalog"
           className="rounded-xl border border-brand-200 px-6 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
         >
           Lihat Menu

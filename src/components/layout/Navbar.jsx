@@ -2,13 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Logo from './Logo';
 import Button from '@/components/ui/Button';
-import { createClient } from '@/lib/supabase/client';
-import { initials } from '@/lib/format';
 
-/** Navigasi pelanggan — semua tautan di bawah bisa dibuka tanpa login. */
+/**
+ * Navigasi pelanggan.
+ *
+ * ISOLASI SISI PUBLIK ↔ ADMIN
+ * Navbar ini sengaja tidak tahu apa-apa soal sesi login: tidak ada tautan
+ * Dashboard, tidak ada tombol Login/Keluar, tidak ada identitas akun — bahkan
+ * ketika yang membuka adalah admin. Sisi publik hanya melayani pemesanan.
+ *
+ * Konsekuensinya yang harus diingat saat menyunting berkas ini:
+ *   - Pintu masuk staf hanya lewat URL langsung `/login` (tidak ditautkan).
+ *   - Kendali sesi (siapa yang masuk, tombol keluar) ada di `/login` dan di
+ *     AdminShell — bukan di sini. Jangan dikembalikan ke navbar.
+ */
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   // "Fitur Utama" adalah istilah yang dipakai ketentuan lomba untuk halaman
@@ -19,9 +29,8 @@ const NAV_LINKS = [
   { href: '/kontak', label: 'Kontak' },
 ];
 
-export default function Navbar({ user, profile }) {
+export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -34,15 +43,7 @@ export default function Navbar({ user, profile }) {
 
   useEffect(() => setOpen(false), [pathname]);
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
-  }
-
   const isActive = (href) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
-  const isAdmin = profile?.role === 'admin';
 
   return (
     <header
@@ -67,53 +68,12 @@ export default function Navbar({ user, profile }) {
               {link.label}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="ml-1 rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
-            >
-              Dashboard
-            </Link>
-          )}
         </nav>
 
         <div className="hidden items-center gap-3 xl:flex">
-          {user ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
-                  {initials(profile?.full_name || user.email)}
-                </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="max-w-[140px] truncate text-sm font-medium text-slate-700">
-                    {profile?.full_name || user.email}
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                    {isAdmin ? 'Admin' : 'User'}
-                  </span>
-                </span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                Keluar
-              </Button>
-            </div>
-          ) : (
-            <>
-              {/*
-                Login diperuntukkan bagi STAF/ADMIN, bukan pelanggan.
-                Pelanggan cukup menekan "Pesan Sekarang" — tanpa akun.
-              */}
-              <Link
-                href="/login"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-brand-700"
-              >
-                Login staf
-              </Link>
-              <Button href="/meja" size="sm">
-                Pesan Sekarang
-              </Button>
-            </>
-          )}
+          <Button href="/meja" size="sm">
+            Pesan Sekarang
+          </Button>
         </div>
 
         <button
@@ -147,42 +107,11 @@ export default function Navbar({ user, profile }) {
                 {link.label}
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50"
-              >
-                Dashboard Admin
-              </Link>
-            )}
 
-            <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-4">
-              {user ? (
-                <>
-                  <p className="px-1 text-sm text-slate-500">
-                    Masuk sebagai{' '}
-                    <span className="font-semibold text-slate-800">
-                      {profile?.full_name || user.email}
-                    </span>{' '}
-                    <span className="font-bold uppercase text-brand-600">
-                      ({isAdmin ? 'admin' : 'user'})
-                    </span>
-                  </p>
-                  <Button variant="secondary" onClick={handleLogout}>
-                    Keluar
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button href="/meja">Pesan Sekarang</Button>
-                  <Link
-                    href="/login"
-                    className="rounded-xl px-4 py-3 text-center text-sm font-medium text-slate-500 transition hover:bg-slate-50"
-                  >
-                    Login staf / admin
-                  </Link>
-                </>
-              )}
+            <div className="mt-3 border-t border-slate-100 pt-4">
+              <Button href="/meja" className="w-full">
+                Pesan Sekarang
+              </Button>
             </div>
           </div>
         </div>

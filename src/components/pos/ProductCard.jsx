@@ -2,9 +2,11 @@
 
 import Badge from '@/components/ui/Badge';
 import { rupiah } from '@/lib/format';
+import { promoInfo } from '@/lib/promo';
 
 export default function ProductCard({ product, qty = 0, onAdd, onRemove }) {
   const habis = product.stock <= 0;
+  const { isPromo, basePrice, finalPrice, discountPercent } = promoInfo(product);
 
   return (
     <article
@@ -34,10 +36,16 @@ export default function ProductCard({ product, qty = 0, onAdd, onRemove }) {
           </span>
         )}
 
-        {qty > 0 && (
+        {qty > 0 ? (
           <span className="absolute right-3 top-3 flex h-7 min-w-7 items-center justify-center rounded-full bg-brand-600 px-2 text-xs font-bold text-white shadow-pop">
             {qty}
           </span>
+        ) : (
+          isPromo && (
+            <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-pop">
+              −{discountPercent}%
+            </span>
+          )
         )}
       </div>
 
@@ -54,7 +62,18 @@ export default function ProductCard({ product, qty = 0, onAdd, onRemove }) {
         */}
         <div className="mt-5 border-t border-slate-100 pt-4">
           <div className="flex items-baseline justify-between gap-3">
-            <p className="text-lg font-extrabold text-brand-700">{rupiah(product.price)}</p>
+            <p className="flex items-baseline gap-2">
+              <span
+                className={`text-lg font-extrabold ${isPromo ? 'text-rose-600' : 'text-brand-700'}`}
+              >
+                {rupiah(finalPrice)}
+              </span>
+              {isPromo && (
+                <span className="text-xs font-medium text-slate-400 line-through">
+                  {rupiah(basePrice)}
+                </span>
+              )}
+            </p>
             <p className="shrink-0 text-[11px] text-slate-400">Tersisa {product.stock}</p>
           </div>
 

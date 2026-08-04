@@ -1,13 +1,19 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
-import Button from '@/components/ui/Button';
 import { site } from '@/lib/site';
-import { tableStatus } from '@/lib/tables';
 
+/**
+ * Section QR di landing page — PENJELASAN saja.
+ *
+ * Alat generatornya (pilih meja → unduh PNG) sudah pindah ke
+ * `/admin/meja` (src/components/admin/TableQrPanel.jsx). Yang tersisa di sini
+ * hanya cerita cara kerjanya plus satu QR contoh, karena pengunjung publik
+ * tidak punya urusan mencetak QR meja milik kedai.
+ *
+ * Dirender di server: isinya tetap, jadi tidak perlu mengirim library QR ke
+ * browser pengunjung.
+ */
 const STEPS = [
   {
     title: 'Scan QR di meja',
@@ -22,45 +28,21 @@ const STEPS = [
     text: 'Daftar menu selalu terbaru — item yang habis otomatis tidak bisa dipesan.',
   },
   {
-    title: 'Struk langsung terbit',
-    text: 'Barista menerima pesanan seketika, struk bisa dicetak sendiri dari HP.',
+    title: 'Bukti pesanan langsung terbit',
+    text: 'Barista menerima pesanan seketika; struk resminya dicetak kasir saat pembayaran.',
   },
 ];
 
-export default function QrOrder({ tables = [] }) {
-  const [tableNo, setTableNo] = useState(tables[0]?.table_no || '01');
-  const [dataUrl, setDataUrl] = useState('');
+export default async function QrOrder() {
+  // QR contoh mengarah ke halaman ketersediaan meja tanpa nomor meja tertentu.
+  const sampleUrl = `${site.siteUrl}/meja`;
 
-  // QR mengarah ke halaman ketersediaan meja, BUKAN langsung ke menu —
-  // supaya pelanggan lebih dulu melihat meja mana yang masih kosong.
-  const targetUrl = `${site.siteUrl}/meja?meja=${encodeURIComponent(tableNo || '01')}`;
-  const selected = tables.find((t) => t.table_no === tableNo);
-  const status = selected ? tableStatus(selected.status) : null;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    QRCode.toDataURL(targetUrl, {
-      width: 520,
-      margin: 1,
-      color: { dark: '#341810', light: '#ffffff' },
-      errorCorrectionLevel: 'M',
-    })
-      .then((url) => !cancelled && setDataUrl(url))
-      .catch(() => !cancelled && setDataUrl(''));
-
-    return () => {
-      cancelled = true;
-    };
-  }, [targetUrl]);
-
-  function handleDownload() {
-    if (!dataUrl) return;
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `qr-meja-${tableNo || '01'}.png`;
-    a.click();
-  }
+  const dataUrl = await QRCode.toDataURL(sampleUrl, {
+    width: 520,
+    margin: 1,
+    color: { dark: '#341810', light: '#ffffff' },
+    errorCorrectionLevel: 'M',
+  }).catch(() => '');
 
   return (
     <section id="qr" className="surface-warm py-20 sm:py-24">
@@ -93,24 +75,15 @@ export default function QrOrder({ tables = [] }) {
             <div className="flex flex-col items-center justify-center gap-6 border-t border-slate-100 bg-gradient-to-br from-brand-50 to-white p-8 sm:p-12 lg:border-l lg:border-t-0">
               <div className="w-full max-w-xs rounded-3xl border border-brand-100 bg-white p-6 text-center shadow-pop">
                 <p className="text-xs font-bold uppercase tracking-widest text-brand-600">
-                  Meja {tableNo || '01'}
+                  Contoh QR
                 </p>
-
-                {status && (
-                  <span
-                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${status.ring} ${status.text}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                    {status.label}
-                  </span>
-                )}
 
                 <div className="mt-4 flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-white">
                   {dataUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={dataUrl}
-                      alt={`QR pemesanan meja ${tableNo}`}
+                      alt="Contoh QR menuju halaman ketersediaan meja"
                       className="h-full w-full object-contain"
                     />
                   ) : (
@@ -118,49 +91,18 @@ export default function QrOrder({ tables = [] }) {
                   )}
                 </div>
 
-                <p className="mt-4 text-sm font-semibold text-slate-900">Scan untuk memesan</p>
-                <p className="mt-1 break-all text-[11px] text-slate-400">{targetUrl}</p>
+                <p className="mt-4 text-sm font-semibold text-slate-900">
+                  Coba pindai dengan kamera HP
+                </p>
+                <p className="mt-1 text-xs leading-snug text-slate-500">
+                  QR ini membuka halaman ketersediaan meja. Di kedai, tiap meja punya QR sendiri
+                  yang langsung menandai nomor mejanya.
+                </p>
               </div>
 
-              <div className="flex w-full max-w-xs flex-col gap-3">
-                <label className="block">
-                  <span className="label-base">Nomor meja</span>
-                  {tables.length > 0 ? (
-                    <select
-                      value={tableNo}
-                      onChange={(e) => setTableNo(e.target.value)}
-                      className="input-base cursor-pointer text-center font-semibold"
-                    >
-                      {tables.map((t) => (
-                        <option key={t.id} value={t.table_no}>
-                          Meja {t.table_no} · {t.label || t.area}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      value={tableNo}
-                      onChange={(e) => setTableNo(e.target.value.slice(0, 4))}
-                      placeholder="01"
-                      className="input-base text-center font-semibold"
-                    />
-                  )}
-                </label>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    className="flex-1"
-                    onClick={handleDownload}
-                    disabled={!dataUrl}
-                  >
-                    Unduh QR
-                  </Button>
-                  <Button href={`/meja?meja=${encodeURIComponent(tableNo || '01')}`} className="flex-1">
-                    Coba Scan
-                  </Button>
-                </div>
-              </div>
+              <p className="max-w-xs text-center text-[11px] leading-snug text-slate-400">
+                QR per meja dibuat dan dicetak oleh pemilik kedai dari panel pengelolaan meja.
+              </p>
             </div>
           </div>
         </div>

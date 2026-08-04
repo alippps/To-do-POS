@@ -21,7 +21,7 @@ export default async function MenuPage({ searchParams }) {
   const [productsRes, tablesRes] = await Promise.all([
     supabase
       .from('products')
-      .select('id, name, category, price, stock, description, image_url')
+      .select('id, name, category, price, promo_price, stock, description, image_url')
       .eq('is_active', true)
       .order('name', { ascending: true }),
     supabase

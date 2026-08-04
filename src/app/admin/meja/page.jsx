@@ -1,5 +1,6 @@
 import PageHeader from '@/components/admin/PageHeader';
 import TableManager from '@/components/admin/TableManager';
+import TableQrPanel from '@/components/admin/TableQrPanel';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,9 @@ export default async function AdminMejaPage() {
       )}
 
       <TableManager tables={tables || []} />
+
+      {/* Generator QR — dulu di landing page publik, sekarang khusus admin. */}
+      <TableQrPanel tables={(tables || []).filter((t) => t.is_active)} />
     </>
   );
 }

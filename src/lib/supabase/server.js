@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /** Supabase client untuk Server Component / Server Action / Route Handler. */
 export function createClient() {
@@ -25,6 +26,27 @@ export function createClient() {
         },
       },
     }
+  );
+}
+
+/**
+ * Client untuk data PUBLIK yang tidak bergantung pada siapa yang membuka —
+ * daftar produk di landing page dan katalog.
+ *
+ * Bedanya dengan `createClient()`: yang ini tidak menyentuh cookie sama
+ * sekali. Itu bukan detail sepele — `cookies()` adalah dynamic API, dan sekali
+ * dipanggil, Next mencoret halamannya dari render statis sehingga `revalidate`
+ * jadi tidak berguna. Tanpa cookie, halamannya boleh di-cache dan disajikan
+ * nyaris seketika.
+ *
+ * Aman karena tabel `products` memang punya policy "publik boleh baca" dan
+ * kunci yang dipakai tetap anon key yang sama.
+ */
+export function createPublicClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
   );
 }
 

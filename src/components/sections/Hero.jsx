@@ -56,8 +56,13 @@ export default function Hero() {
               </svg>
               Konsultasi Gratis via WhatsApp
             </Button>
-            <Button href="/menu" variant="secondary" size="lg">
-              Coba Pesan Sekarang
+            {/*
+              Ajakan memesan sudah dipegang tombol "Pesan Sekarang" di navbar
+              yang selalu tampil. Di sini cukup arahkan ke katalog — pengunjung
+              yang baru mendarat biasanya mau lihat-lihat dulu, bukan checkout.
+            */}
+            <Button href="/katalog" variant="secondary" size="lg">
+              Lihat Menu Kami
             </Button>
           </div>
 

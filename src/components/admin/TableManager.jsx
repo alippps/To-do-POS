@@ -9,10 +9,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import { Input, Select } from '@/components/ui/Field';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
-import { TABLE_STATUS_LIST, tableStatus } from '@/lib/tables';
+import { TABLE_AREAS, TABLE_STATUS_LIST, tableStatus } from '@/lib/tables';
 import { createTable, updateTable, deleteTable, setTableStatus } from '@/app/admin/meja/actions';
-
-const AREAS = ['Indoor', 'Outdoor', 'Workspace', 'VIP'];
 
 const EMPTY = { table_no: '', label: '', area: 'Indoor', capacity: 2, is_active: true };
 
@@ -271,10 +269,16 @@ export default function TableManager({ tables = [] }) {
             value={values.label}
             onChange={(e) => change('label', e.target.value)}
             placeholder="Dekat jendela"
+            hint="Tempat menulis sifat ruangannya — mis. “Workspace / Meeting Room”, “Bar counter”."
           />
 
-          <Select label="Area" value={values.area} onChange={(e) => change('area', e.target.value)}>
-            {AREAS.map((a) => (
+          <Select
+            label="Area"
+            value={values.area}
+            onChange={(e) => change('area', e.target.value)}
+            hint="Cuma dua: pelanggan duduk di dalam atau di luar."
+          >
+            {TABLE_AREAS.map((a) => (
               <option key={a} value={a}>
                 {a}
               </option>

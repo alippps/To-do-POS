@@ -51,23 +51,38 @@ export default function Testimonials() {
           description="Ratusan cangkir kopi dan ribuan transaksi setiap bulan — ini pengalaman mereka."
         />
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/*
+          Dua kolom, bukan empat. Kutipan sepanjang 2–3 baris butuh lebar baca
+          yang layak; dipaksa empat kolom teksnya jadi kolom sempit yang capek
+          dibaca. Padding kartu juga wajib ditulis di sini — kelas `.card`
+          hanya mengatur radius, border, dan bayangan.
+        */}
+        <div className="mt-14 grid gap-6 sm:grid-cols-2">
           {TESTIMONIALS.map((t) => (
             <figure
               key={t.name}
-              className="card flex h-full flex-col transition duration-300 hover:-translate-y-1 hover:border-brand-200"
+              className="card relative flex h-full flex-col p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-pop sm:p-8"
             >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-6 top-4 font-display text-6xl leading-none text-brand-100 select-none"
+              >
+                &rdquo;
+              </span>
+
               <Stars count={t.rating} />
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">
-                “{t.text}”
+
+              <blockquote className="relative mt-5 flex-1 text-base leading-relaxed text-slate-700">
+                {t.text}
               </blockquote>
-              <figcaption className="mt-6 flex items-center gap-3 border-t border-slate-100 pt-5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white">
+
+              <figcaption className="mt-7 flex items-center gap-3.5 border-t border-slate-100 pt-5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-pop">
                   {initials(t.name)}
                 </span>
-                <span>
-                  <span className="block text-sm font-semibold text-slate-900">{t.name}</span>
-                  <span className="block text-xs text-slate-400">{t.role}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold text-slate-900">{t.name}</span>
+                  <span className="block truncate text-xs text-slate-500">{t.role}</span>
                 </span>
               </figcaption>
             </figure>

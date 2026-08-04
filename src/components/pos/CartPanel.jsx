@@ -91,7 +91,14 @@ export default function CartPanel({
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
-                  <p className="text-xs text-slate-400">{rupiah(item.price)}</p>
+                  <p className="flex items-baseline gap-1.5 text-xs">
+                    <span className={item.isPromo ? 'font-bold text-rose-600' : 'text-slate-400'}>
+                      {rupiah(item.price)}
+                    </span>
+                    {item.isPromo && (
+                      <span className="text-slate-400 line-through">{rupiah(item.basePrice)}</span>
+                    )}
+                  </p>
                   <div className="mt-2 flex items-center gap-1">
                     <button
                       type="button"

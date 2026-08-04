@@ -34,24 +34,85 @@ Table, Card, dsb.) ditulis sendiri di `src/components/ui/`.
 | Area | Isi |
 | --- | --- |
 | **Landing page** | Navbar · Hero · Tentang CoffeeShop & Software House · Layanan Utama · Keunggulan · Menu Favorit · Portfolio · Testimoni · QR Pemesanan · FAQ · CTA WhatsApp · Footer |
-| **Pelanggan (tanpa login)** | `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/struk/[invoice]` struk digital yang bisa dicetak · Kontak · About |
-| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `admin` |
-| **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status) · Daftar Transaksi · **Hak Akses** |
-| **QR Ordering** | Generator QR per nomor meja, bisa diunduh sebagai PNG |
+| **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · Kontak · About |
+| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `admin`. Dibuka lewat URL langsung `/login` & `/register`; tidak ditautkan dari situs publik |
+| **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · **Kasir** (buat pesanan untuk pelanggan walk-in) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status + generator QR) · Daftar Transaksi · **Hak Akses** |
+| **QR Ordering** | Landing page menjelaskan alurnya + satu QR contoh. **Generator QR per meja (unduh PNG) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
 
 ---
 
 ## 🧭 Alur pemesanan
 
+Ada **dua jalan masuk**, dan keduanya berakhir di tagihan meja yang sama.
+
+### A. Datang langsung → pesan di kasir
+
 ```
-QR di meja  →  /meja?meja=07        Lihat meja mana yang masih kosong (tanpa login)
+Pelanggan datang  →  /admin/kasir      Kasir: pilih MEJA KOSONG → masukkan pesanan
+                  →  duduk di mejanya  Meja otomatis tertandai "Terisi"
+                  →  scan QR di meja   Mau nambah? Pesan sendiri, tanpa antre lagi
+                  →  /admin/transaksi  Kasir menandai "Lunas" saat pelanggan pulang
+```
+
+Pesanan dari kasir sengaja dibuat berstatus **`pending`**, bukan langsung lunas. Alasannya:
+status meja diturunkan dari ada-tidaknya pesanan pending, jadi pesanan yang langsung dilunasi
+akan membuat mejanya kembali “Tersedia” padahal pelanggan baru saja duduk di situ. Semua
+tambahan lewat QR menempel ke meja yang sama dan dilunasi sekali di akhir.
+
+### B. Scan QR di meja → pesan sendiri
+
+```
+QR di meja  →  /meja?meja=07        LAYAR HUB — empat pilihan untuk meja itu:
+                                      📖 Menu    → /katalog     lihat menu & harga (baca saja)
+                                      🛒 Order   → /menu?meja=07 pesan dari meja ini
+                                      💳 Bayar   → /bayar?meja=07 tagihan berjalan meja ini
+                                      🔥 Promo   → /promo?meja=07 menu yang sedang diskon
             →  /menu?meja=07        Pilih menu, isi nama, checkout
-            →  /struk/INV-…         Struk digital — tombol Cetak hanya mencetak struknya
+            →  /struk/INV-…         Bukti pesanan digital
             →  /admin/transaksi     Kasir menandai "Lunas" → meja otomatis kosong lagi
 ```
 
+Yang memindai QR meja 07 memang sedang duduk di meja 07, jadi ia tidak disuruh memilih meja
+lagi. Grid ketersediaan meja tetap ada di **`/meja` tanpa parameter** (dari navbar, atau lewat
+tautan “Duduk di meja lain?” di bawah hub).
+
 Pesanan yang masuk lewat QR berstatus **`pending`** dan menandai mejanya **terisi**.
 Begitu kasir menandainya **lunas** (atau **batal**), trigger database membebaskan meja itu kembali.
+Selama masih `pending`, pesanan itulah yang muncul di halaman **Bayar** meja tersebut.
+
+---
+
+## 🔒 Isolasi sisi pelanggan ↔ admin
+
+Antarmuka publik **murni melayani pemesanan**. Tidak ada satu pun tautan, tombol, atau
+identitas akun yang mengarah ke area staf — bahkan ketika yang membuka situs adalah admin
+yang sedang login.
+
+| Dulu ada di sisi publik | Sekarang |
+| --- | --- |
+| Navbar: tautan **Dashboard** (untuk admin) | Dihapus |
+| Navbar: tautan **Login staf** | Dihapus |
+| Navbar: chip identitas akun + tombol **Keluar** | Dihapus |
+| Footer: kolom **Staf & Admin** (`/login`, `/register`, `/admin`) | Dihapus |
+| Menu Favorit: “tambahkan produk dari Dashboard Admin” | Diganti kalimat netral untuk pelanggan |
+| Section QR: pilih meja mana pun → **unduh QR-nya** | Generator pindah ke `/admin/meja`; landing tinggal penjelasan + 1 QR contoh |
+
+**Pintu masuk staf:** ketik `/login` langsung di address bar. Halaman itu tidak ditautkan
+dari mana pun, tapi tetap publik dan berfungsi normal — tidak ada rahasia yang bergantung
+pada URL ini, seluruh proteksi tetap dijaga 4 lapis (lihat [Keamanan](#-keamanan)).
+
+**Kendali sesi pindah ke `/login`.** Karena sisi publik tidak lagi punya tombol Keluar,
+`/login` berperan ganda: saat belum ada sesi ia menampilkan form login, saat sesi aktif ia
+menampilkan panel sesi — siapa yang masuk, role-nya, tombol **Buka Dashboard Admin** (khusus
+admin), dan tombol **Keluar**. Tanpa panel ini akun ber-role `user` akan terkunci: tidak bisa
+membuka `/admin`, tidak bisa keluar dari mana pun.
+
+`SiteLayout` juga tidak lagi memanggil `getSessionUser()` — tidak ada elemen publik yang
+berubah karena status login, jadi query sesi per request itu murni beban tanpa guna.
+
+> **Catatan untuk penguji/juri:** halaman **Login** dan **Register** tetap ada dan tetap
+> memenuhi ketentuan lomba — buka `/login` dan `/register` langsung. Keduanya tidak
+> ditautkan dari situs publik semata-mata karena isolasi ini.
 
 ---
 
@@ -63,12 +124,16 @@ dan tombol untuk menaikkan/menurunkan role.
 | Halaman / Aksi | Tamu | User | Admin |
 | --- | :---: | :---: | :---: |
 | Landing `/`, About, Kontak | ✅ | ✅ | ✅ |
+| Katalog menu `/katalog` (baca saja) | ✅ | ✅ | ✅ |
+| Promo hari ini `/promo` | ✅ | ✅ | ✅ |
+| Tagihan meja `/bayar?meja=07` | ✅ | ✅ | ✅ |
 | Ketersediaan meja `/meja` | ✅ | ✅ | ✅ |
 | Menu & pesan `/menu` | ✅ | ✅ | ✅ |
 | Struk `/struk/[invoice]` | ✅ | ✅ | ✅ |
 | Membuat pesanan (checkout) | ✅ | ✅ | ✅ |
 | Mengirim pesan kontak | ✅ | ✅ | ✅ |
 | Dashboard `/admin` | ❌ | ❌ | ✅ |
+| Kasir `/admin/kasir` | ❌ | ❌ | ✅ |
 | CRUD produk `/admin/produk` | ❌ | ❌ | ✅ |
 | Denah meja `/admin/meja` | ❌ | ❌ | ✅ |
 | Daftar transaksi `/admin/transaksi` | ❌ | ❌ | ✅ |
@@ -99,6 +164,31 @@ order by p.role, u.email;
 
 ---
 
+## ⚠️ Sudah pernah menjalankan schema versi lama? Jalankan ulang.
+
+Fitur **Bayar** dan **Promo Hari Ini** menambah hal baru di database:
+
+| Tambahan | Dipakai oleh |
+| --- | --- |
+| Kolom `products.promo_price` | `/promo`, katalog, menu, keranjang, `/admin/produk` |
+| RPC `get_table_bill(p_table_no)` | Tombol **Bayar** pada hub & halaman `/bayar` |
+| `create_order()` versi baru | Menagih harga promo, bukan harga normal |
+| Penyederhanaan area meja | Area `Workspace`/`VIP` diubah jadi `Indoor`; sifat ruangannya pindah ke label |
+
+Tempel ulang **seluruh** isi [`supabase/schema.sql`](supabase/schema.sql) ke SQL Editor Supabase
+lalu **Run**. File-nya idempotent — data yang sudah ada tidak akan hilang, dan promo yang sudah
+kamu atur di `/admin/produk` tidak tertimpa.
+
+**Area meja sekarang hanya `Indoor` dan `Outdoor`.** Ruang kerja dan meeting room sama-sama
+berada di dalam ruangan, jadi keduanya bukan area tersendiri — sifat ruangannya ditulis di kolom
+**label** meja (mis. “Workspace / Meeting Room”, “Bar counter”, “Teras depan”). Menjalankan
+skrip di atas otomatis memindahkan meja lama yang berarea `Workspace`/`VIP` ke `Indoor`.
+
+Tanpa langkah ini, halaman menu/katalog/promo akan menampilkan pesan gagal memuat karena
+kolom `promo_price` belum ada.
+
+---
+
 ## 🚀 Cara Menjalankan
 
 ### 1. Prasyarat
@@ -120,7 +210,8 @@ npm install
 
 1. Daftar / masuk ke [supabase.com](https://supabase.com), buat **New Project**.
 2. Buka **SQL Editor** → tempel seluruh isi [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-   Skrip ini membuat tabel, RLS policy, trigger, fungsi checkout, 12 produk contoh, dan 12 meja contoh.
+   Skrip ini membuat tabel, RLS policy, trigger, fungsi checkout, RPC struk & tagihan meja,
+   12 produk contoh (2 di antaranya dipasang promo), dan 12 meja contoh.
    File-nya **idempotent** — kalau sebelumnya sudah menjalankan versi lama, cukup jalankan ulang untuk upgrade.
 3. Buka **Project Settings → API**, salin `Project URL` dan `anon public key`.
 
@@ -149,7 +240,9 @@ update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'emailkamu@gmail.com');
 ```
 
-3. Login ulang → menu **Dashboard** muncul di navbar, `/admin` sudah bisa diakses.
+3. Buka **`/login`** langsung lewat address bar (tautannya sengaja tidak ada di situs publik —
+   lihat [Isolasi sisi pelanggan ↔ admin](#-isolasi-sisi-pelanggan--admin)), lalu masuk.
+   Setelah masuk sebagai admin, `/login` menampilkan tombol **Buka Dashboard Admin**.
 4. Admin berikutnya cukup ditambahkan lewat halaman **`/admin/akses`** — tidak perlu SQL lagi.
 
 > Jika ingin login langsung tanpa konfirmasi email, matikan **Confirm email** di
@@ -169,6 +262,11 @@ QR berisi `NEXT_PUBLIC_SITE_URL`, jadi `localhost` tidak bisa dibuka dari HP.
 Untuk uji coba, jalankan `npm run dev -- -H 0.0.0.0` lalu set
 `NEXT_PUBLIC_SITE_URL=http://<IP-laptop>:3000`, atau deploy dulu ke Vercel.
 
+QR per meja diunduh dari **`/admin/meja` → panel “Cetak QR Meja”** (bukan dari landing page).
+Panel itu menolak mencetak diam-diam: kalau `NEXT_PUBLIC_SITE_URL` masih alamat lokal, muncul
+peringatan bahwa QR-nya tidak akan bisa dipindai pelanggan — supaya ketahuan sebelum stikernya
+terlanjur tertempel di semua meja.
+
 ---
 
 ## 🗂️ Struktur Proyek
@@ -178,8 +276,12 @@ src/
 ├─ app/
 │  ├─ (site)/                 # Halaman publik (pakai Navbar + Footer)
 │  │  ├─ page.jsx             # Home / landing (semua section)
-│  │  ├─ meja/                # Ketersediaan meja — tujuan scan QR
-│  │  ├─ menu/                # Menu pelanggan + server action checkout
+│  │  ├─ loading.jsx          # Kerangka bawaan semua halaman publik
+│  │  ├─ katalog/             # Daftar menu BACA SAJA (tanpa keranjang)
+│  │  ├─ promo/               # Menu yang sedang diskon (kolom promo_price)
+│  │  ├─ bayar/               # Tagihan berjalan sebuah meja (RPC get_table_bill)
+│  │  ├─ meja/                # Hub hasil scan QR + ketersediaan meja (+ loading.jsx)
+│  │  ├─ menu/                # Menu pelanggan + server action checkout (+ loading.jsx)
 │  │  ├─ fitur/               # Redirect ke /menu (menjaga QR lama tetap jalan)
 │  │  ├─ kontak/              # Form kontak + server action simpan pesan
 │  │  └─ about/
@@ -187,8 +289,10 @@ src/
 │  ├─ (auth)/                 # Login & Register (layout split-screen)
 │  ├─ admin/                  # Area admin (dilindungi middleware + layout)
 │  │  ├─ page.jsx             # Dashboard
+│  │  ├─ loading.jsx          # Kerangka semua halaman admin
+│  │  ├─ kasir/               # Buat pesanan untuk pelanggan walk-in
 │  │  ├─ produk/              # CRUD + Search produk
-│  │  ├─ meja/                # CRUD denah meja + status
+│  │  ├─ meja/                # CRUD denah meja + status + generator QR
 │  │  ├─ transaksi/           # Daftar & kelola transaksi
 │  │  └─ akses/               # Daftar akun + ID + matriks hak akses
 │  ├─ layout.jsx              # Root layout + metadata + font
@@ -200,14 +304,16 @@ src/
 │  ├─ sections/               # Hero, About, Services, Advantages, Portfolio,
 │  │                          # Testimonials, Faq, QrOrder, CtaWhatsapp, ContactForm
 │  ├─ tables/                 # TableAvailability (grid meja pelanggan)
-│  ├─ pos/                    # PosClient, ProductCard, CartPanel,
+│  ├─ pos/                    # ScanHub, FlowSteps, PosClient, ProductCard, CartPanel,
 │  │                          # ReceiptModal, ReceiptPaper, PrintReceiptBar
-│  ├─ auth/                   # LoginForm, RegisterForm
-│  └─ admin/                  # AdminShell, ProductManager, TableManager,
-│                             # TransactionManager, AccessManager, ...
+│  ├─ auth/                   # LoginForm, RegisterForm, SessionPanel
+│  └─ admin/                  # AdminShell, CashierClient, ProductManager, TableManager,
+│                             # TableQrPanel, TransactionManager, AccessManager, ...
 ├─ lib/
-│  ├─ supabase/               # client.js (browser), server.js (SSR), middleware.js
+│  ├─ supabase/               # client.js (browser), server.js (SSR + createPublicClient),
+│  │                          # middleware.js
 │  ├─ site.js                 # Identitas bisnis, nomor WA, kategori produk
+│  ├─ promo.js                # Aturan harga promo (dipakai semua halaman)
 │  ├─ tables.js               # Status meja + label pembayaran/pesanan
 │  ├─ access.js               # Matriks hak akses (sumber data /admin/akses)
 │  └─ format.js               # rupiah(), formatDate(), initials()
@@ -221,13 +327,13 @@ src/
 | Ketentuan | Status | Lokasi |
 | --- | :---: | --- |
 | Tema UMKM & transformasi digital | ✅ | Landing page (Hero, Layanan, Tentang), seluruh alur POS |
-| Sistem **C**reate | ✅ | `admin/produk/actions.js`, `admin/meja/actions.js`, `(site)/menu/actions.js`, `(site)/kontak/actions.js` |
+| Sistem **C**reate | ✅ | `admin/produk/actions.js`, `admin/meja/actions.js`, `admin/kasir/actions.js`, `(site)/menu/actions.js`, `(site)/kontak/actions.js` |
 | Sistem **R**ead | ✅ | Server Component tiap `page.jsx` |
 | Sistem **U**pdate | ✅ | `updateProduct()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()` |
 | Sistem **D**elete | ✅ | `deleteProduct()`, `deleteTable()`, `deleteTransaction()` |
 | Sistem **S**earch | ✅ | `ProductManager`, `TableManager`, `TransactionManager`, `AccessManager`, `PosClient` |
-| Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` |
-| Halaman **Register** | ✅ | `/register` — `src/app/(auth)/register/page.jsx` |
+| Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` (buka langsung; tidak ditautkan dari situs publik, lihat [Isolasi](#-isolasi-sisi-pelanggan--admin)) |
+| Halaman **Register** | ✅ | `/register` — `src/app/(auth)/register/page.jsx` (buka langsung) |
 | User Side — **Home** | ✅ | `/` — `src/app/(site)/page.jsx` |
 | User Side — **Fitur Utama (jual beli)** | ✅ | `/menu` — `src/app/(site)/menu/page.jsx` (rute lama `/fitur` diarahkan ke sini) |
 | User Side — **Kontak + form** | ✅ | `/kontak` — form tervalidasi ganda, tersimpan ke tabel `contact_messages` |
@@ -239,9 +345,11 @@ src/
 | Validasi input | ✅ | Divalidasi 2× — di client (UX) dan di Server Action (keamanan) |
 | Keamanan dasar | ✅ | 4 lapis: middleware → layout → server action → Row Level Security |
 
-**Di luar ketentuan (nilai tambah inovasi):** ketersediaan meja real-time hasil scan QR (`/meja`),
-struk digital thermal 80mm yang bisa dicetak sendiri (`/struk/[invoice]`), manajemen denah meja
-(`/admin/meja`), dan panel hak akses beserta ID tiap akun (`/admin/akses`).
+**Di luar ketentuan (nilai tambah inovasi):** layar hub 4 pilihan hasil scan QR meja
+(`/meja?meja=07`), tagihan berjalan per meja tanpa login (`/bayar`), promo harian yang dikelola
+dari daftar produk (`/promo`), katalog menu baca-saja (`/katalog`), ketersediaan meja real-time
+(`/meja`), struk digital thermal 80mm (`/struk/[invoice]`), manajemen denah meja + generator QR
+per meja (`/admin/meja`), dan panel hak akses beserta ID tiap akun (`/admin/akses`).
 
 ---
 

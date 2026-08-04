@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { TABLE_AREAS } from '@/lib/tables';
 
 const STATUSES = ['available', 'occupied', 'reserved'];
 
@@ -30,18 +31,26 @@ function revalidateAll() {
 function sanitize(input) {
   const table_no = String(input?.table_no || '').trim();
   const capacity = Number(input?.capacity);
+  const area = String(input?.area || '').trim();
 
   const errors = {};
   if (!table_no) errors.table_no = 'Nomor meja wajib diisi.';
   if (table_no.length > 8) errors.table_no = 'Nomor meja maksimal 8 karakter.';
   if (!Number.isInteger(capacity) || capacity < 1) errors.capacity = 'Kapasitas harus bilangan bulat ≥ 1.';
 
+  // Area dikunci ke daftar resmi. Tanpa ini, nilai bebas apa pun bisa masuk
+  // lewat pemanggilan langsung dan memunculkan kembali area lama seperti
+  // 'Workspace' atau 'VIP' yang sudah tidak dipakai.
+  if (area && !TABLE_AREAS.includes(area)) {
+    errors.area = `Area harus salah satu dari: ${TABLE_AREAS.join(', ')}.`;
+  }
+
   return {
     errors,
     values: {
       table_no,
       label: String(input?.label || '').trim() || null,
-      area: String(input?.area || 'Indoor').trim() || 'Indoor',
+      area: TABLE_AREAS.includes(area) ? area : TABLE_AREAS[0],
       capacity,
       is_active: Boolean(input?.is_active),
     },
