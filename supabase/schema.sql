@@ -48,6 +48,17 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+/*
+  Role v3 — menambah 'kasir' di antara 'user' dan 'admin'.
+
+  `create table if not exists` di atas tidak menyentuh tabel yang sudah ada,
+  jadi constraint lamanya (yang cuma mengizinkan user/admin) harus diganti
+  secara eksplisit. Tanpa ini, menyetel role 'kasir' akan ditolak database.
+*/
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('user', 'kasir', 'admin'));
+
 -- Helper: cek apakah user yang login adalah admin (SECURITY DEFINER agar bebas rekursi RLS)
 create or replace function public.is_admin()
 returns boolean
@@ -58,6 +69,25 @@ as $$
   select exists (
     select 1 from public.profiles p
     where p.id = auth.uid() and p.role = 'admin'
+  );
+$$;
+
+/*
+  Staf = admin ATAU kasir.
+
+  Dipakai policy transaksi. Kasir perlu membaca dan menandai lunas pesanan,
+  tapi TIDAK boleh menyentuh produk, meja, hak akses, maupun menghapus
+  transaksi — batasan itu dijaga dengan tetap memakai is_admin() di sana.
+*/
+create or replace function public.is_staff()
+returns boolean
+language sql
+security definer set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'kasir')
   );
 $$;
 
@@ -116,6 +146,19 @@ create table if not exists public.cafe_tables (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+/*
+  `create table if not exists` di atas TIDAK menyentuh tabel yang sudah ada —
+  kolom yang telanjur hilang tidak akan kembali olehnya. Baris ini yang
+  mengembalikannya, sekaligus menutup kasus database lama yang belum punya
+  kolom ini sama sekali.
+
+  `label` sengaja opsional (nullable): boleh dikosongkan semua. Seluruh tampilan
+  sudah menyediakan cadangan — jatuh ke nomor meja atau nama area. Gunanya untuk
+  menuliskan sifat ruangan yang bukan area, misalnya "Workspace / Meeting Room"
+  pada meja 11 & 12, atau "Bar counter" dan "Dekat jendela".
+*/
+alter table public.cafe_tables add column if not exists label text;
 
 create index if not exists cafe_tables_status_idx on public.cafe_tables (status);
 
@@ -501,7 +544,7 @@ begin
     raise exception 'Akses ditolak: khusus admin.';
   end if;
 
-  if p_role not in ('user', 'admin') then
+  if p_role not in ('user', 'kasir', 'admin') then
     raise exception 'Role tidak valid: %', p_role;
   end if;
 
@@ -561,17 +604,35 @@ create policy "meja: admin boleh tulis" on public.cafe_tables
 -- RPC get_receipt() yang hanya mengembalikan satu invoice.
 drop policy if exists "transaksi: baca milik sendiri / admin" on public.transactions;
 create policy "transaksi: baca milik sendiri / admin" on public.transactions
-  for select using (public.is_admin() or user_id = auth.uid());
+  for select using (public.is_staff() or user_id = auth.uid());
 
+/*
+  Policy tulis sengaja DIPECAH per operasi.
+
+  Sebelumnya satu policy `for all` menutup insert/update/delete sekaligus.
+  Dipecah karena kasir butuh UPDATE (menandai lunas) tapi tidak boleh DELETE —
+  menghapus riwayat penjualan tidak bisa dibatalkan. Kalau tetap `for all`,
+  memberi kasir hak ubah otomatis memberi hak hapus juga.
+*/
 drop policy if exists "transaksi: admin boleh tulis" on public.transactions;
-create policy "transaksi: admin boleh tulis" on public.transactions
-  for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "transaksi: staf boleh ubah" on public.transactions;
+create policy "transaksi: staf boleh ubah" on public.transactions
+  for update using (public.is_staff()) with check (public.is_staff());
+
+drop policy if exists "transaksi: staf boleh tambah" on public.transactions;
+create policy "transaksi: staf boleh tambah" on public.transactions
+  for insert with check (public.is_staff());
+
+drop policy if exists "transaksi: hanya admin boleh hapus" on public.transactions;
+create policy "transaksi: hanya admin boleh hapus" on public.transactions
+  for delete using (public.is_admin());
 
 -- TRANSACTION ITEMS
 drop policy if exists "item: baca mengikuti transaksi" on public.transaction_items;
 create policy "item: baca mengikuti transaksi" on public.transaction_items
   for select using (
-    public.is_admin() or exists (
+    public.is_staff() or exists (
       select 1 from public.transactions t
       where t.id = transaction_id and t.user_id = auth.uid()
     )

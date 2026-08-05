@@ -168,8 +168,11 @@ export default function CashierClient({ products = [], tables = [], categories =
         </div>
       )}
 
+      {/* `min-w-0` — alasannya sama dengan di PosClient: baris chip kategori
+          di dalamnya berisi tombol `shrink-0`, dan tanpa ini lebar minimumnya
+          menjadi lebar kolom, membuat halaman bisa digeser ke samping. */}
       <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
-        <div>
+        <div className="min-w-0">
           {/* LANGKAH 1 — meja */}
           <section className="card mb-6 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">

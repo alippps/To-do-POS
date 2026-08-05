@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ScanIntentDialog from './ScanIntentDialog';
 import { rupiah } from '@/lib/format';
 import { tableStatus } from '@/lib/tables';
 
@@ -65,6 +66,13 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
 
   return (
     <div className="mx-auto w-full max-w-2xl">
+      {/*
+        Popup dulu, hub belakangan. Popup menjawab dua niat yang paling sering
+        (pesan / nambah); hub di belakangnya untuk sisanya — lihat menu, cek
+        tagihan, lihat promo.
+      */}
+      <ScanIntentDialog tableNo={meja} billCount={billCount} billTotal={billTotal} />
+
       {/* Identitas meja — penegasan bahwa QR-nya terbaca benar */}
       <div className="card-accent animate-fade-up p-6 sm:p-8">
         <div className="flex items-center gap-5">

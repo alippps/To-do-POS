@@ -1,6 +1,6 @@
 import PageHeader from '@/components/admin/PageHeader';
 import TransactionManager from '@/components/admin/TransactionManager';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getSessionUser } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +8,10 @@ export const metadata = { title: 'Daftar Transaksi' };
 
 export default async function AdminTransaksiPage() {
   const supabase = createClient();
+  const { profile } = await getSessionUser();
+
+  // Kasir boleh mengubah status, tapi tidak menghapus riwayat penjualan.
+  const bolehHapus = profile?.role === 'admin';
 
   const { data: transactions, error } = await supabase
     .from('transactions')
@@ -28,7 +32,7 @@ export default async function AdminTransaksiPage() {
         </div>
       )}
 
-      <TransactionManager transactions={transactions || []} />
+      <TransactionManager transactions={transactions || []} canDelete={bolehHapus} />
     </>
   );
 }

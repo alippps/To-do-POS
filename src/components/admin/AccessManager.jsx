@@ -8,8 +8,17 @@ import EmptyState from '@/components/ui/EmptyState';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import { formatDate } from '@/lib/format';
-import { ROLES } from '@/lib/access';
+import { ROLES, ASSIGNABLE_ROLES } from '@/lib/access';
 import { setUserRole } from '@/app/admin/akses/actions';
+
+/** Akibat nyata dari tiap pilihan — ditulis di dialog konfirmasi. */
+const PENJELASAN_ROLE = {
+  admin:
+    'Akun ini akan bisa membuka SELURUH area /admin: mengubah produk, denah meja, menghapus transaksi, dan mengatur role akun lain.',
+  kasir:
+    'Akun ini hanya bisa membuka Dashboard, Kasir, dan Daftar Transaksi. Bisa membuat pesanan dan menandai lunas, tapi tidak bisa mengubah produk, denah meja, menghapus transaksi, maupun mengatur role.',
+  user: 'Akun ini akan kehilangan seluruh akses ke area /admin.',
+};
 
 /**
  * Daftar akun beserta ID dan role-nya — menjawab pertanyaan
@@ -38,7 +47,7 @@ export default function AccessManager({ users = [], currentUserId }) {
     });
   }, [users, keyword, roleFilter]);
 
-  const adminCount = users.filter((u) => u.role === 'admin').length;
+  const jumlah = (r) => users.filter((u) => u.role === r).length;
 
   async function handleConfirm() {
     if (!pending) return;
@@ -62,18 +71,22 @@ export default function AccessManager({ users = [], currentUserId }) {
 
   return (
     <>
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Akun</p>
           <p className="mt-2 text-2xl font-extrabold text-slate-900">{users.length}</p>
         </div>
         <div className="card p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Akses Admin</p>
-          <p className="mt-2 text-2xl font-extrabold text-brand-700">{adminCount}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Admin</p>
+          <p className="mt-2 text-2xl font-extrabold text-amber-600">{jumlah('admin')}</p>
         </div>
         <div className="card p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Role User</p>
-          <p className="mt-2 text-2xl font-extrabold text-slate-900">{users.length - adminCount}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kasir</p>
+          <p className="mt-2 text-2xl font-extrabold text-emerald-600">{jumlah('kasir')}</p>
+        </div>
+        <div className="card p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">User</p>
+          <p className="mt-2 text-2xl font-extrabold text-slate-900">{jumlah('user')}</p>
         </div>
       </div>
 
@@ -91,8 +104,11 @@ export default function AccessManager({ users = [], currentUserId }) {
           className="input-base cursor-pointer sm:w-48"
         >
           <option value="Semua">Semua role</option>
-          <option value="admin">Admin</option>
-          <option value="user">User</option>
+          {ASSIGNABLE_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {ROLES[r].label}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -116,6 +132,7 @@ export default function AccessManager({ users = [], currentUserId }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((u) => {
+                  const peran = ROLES[u.role] || ROLES.user;
                   const isAdmin = u.role === 'admin';
                   const isSelf = u.id === currentUserId;
 
@@ -146,9 +163,7 @@ export default function AccessManager({ users = [], currentUserId }) {
                       </td>
 
                       <td className="px-5 py-4">
-                        <Badge tone={isAdmin ? 'amber' : 'slate'}>
-                          {isAdmin ? 'Admin' : 'User'}
-                        </Badge>
+                        <Badge tone={peran.badge}>{peran.label}</Badge>
                       </td>
 
                       <td className="px-5 py-4 text-xs text-slate-500">
@@ -156,22 +171,29 @@ export default function AccessManager({ users = [], currentUserId }) {
                       </td>
 
                       <td className="px-5 py-4 text-right">
+                        {/*
+                          Tombol dua-arah diganti pemilih role sejak ada tiga
+                          peran — "Jadikan Admin" tidak lagi cukup menjelaskan
+                          pilihan yang tersedia.
+                        */}
                         {isSelf && isAdmin ? (
                           <span className="text-xs text-slate-400">Tidak bisa diubah sendiri</span>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPending({ user: u, nextRole: isAdmin ? 'user' : 'admin' })
+                          <select
+                            value={u.role}
+                            onChange={(e) =>
+                              e.target.value !== u.role &&
+                              setPending({ user: u, nextRole: e.target.value })
                             }
-                            className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                              isAdmin
-                                ? 'text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50'
-                                : 'bg-brand-600 text-white hover:bg-brand-700'
-                            }`}
+                            aria-label={`Ubah role ${u.email}`}
+                            className="input-base w-auto cursor-pointer py-2 text-xs"
                           >
-                            {isAdmin ? 'Turunkan ke User' : 'Jadikan Admin'}
-                          </button>
+                            {ASSIGNABLE_ROLES.map((r) => (
+                              <option key={r} value={r}>
+                                {ROLES[r].label}
+                              </option>
+                            ))}
+                          </select>
                         )}
                       </td>
                     </tr>
@@ -188,17 +210,11 @@ export default function AccessManager({ users = [], currentUserId }) {
         onClose={() => setPending(null)}
         onConfirm={handleConfirm}
         loading={loading}
-        confirmLabel={pending?.nextRole === 'admin' ? 'Ya, jadikan admin' : 'Ya, turunkan'}
-        title={
-          pending?.nextRole === 'admin'
-            ? `Beri akses admin ke ${pending?.user?.email}?`
-            : `Cabut akses admin ${pending?.user?.email}?`
-        }
-        description={
-          pending?.nextRole === 'admin'
-            ? ROLES.admin.who + ' Akun ini akan bisa membuka seluruh area /admin dan mengubah data.'
-            : 'Akun ini akan kehilangan akses ke seluruh area /admin.'
-        }
+        confirmLabel={`Ya, jadikan ${ROLES[pending?.nextRole]?.label || 'role baru'}`}
+        title={`Ubah role ${pending?.user?.email} menjadi ${
+          ROLES[pending?.nextRole]?.label || pending?.nextRole
+        }?`}
+        description={PENJELASAN_ROLE[pending?.nextRole] || ''}
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />

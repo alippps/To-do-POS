@@ -123,6 +123,12 @@ export default function PosClient({ products = [], categories = [], tables = [],
     );
   }
 
+  /** Buang satu menu sepenuhnya, tanpa perlu menekan "−" berulang kali. */
+  function handleRemoveAll(item) {
+    const id = item.product_id || item.id;
+    setCart((prev) => prev.filter((i) => i.product_id !== id));
+  }
+
   function handleFormChange(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -181,6 +187,7 @@ export default function PosClient({ products = [], categories = [], tables = [],
       onFormChange={handleFormChange}
       onAdd={handleAdd}
       onRemove={handleRemove}
+      onRemoveAll={handleRemoveAll}
       onClear={() => setCart([])}
       onSubmit={handleSubmit}
       onCloseSheet={() => setSheetOpen(false)}
@@ -192,8 +199,17 @@ export default function PosClient({ products = [], categories = [], tables = [],
 
   return (
     <>
+      {/*
+        `min-w-0` pada kolom kiri bukan hiasan.
+
+        Item grid/flex punya `min-width: auto`, artinya ia menolak menyusut di
+        bawah lebar minimum isinya. Baris chip kategori di dalamnya adalah flex
+        yang isinya `shrink-0`, jadi lebar minimumnya = total semua chip. Tanpa
+        `min-w-0`, angka itulah yang jadi lebar kolom — dan seluruh halaman ikut
+        melebar sampai bisa digeser ke samping di HP.
+      */}
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-        <div>
+        <div className="min-w-0">
           {/* Panduan 3 langkah — supaya pelanggan tidak menebak-nebak urutannya */}
           <div className="card mb-6 p-4 sm:p-5">
             <p className="text-[11px] font-bold uppercase tracking-widest text-brand-600">

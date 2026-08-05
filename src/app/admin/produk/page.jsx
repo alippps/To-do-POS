@@ -1,12 +1,14 @@
 import PageHeader from '@/components/admin/PageHeader';
 import ProductManager from '@/components/admin/ProductManager';
 import { createClient } from '@/lib/supabase/server';
+import { requirePageAccess } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Daftar Produk' };
 
 export default async function AdminProdukPage() {
+  await requirePageAccess('/admin/produk'); // kasir tidak boleh mengubah harga
   const supabase = createClient();
 
   const { data: products, error } = await supabase

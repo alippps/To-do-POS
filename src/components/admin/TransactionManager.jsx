@@ -25,7 +25,7 @@ const PERIODS = [
   { value: '30d', label: '30 hari terakhir' },
 ];
 
-export default function TransactionManager({ transactions = [] }) {
+export default function TransactionManager({ transactions = [], canDelete = false }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -243,13 +243,15 @@ export default function TransactionManager({ transactions = [] }) {
                           >
                             Cetak
                           </a>
-                          <button
-                            type="button"
-                            onClick={() => setDeleting(t)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            Hapus
-                          </button>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleting(t)}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              Hapus
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -305,13 +307,15 @@ export default function TransactionManager({ transactions = [] }) {
                   >
                     {t.status === 'paid' ? 'Set Pending' : 'Set Lunas'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(t)}
-                    className="flex-1 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-600"
-                  >
-                    Hapus
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleting(t)}
+                      className="flex-1 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-600"
+                    >
+                      Hapus
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

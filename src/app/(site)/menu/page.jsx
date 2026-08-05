@@ -3,6 +3,7 @@ import Container from '@/components/ui/Container';
 import FlowSteps from '@/components/pos/FlowSteps';
 import PosClient from '@/components/pos/PosClient';
 import { createClient } from '@/lib/supabase/server';
+import { rupiah } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,20 @@ export default async function MenuPage({ searchParams }) {
 
   const activeTable = tables.find((t) => t.table_no === defaultTable);
 
+  /*
+    `mode=tambah` datang dari popup hasil scan QR. Bedanya bukan cuma kata-kata:
+    pelanggan yang menambah perlu melihat tagihan meja yang SUDAH berjalan,
+    supaya jelas tambahannya menempel ke situ dan bukan tagihan baru.
+  */
+  const modeTambah = searchParams?.mode === 'tambah' && Boolean(defaultTable);
+  let tagihan = null;
+
+  if (modeTambah) {
+    const { data } = await supabase.rpc('get_table_bill', { p_table_no: defaultTable });
+    const orders = data?.orders || [];
+    if (orders.length > 0) tagihan = { count: orders.length, total: Number(data?.total || 0) };
+  }
+
   return (
     <div className="bg-slate-50 pb-28 pt-8 sm:pt-12 lg:pb-14">
       <Container>
@@ -55,13 +70,30 @@ export default async function MenuPage({ searchParams }) {
           </div>
 
           <h1 className="mt-4 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Mau ngopi apa hari ini?
+            {modeTambah ? `Tambah pesanan untuk Meja ${defaultTable}` : 'Mau ngopi apa hari ini?'}
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-slate-500">
-            Pilih menu, masukkan ke keranjang, lalu pesan. Kamu tidak perlu membuat akun — cukup isi
-            nama dan nomor meja, struk langsung terbit.
+            {modeTambah
+              ? 'Pilih tambahannya seperti biasa. Pesanan ini masuk ke tagihan meja yang sama — dibayar sekali saja di kasir nanti.'
+              : 'Pilih menu, masukkan ke keranjang, lalu pesan. Kamu tidak perlu membuat akun — cukup isi nama dan nomor meja, struk langsung terbit.'}
           </p>
+
+          {/* Tagihan yang sudah berjalan — bukti bahwa tambahan ini menyatu ke situ. */}
+          {tagihan && (
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+              <span className="font-semibold text-amber-900">
+                Tagihan berjalan Meja {defaultTable}: {tagihan.count} pesanan
+              </span>
+              <span className="font-bold text-amber-900">{rupiah(tagihan.total)}</span>
+              <Link
+                href={`/bayar?meja=${encodeURIComponent(defaultTable)}`}
+                className="text-xs font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900"
+              >
+                Lihat rinciannya
+              </Link>
+            </div>
+          )}
 
           {/* Konteks meja hasil scan QR */}
           <div className="mt-5 flex flex-wrap items-center gap-3">

@@ -62,8 +62,11 @@ tambahan lewat QR menempel ke meja yang sama dan dilunasi sekali di akhir.
 ### B. Scan QR di meja → pesan sendiri
 
 ```
-QR di meja  →  /meja?meja=07        LAYAR HUB — empat pilihan untuk meja itu:
-                                      📖 Menu    → /katalog     lihat menu & harga (baca saja)
+QR di meja  →  /meja?meja=07        POPUP langsung muncul, dua pilihan:
+                                      Tambah Pesanan  → /menu?meja=07&mode=tambah
+                                      Langsung Pesan  → /menu?meja=07
+                                    Popup ditutup → LAYAR HUB di belakangnya:
+                                      📖 Menu    → /katalog      lihat menu & harga (baca saja)
                                       🛒 Order   → /menu?meja=07 pesan dari meja ini
                                       💳 Bayar   → /bayar?meja=07 tagihan berjalan meja ini
                                       🔥 Promo   → /promo?meja=07 menu yang sedang diskon
@@ -71,6 +74,14 @@ QR di meja  →  /meja?meja=07        LAYAR HUB — empat pilihan untuk meja itu
             →  /struk/INV-…         Bukti pesanan digital
             →  /admin/transaksi     Kasir menandai "Lunas" → meja otomatis kosong lagi
 ```
+
+Mana yang jadi tombol utama di popup ditentukan keadaan meja, bukan tebakan: kalau meja itu
+sudah punya tagihan berjalan, **Tambah Pesanan** yang ditonjolkan beserta jumlah dan totalnya.
+Kalau belum ada apa-apa, **Langsung Pesan** yang di atas.
+
+Cabang `mode=tambah` bukan sekadar beda kata: halaman menu berganti judul jadi “Tambah pesanan
+untuk Meja 07” dan memunculkan tagihan yang sedang berjalan, supaya jelas tambahannya menempel
+ke situ — bukan jadi tagihan terpisah. Apa pun cabangnya, **pembayaran tetap sekali di akhir**.
 
 Yang memindai QR meja 07 memang sedang duduk di meja 07, jadi ia tidak disuruh memilih meja
 lagi. Grid ketersediaan meja tetap ada di **`/meja` tanpa parameter** (dari navbar, atau lewat
@@ -121,29 +132,30 @@ berubah karena status login, jadi query sesi per request itu murni beban tanpa g
 Halaman **`/admin/akses`** menampilkan tabel ini secara langsung **beserta ID (UUID) tiap akun**
 dan tombol untuk menaikkan/menurunkan role.
 
-| Halaman / Aksi | Tamu | User | Admin |
-| --- | :---: | :---: | :---: |
-| Landing `/`, About, Kontak | ✅ | ✅ | ✅ |
-| Katalog menu `/katalog` (baca saja) | ✅ | ✅ | ✅ |
-| Promo hari ini `/promo` | ✅ | ✅ | ✅ |
-| Tagihan meja `/bayar?meja=07` | ✅ | ✅ | ✅ |
-| Ketersediaan meja `/meja` | ✅ | ✅ | ✅ |
-| Menu & pesan `/menu` | ✅ | ✅ | ✅ |
-| Struk `/struk/[invoice]` | ✅ | ✅ | ✅ |
-| Membuat pesanan (checkout) | ✅ | ✅ | ✅ |
-| Mengirim pesan kontak | ✅ | ✅ | ✅ |
-| Dashboard `/admin` | ❌ | ❌ | ✅ |
-| Kasir `/admin/kasir` | ❌ | ❌ | ✅ |
-| CRUD produk `/admin/produk` | ❌ | ❌ | ✅ |
-| Denah meja `/admin/meja` | ❌ | ❌ | ✅ |
-| Daftar transaksi `/admin/transaksi` | ❌ | ❌ | ✅ |
-| Hak akses `/admin/akses` | ❌ | ❌ | ✅ |
-| Baca produk & meja (DB) | ✅ | ✅ | ✅ |
-| Tulis produk & meja (DB) | ❌ | ❌ | ✅ |
-| Baca tabel transaksi (DB) | ❌ | ◐ miliknya | ✅ |
-| Ubah / hapus transaksi | ❌ | ❌ | ✅ |
-| Ubah role akun | ❌ | ❌ | ✅ |
-| Baca pesan kontak masuk | ❌ | ❌ | ✅ |
+| Halaman / Aksi | Tamu | User | Kasir | Admin |
+| --- | :---: | :---: | :---: | :---: |
+| Landing `/`, About, Kontak | ✅ | ✅ | ✅ | ✅ |
+| Katalog menu `/katalog` (baca saja) | ✅ | ✅ | ✅ | ✅ |
+| Promo hari ini `/promo` | ✅ | ✅ | ✅ | ✅ |
+| Tagihan meja `/bayar?meja=07` | ✅ | ✅ | ✅ | ✅ |
+| Ketersediaan meja `/meja` | ✅ | ✅ | ✅ | ✅ |
+| Menu & pesan `/menu` | ✅ | ✅ | ✅ | ✅ |
+| Struk `/struk/[invoice]` | ✅ | ✅ | ✅ | ✅ |
+| Membuat pesanan (checkout) | ✅ | ✅ | ✅ | ✅ |
+| Mengirim pesan kontak | ✅ | ✅ | ✅ | ✅ |
+| Dashboard `/admin` | ❌ | ❌ | ✅ | ✅ |
+| Kasir `/admin/kasir` | ❌ | ❌ | ✅ | ✅ |
+| Daftar transaksi `/admin/transaksi` | ❌ | ❌ | ✅ | ✅ |
+| CRUD produk `/admin/produk` | ❌ | ❌ | ❌ | ✅ |
+| Denah meja `/admin/meja` | ❌ | ❌ | ❌ | ✅ |
+| Hak akses `/admin/akses` | ❌ | ❌ | ❌ | ✅ |
+| Baca produk & meja (DB) | ✅ | ✅ | ✅ | ✅ |
+| Tulis produk & meja (DB) | ❌ | ❌ | ❌ | ✅ |
+| Baca tabel transaksi (DB) | ❌ | ◐ miliknya | ✅ | ✅ |
+| Ubah status transaksi (lunas/batal) | ❌ | ❌ | ✅ | ✅ |
+| **Hapus transaksi** | ❌ | ❌ | ❌ | ✅ |
+| Ubah role akun | ❌ | ❌ | ❌ | ✅ |
+| Baca pesan kontak masuk | ❌ | ❌ | ❌ | ✅ |
 
 **Siapa itu siapa**
 
@@ -151,7 +163,8 @@ dan tombol untuk menaikkan/menurunkan role.
 | --- | --- | --- |
 | **Tamu** | tanpa ID akun (`auth.uid()` = `NULL`) | Siapa pun yang membuka website / scan QR |
 | **User** | UUID di `profiles` dengan `role = 'user'` | Semua akun baru otomatis `user` |
-| **Admin** | UUID di `profiles` dengan `role = 'admin'` | Dinaikkan dari `/admin/akses` atau SQL Editor |
+| **Kasir** | UUID di `profiles` dengan `role = 'kasir'` | Petugas kasir. Hanya Dashboard, Kasir, dan Daftar Transaksi |
+| **Admin** | UUID di `profiles` dengan `role = 'admin'` | Pemilik. Seluruh area admin. Dinaikkan dari `/admin/akses` atau SQL Editor |
 
 Cek langsung dari SQL Editor Supabase siapa saja yang memegang akses admin:
 
@@ -170,6 +183,7 @@ Fitur **Bayar** dan **Promo Hari Ini** menambah hal baru di database:
 
 | Tambahan | Dipakai oleh |
 | --- | --- |
+| **Role `kasir`** | Constraint `profiles_role_check`, helper `is_staff()`, policy transaksi dipecah per operasi, `admin_set_role()` menerima `kasir` |
 | Kolom `products.promo_price` | `/promo`, katalog, menu, keranjang, `/admin/produk` |
 | RPC `get_table_bill(p_table_no)` | Tombol **Bayar** pada hub & halaman `/bayar` |
 | `create_order()` versi baru | Menagih harga promo, bukan harga normal |
@@ -304,8 +318,9 @@ src/
 │  ├─ sections/               # Hero, About, Services, Advantages, Portfolio,
 │  │                          # Testimonials, Faq, QrOrder, CtaWhatsapp, ContactForm
 │  ├─ tables/                 # TableAvailability (grid meja pelanggan)
-│  ├─ pos/                    # ScanHub, FlowSteps, PosClient, ProductCard, CartPanel,
-│  │                          # ReceiptModal, ReceiptPaper, PrintReceiptBar
+│  ├─ pos/                    # ScanIntentDialog, ScanHub, FlowSteps, PosClient,
+│  │                          # ProductCard, CartPanel, ReceiptModal, ReceiptPaper,
+│  │                          # PrintReceiptBar
 │  ├─ auth/                   # LoginForm, RegisterForm, SessionPanel
 │  └─ admin/                  # AdminShell, CashierClient, ProductManager, TableManager,
 │                             # TableQrPanel, TransactionManager, AccessManager, ...

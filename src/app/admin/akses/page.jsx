@@ -2,6 +2,7 @@ import PageHeader from '@/components/admin/PageHeader';
 import AccessManager from '@/components/admin/AccessManager';
 import { createClient, getSessionUser } from '@/lib/supabase/server';
 import { ROLES, ACCESS_MATRIX, SECURITY_LAYERS } from '@/lib/access';
+import { requirePageAccess } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ const MARK = {
  * yang saat ini memegang akses admin.
  */
 export default async function AdminAksesPage() {
+  await requirePageAccess('/admin/akses'); // kasir tidak boleh mengubah role siapa pun
   const supabase = createClient();
   const { user } = await getSessionUser();
 
@@ -39,7 +41,7 @@ export default async function AdminAksesPage() {
       )}
 
       {/* Penjelasan tiap role */}
-      <section className="mb-8 grid gap-4 lg:grid-cols-3">
+      <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Object.values(ROLES).map((role) => (
           <div key={role.key} className="card-accent p-5">
             <h2 className="text-lg font-bold text-slate-900">{role.label}</h2>
@@ -78,6 +80,7 @@ export default async function AdminAksesPage() {
                   <th className="px-5 py-3.5">Halaman / Aksi</th>
                   <th className="px-5 py-3.5 text-center">Tamu</th>
                   <th className="px-5 py-3.5 text-center">User</th>
+                  <th className="px-5 py-3.5 text-center">Kasir</th>
                   <th className="px-5 py-3.5 text-center">Admin</th>
                 </tr>
               </thead>
@@ -130,7 +133,7 @@ function FragmentRows({ group }) {
   return (
     <>
       <tr className="bg-slate-50/40">
-        <td colSpan={4} className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        <td colSpan={5} className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
           {group.area}
         </td>
       </tr>
@@ -140,7 +143,7 @@ function FragmentRows({ group }) {
             <p className="font-medium text-slate-800">{row.name}</p>
             {row.note && <p className="mt-0.5 text-xs text-slate-500">{row.note}</p>}
           </td>
-          {['guest', 'user', 'admin'].map((role) => {
+          {['guest', 'user', 'kasir', 'admin'].map((role) => {
             const mark = MARK[row[role]] || MARK.n;
             return (
               <td key={role} className="px-5 py-3.5 text-center">

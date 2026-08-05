@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
+import { ROLES } from '@/lib/access';
+
 /**
- * Ubah role sebuah akun (user ⇄ admin).
+ * Ubah role sebuah akun (user / kasir / admin).
  *
  * Pengecekan admin + larangan menurunkan role diri sendiri dilakukan
  * di dalam RPC `admin_set_role` (SECURITY DEFINER), sehingga aturannya
@@ -25,6 +27,6 @@ export async function setUserRole(userId, role) {
 
   return {
     ok: true,
-    message: role === 'admin' ? 'Akun dinaikkan menjadi admin.' : 'Akun diturunkan menjadi user.',
+    message: `Role akun diubah menjadi ${ROLES[role]?.label || role}.`,
   };
 }

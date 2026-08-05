@@ -21,6 +21,7 @@ export default function CartPanel({
   onFormChange,
   onAdd,
   onRemove,
+  onRemoveAll,
   onClear,
   onSubmit,
   onCloseSheet,
@@ -69,7 +70,17 @@ export default function CartPanel({
         </div>
       </div>
 
-      <div className="scroll-slim flex-1 overflow-y-auto px-5 py-4">
+      {/*
+        Daftar item DAN form dijadikan satu area gulir.
+
+        Sebelumnya keduanya jadi dua kotak gulir bersebelahan, dan di bottom
+        sheet HP form-nya yang tinggi menghimpit daftar item sampai tersisa
+        satu baris — tombol kurangi/hapus jadi nyaris tak terjangkau. Total dan
+        tombol pesan dipindah ke footer yang menempel, supaya menggulir daftar
+        item tidak pernah menyembunyikan tombolnya.
+      */}
+      <div className="scroll-slim flex-1 overflow-y-auto">
+        <div className="px-5 py-4">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <span className="text-3xl">🛒</span>
@@ -99,24 +110,40 @@ export default function CartPanel({
                       <span className="text-slate-400 line-through">{rupiah(item.basePrice)}</span>
                     )}
                   </p>
-                  <div className="mt-2 flex items-center gap-1">
+                  <div className="mt-2.5 flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => onRemove(item)}
                       aria-label={`Kurangi ${item.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-lg text-slate-600 transition hover:bg-slate-50"
                     >
                       −
                     </button>
-                    <span className="w-7 text-center text-sm font-bold text-slate-800">{item.qty}</span>
+                    <span className="w-8 text-center text-sm font-bold text-slate-800">{item.qty}</span>
                     <button
                       type="button"
                       onClick={() => onAdd(item)}
                       disabled={item.qty >= item.stock}
                       aria-label={`Tambah ${item.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-lg text-white transition hover:bg-brand-700 disabled:opacity-40"
                     >
                       +
+                    </button>
+
+                    {/*
+                      Membatalkan satu menu lewat "−" berarti menekan berulang
+                      sampai habis. Tombol ini membuangnya sekaligus.
+                    */}
+                    <button
+                      type="button"
+                      onClick={() => onRemoveAll?.(item)}
+                      aria-label={`Hapus ${item.name} dari keranjang`}
+                      className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7h16M10 11v6M14 11v6" strokeLinecap="round" />
+                        <path d="M6 7l1 13h10l1-13M9 7V4h6v3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -126,9 +153,9 @@ export default function CartPanel({
             ))}
           </ul>
         )}
-      </div>
+        </div>
 
-      <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+        <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
         <Input
           label={<Wajib>Nama pemesan</Wajib>}
           value={form.customerName}
@@ -182,15 +209,20 @@ export default function CartPanel({
           className="min-h-[72px]"
         />
 
-        {/*
-          Pengingat kolom wajib muncul lebih dulu, sebelum pelanggan menekan
-          tombol dan kena pesan error — bertanya duluan lebih ramah daripada
-          menyalahkan belakangan.
-        */}
+        </div>
+      </div>
+
+      {/*
+        Footer menempel — total & tombol pesan selalu terlihat walau daftarnya
+        panjang. Pengingat dan pesan error ikut di sini, bukan di area gulir:
+        kalau tombolnya ditekan sementara pesannya berada jauh di atas layar,
+        pelanggan cuma melihat tombol yang seolah tidak bereaksi.
+      */}
+      <div className="space-y-3 border-t border-slate-200 bg-white px-5 py-4">
         {items.length > 0 && missing.length > 0 && !error && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800">
-            Tinggal satu langkah — isi <span className="font-bold">{missing.join(' dan ')}</span> di
-            atas, lalu tekan Pesan Sekarang.
+            Tinggal satu langkah — isi <span className="font-bold">{missing.join(' dan ')}</span>,
+            lalu tekan Pesan Sekarang.
           </p>
         )}
 
@@ -200,7 +232,7 @@ export default function CartPanel({
           </p>
         )}
 
-        <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+        <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-500">Total</span>
           <span className="text-xl font-extrabold text-slate-900">{rupiah(total)}</span>
         </div>

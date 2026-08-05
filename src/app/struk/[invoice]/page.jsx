@@ -155,14 +155,24 @@ export default async function StrukPage({ params, searchParams }) {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto mb-6 w-full max-w-md">
-        <FlowSteps current="struk" tableNo={transaction.table_no || ''} />
+        <FlowSteps
+          current="struk"
+          tableNo={transaction.table_no || ''}
+          paymentStatus={transaction.status}
+        />
       </div>
 
       <div className="mx-auto mb-6 w-full max-w-md text-center">
-        <p className="eyebrow mx-auto">Langkah 3 dari 3 · Bukti pesanan</p>
-        <h1 className="mt-3 text-xl font-bold text-slate-900">Pesanan kamu tersimpan</h1>
+        <p className="eyebrow mx-auto">
+          {transaction.status === 'paid' ? 'Selesai · Bukti pesanan' : 'Langkah 3 dari 3 · Bukti pesanan'}
+        </p>
+        <h1 className="mt-3 text-xl font-bold text-slate-900">
+          {transaction.status === 'paid' ? 'Pesanan kamu sudah lunas' : 'Pesanan kamu tersimpan'}
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Simpan halaman ini atau screenshot, lalu tunjukkan ke kasir.
+          {transaction.status === 'paid'
+            ? 'Tidak ada yang perlu dibayar lagi. Simpan halaman ini sebagai bukti.'
+            : 'Simpan halaman ini atau screenshot, lalu tunjukkan ke kasir.'}
         </p>
       </div>
 

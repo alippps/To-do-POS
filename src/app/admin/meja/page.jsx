@@ -2,12 +2,14 @@ import PageHeader from '@/components/admin/PageHeader';
 import TableManager from '@/components/admin/TableManager';
 import TableQrPanel from '@/components/admin/TableQrPanel';
 import { createClient } from '@/lib/supabase/server';
+import { requirePageAccess } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Denah Meja' };
 
 export default async function AdminMejaPage() {
+  await requirePageAccess('/admin/meja'); // kasir tidak boleh mengubah denah
   const supabase = createClient();
 
   const { data: tables, error } = await supabase

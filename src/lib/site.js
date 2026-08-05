@@ -11,8 +11,19 @@ export const site = {
   email: 'halo@todocoffee.id',
   phone: '+62 812-3456-7890',
   hours: 'Setiap hari, 08.00 – 23.00 WIB',
-  waNumber: process.env.NEXT_PUBLIC_WA_NUMBER || '6281234567890',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  /*
+    Nilai dari .env.local dirapikan sebelum dipakai.
+
+    Spasi nyasar di ujung baris `.env` tidak terlihat saat menyunting, tapi ikut
+    terbawa ke nilai variabelnya. Untuk `siteUrl` akibatnya fatal: alamat itu
+    dicetak permanen ke dalam QR meja, dan spasi di tengah URL membuat hasil
+    pindaian tidak bisa dibuka. Garis miring di ujung juga dibuang supaya tidak
+    pernah terbentuk "//meja".
+  */
+  waNumber: (process.env.NEXT_PUBLIC_WA_NUMBER || '6281234567890').trim(),
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+    .trim()
+    .replace(/\/+$/, ''),
   social: {
     instagram: 'https://instagram.com/',
     tiktok: 'https://tiktok.com/',

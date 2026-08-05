@@ -20,25 +20,81 @@ export const ROLES = {
     who: 'Akun yang mendaftar lewat /register. Semua akun baru otomatis berperan user.',
     identity: 'Punya ID akun (UUID) di tabel profiles dengan role = user.',
   },
+  kasir: {
+    key: 'kasir',
+    label: 'Kasir',
+    badge: 'green',
+    who: 'Petugas kasir. Hanya membuka Dashboard, Kasir, dan Daftar Transaksi.',
+    identity: 'Punya ID akun (UUID) di tabel profiles dengan role = kasir.',
+  },
   admin: {
     key: 'admin',
     label: 'Admin',
     badge: 'amber',
-    who: 'Staf kedai. Role dinaikkan manual dari halaman ini atau lewat SQL Editor.',
+    who: 'Pemilik / penanggung jawab. Membuka seluruh area admin.',
     identity: 'Punya ID akun (UUID) di tabel profiles dengan role = admin.',
   },
 };
+
+/** Role yang bisa dipilih di halaman /admin/akses, dari paling rendah. */
+export const ASSIGNABLE_ROLES = ['user', 'kasir', 'admin'];
+
+/**
+ * Halaman admin yang boleh dibuka tiap role — SUMBER KEBENARAN TUNGGAL.
+ *
+ * Dipakai bersama oleh middleware (menahan permintaan), layout & tiap halaman
+ * (memeriksa ulang di server), dan AdminShell (menyembunyikan menu yang tidak
+ * boleh dibuka). Menambah halaman admin baru cukup didaftarkan di sini.
+ *
+ * Kasir sengaja tidak diberi Produk, Denah Meja, dan Hak Akses: tiga halaman
+ * itu mengubah harga, denah, dan siapa yang boleh masuk — wewenang pemilik,
+ * bukan petugas yang sedang melayani antrean.
+ */
+export const ADMIN_PAGES = {
+  admin: ['/admin', '/admin/kasir', '/admin/produk', '/admin/meja', '/admin/transaksi', '/admin/akses'],
+  kasir: ['/admin', '/admin/kasir', '/admin/transaksi'],
+  user: [],
+};
+
+/** Role apa pun yang berhak masuk area /admin sama sekali. */
+export const STAFF_ROLES = ['admin', 'kasir'];
+
+/**
+ * Apakah `role` boleh membuka `pathname`?
+ *
+ * Pencocokan memakai awalan supaya sub-rute ikut terjaga, tapi hanya pada batas
+ * segmen — sehingga `/admin/kasir` tidak pernah lolos gara-gara mirip dengan
+ * `/admin/kasirXYZ`.
+ */
+export function canOpenAdminPath(role, pathname) {
+  const izin = ADMIN_PAGES[role];
+  if (!izin || izin.length === 0) return false;
+
+  return izin.some((p) => {
+    if (pathname === p) return true;
+
+    /*
+      '/admin' hanya boleh cocok PERSIS. Kalau ia ikut mencocokkan awalan,
+      izin membuka dashboard otomatis membuka seluruh sub-halaman admin —
+      kasir jadi bisa masuk /admin/produk. Entri yang lebih dalam tetap
+      mencocokkan awalan supaya sub-rutenya (mis. /admin/kasir/apa pun)
+      ikut terjaga, dan garis miring menjaganya berhenti di batas segmen.
+    */
+    if (p === '/admin') return false;
+    return pathname.startsWith(`${p}/`);
+  });
+}
 
 /** y = boleh, n = tidak boleh, o = boleh sebagian (lihat catatan). */
 export const ACCESS_MATRIX = [
   {
     area: 'Halaman publik',
     rows: [
-      { name: 'Landing page (/)', path: '/', guest: 'y', user: 'y', admin: 'y' },
-      { name: 'Ketersediaan meja (/meja)', path: '/meja', guest: 'y', user: 'y', admin: 'y' },
-      { name: 'Menu & pesan (/menu)', path: '/menu', guest: 'y', user: 'y', admin: 'y' },
-      { name: 'Struk pesanan (/struk/…)', path: '/struk', guest: 'y', user: 'y', admin: 'y' },
-      { name: 'About & Kontak', path: '/about', guest: 'y', user: 'y', admin: 'y' },
+      { name: 'Landing page (/)', path: '/', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
+      { name: 'Ketersediaan meja (/meja)', path: '/meja', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
+      { name: 'Menu & pesan (/menu)', path: '/menu', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
+      { name: 'Struk pesanan (/struk/…)', path: '/struk', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
+      { name: 'About & Kontak', path: '/about', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
     ],
   },
   {
@@ -48,6 +104,7 @@ export const ACCESS_MATRIX = [
         name: 'Membuat pesanan (checkout)',
         guest: 'y',
         user: 'y',
+        kasir: 'y',
         admin: 'y',
         note: 'Lewat RPC create_order — tidak butuh login sama sekali.',
       },
@@ -55,50 +112,70 @@ export const ACCESS_MATRIX = [
         name: 'Melihat struk lewat nomor invoice',
         guest: 'y',
         user: 'y',
+        kasir: 'y',
         admin: 'y',
         note: 'Lewat RPC get_receipt, satu invoice per permintaan.',
       },
-      { name: 'Mengirim pesan kontak', guest: 'y', user: 'y', admin: 'y' },
+      { name: 'Mengirim pesan kontak', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
     ],
   },
   {
     area: 'Area admin',
     rows: [
-      { name: 'Dashboard (/admin)', path: '/admin', guest: 'n', user: 'n', admin: 'y' },
-      { name: 'CRUD produk (/admin/produk)', path: '/admin/produk', guest: 'n', user: 'n', admin: 'y' },
-      { name: 'Denah meja (/admin/meja)', path: '/admin/meja', guest: 'n', user: 'n', admin: 'y' },
+      { name: 'Dashboard (/admin)', path: '/admin', guest: 'n', user: 'n', kasir: 'y', admin: 'y' },
+      { name: 'Kasir (/admin/kasir)', path: '/admin/kasir', guest: 'n', user: 'n', kasir: 'y', admin: 'y' },
       {
         name: 'Daftar transaksi (/admin/transaksi)',
         path: '/admin/transaksi',
         guest: 'n',
         user: 'n',
+        kasir: 'y',
         admin: 'y',
       },
-      { name: 'Hak akses (/admin/akses)', path: '/admin/akses', guest: 'n', user: 'n', admin: 'y' },
+      { name: 'CRUD produk (/admin/produk)', path: '/admin/produk', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
+      { name: 'Denah meja (/admin/meja)', path: '/admin/meja', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
+      { name: 'Hak akses (/admin/akses)', path: '/admin/akses', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
     ],
   },
   {
     area: 'Data (Row Level Security)',
     rows: [
-      { name: 'Baca produk & meja', guest: 'y', user: 'y', admin: 'y' },
-      { name: 'Tulis produk & meja', guest: 'n', user: 'n', admin: 'y' },
+      { name: 'Baca produk & meja', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
+      { name: 'Tulis produk & meja', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
       {
         name: 'Baca transaksi di tabel',
         guest: 'n',
         user: 'o',
+        kasir: 'y',
         admin: 'y',
         note: 'User hanya melihat transaksi miliknya sendiri (user_id = auth.uid()).',
       },
-      { name: 'Ubah / hapus transaksi', guest: 'n', user: 'n', admin: 'y' },
+      {
+        name: 'Ubah status transaksi',
+        guest: 'n',
+        user: 'n',
+        kasir: 'y',
+        admin: 'y',
+        note: 'Menandai pesanan lunas / batal — pekerjaan sehari-hari kasir.',
+      },
+      {
+        name: 'Hapus transaksi',
+        guest: 'n',
+        user: 'n',
+        kasir: 'n',
+        admin: 'y',
+        note: 'Menghapus riwayat penjualan tidak bisa dibatalkan, jadi ditahan di admin.',
+      },
       {
         name: 'Baca profil akun',
         guest: 'n',
         user: 'o',
+        kasir: 'o',
         admin: 'y',
-        note: 'User hanya bisa membaca profilnya sendiri.',
+        note: 'User & kasir hanya bisa membaca profilnya sendiri.',
       },
-      { name: 'Ubah role akun', guest: 'n', user: 'n', admin: 'y' },
-      { name: 'Baca pesan kontak masuk', guest: 'n', user: 'n', admin: 'y' },
+      { name: 'Ubah role akun', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
+      { name: 'Baca pesan kontak masuk', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
     ],
   },
 ];
@@ -109,17 +186,19 @@ export const SECURITY_LAYERS = [
     title: 'Middleware',
     file: 'src/middleware.js',
     detail:
-      'Menahan permintaan ke /admin bila belum login atau role-nya bukan admin, lalu mengalihkan ke /login atau /.',
+      'Menahan permintaan ke /admin bila belum login, dan mencocokkan role dengan daftar halaman yang boleh dibukanya (ADMIN_PAGES).',
   },
   {
-    title: 'Layout admin',
-    file: 'src/app/admin/layout.jsx',
-    detail: 'Lapis kedua: memeriksa ulang user + role sebelum halaman admin dirender.',
+    title: 'Layout & halaman admin',
+    file: 'src/app/admin/**/page.jsx',
+    detail:
+      'Lapis kedua: layout memastikan pemanggil berperan staf, tiap halaman terbatas memeriksa ulang role-nya sendiri sebelum dirender.',
   },
   {
     title: 'Server action',
     file: 'src/app/admin/**/actions.js',
-    detail: 'Setiap aksi tulis memanggil requireAdmin() sebelum menyentuh database.',
+    detail:
+      'Setiap aksi tulis memanggil penjaga role sebelum menyentuh database — kasir ditolak pada aksi produk, meja, dan hak akses.',
   },
   {
     title: 'Row Level Security',

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Logo from '@/components/layout/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { initials } from '@/lib/format';
+import { canOpenAdminPath, ROLES } from '@/lib/access';
 
 const MENU = [
   {
@@ -77,7 +78,7 @@ const MENU = [
   },
 ];
 
-export default function AdminShell({ profile, email, children }) {
+export default function AdminShell({ profile, email, role = 'admin', children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -91,9 +92,19 @@ export default function AdminShell({ profile, email, children }) {
 
   const isActive = (href) => (href === '/admin' ? pathname === '/admin' : pathname.startsWith(href));
 
+  /*
+    Menu disaring, bukan sekadar dinonaktifkan. Kasir tidak perlu melihat
+    Produk / Denah Meja / Hak Akses sama sekali — menampilkan pintu yang
+    pasti tertutup hanya menimbulkan pertanyaan saat jam sibuk.
+
+    Ini murni kenyamanan; penolakan sebenarnya dilakukan middleware, penjaga
+    halaman, server action, dan RLS.
+  */
+  const menu = MENU.filter((item) => canOpenAdminPath(role, item.href));
+
   const nav = (
     <nav className="flex flex-col gap-1">
-      {MENU.map((item) => (
+      {menu.map((item) => (
         <Link
           key={item.href}
           href={item.href}
@@ -139,9 +150,13 @@ export default function AdminShell({ profile, email, children }) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900">
-                {profile?.full_name || 'Admin'}
+                {profile?.full_name || ROLES[role]?.label || 'Staf'}
               </p>
               <p className="truncate text-[11px] text-slate-400">{email}</p>
+              {/* Role ditulis eksplisit supaya staf tahu kenapa menunya lebih sedikit. */}
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                {ROLES[role]?.label || role}
+              </p>
             </div>
           </div>
           <button

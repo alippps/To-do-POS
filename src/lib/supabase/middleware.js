@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { canOpenAdminPath, STAFF_ROLES } from '@/lib/access';
 
 /**
  * Refresh session Supabase pada tiap request + proteksi route /admin.
@@ -47,10 +48,26 @@ export async function updateSession(request) {
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    const role = profile?.role;
+
+    /*
+      Izin diperiksa PER HALAMAN, bukan sekadar "admin atau bukan".
+      Kasir boleh membuka Dashboard, Kasir, dan Daftar Transaksi saja —
+      daftarnya ada di ADMIN_PAGES (src/lib/access.js).
+    */
+    if (!canOpenAdminPath(role, pathname)) {
       const url = request.nextUrl.clone();
-      url.pathname = '/';
-      url.searchParams.set('forbidden', '1');
+
+      // Staf yang nyasar ke halaman di luar wewenangnya dikembalikan ke
+      // dashboard, bukan dilempar keluar ke halaman pelanggan.
+      if (STAFF_ROLES.includes(role)) {
+        url.pathname = '/admin';
+        url.search = '';
+      } else {
+        url.pathname = '/';
+        url.searchParams.set('forbidden', '1');
+      }
+
       return NextResponse.redirect(url);
     }
   }
