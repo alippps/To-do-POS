@@ -1,10 +1,31 @@
-# To Do — Sistem Point of Sale (CRUDS)
+# To Do POS — Sistem Point of Sale multi-UMKM (CRUDS)
 
-Sistem **Point of Sale** modern untuk coffee shop, lengkap dengan **Create, Read, Update, Delete, Search**.
+Sistem **Point of Sale** modern untuk UMKM kuliner, lengkap dengan **Create, Read, Update, Delete, Search**.
 Dibangun dengan **Next.js App Router + Tailwind CSS + Supabase**.
 
-> **Pelanggan tidak perlu login.** Scan QR → lihat meja yang kosong → pilih menu → pesan → struk terbit.
+> **Pelanggan tidak perlu login.** Scan QR di meja → nomor meja terbaca sendiri → pilih menu → pesan → struk terbit.
 > Akun hanya dibutuhkan oleh **staf/admin** untuk membuka dashboard.
+
+## 🏪 Satu pemasangan, banyak UMKM
+
+Sejak **v4**, satu pemasangan sistem ini melayani **banyak outlet sekaligus**. Setiap UMKM
+punya `slug` sendiri yang muncul di URL dan ikut tercetak permanen di QR mejanya:
+
+```
+/                          direktori outlet
+/k/kopi-pagi               landing Kopi Pagi
+/k/kopi-pagi/meja?meja=07  hasil scan QR meja 07 Kopi Pagi
+/k/kopi-pagi/admin         dashboard Kopi Pagi
+
+/k/roti-88/meja?meja=03    outlet lain, denah & menu sendiri
+```
+
+Pemisahannya **bukan sekadar penyaring di kueri aplikasi.** Seluruh RLS policy ikut
+disaring per outlet (`is_admin_of()` / `is_staff_of()`), nomor meja unik **per outlet**,
+dan ketiga RPC publik menerima slug — jadi admin Kopi Pagi tidak bisa membaca apalagi
+mengubah data Roti Bakar 88, sekalipun ia menebak id barisnya.
+
+Menambah outlet baru cukup satu baris `insert` — lihat [bagian 11 di `supabase/schema.sql`](supabase/schema.sql).
 
 ---
 
@@ -34,18 +55,30 @@ Table, Card, dsb.) ditulis sendiri di `src/components/ui/`.
 | Area | Isi |
 | --- | --- |
 | **Landing page** | Navbar · Hero · Tentang CoffeeShop & Software House · Layanan Utama · Keunggulan · Menu Favorit · Portfolio · Testimoni · QR Pemesanan · FAQ · CTA WhatsApp · Footer |
-| **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · Kontak · About |
+| **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja (ikut membawa `?meja=` supaya ajakan pesannya kembali ke meja yang sama) · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · Kontak · About |
 | **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `admin`. Dibuka lewat URL langsung `/login` & `/register`; tidak ditautkan dari situs publik |
 | **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · **Kasir** (buat pesanan untuk pelanggan walk-in) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status + generator QR) · Daftar Transaksi · **Hak Akses** |
-| **QR Ordering** | Landing page menjelaskan alurnya + satu QR contoh. **Generator QR per meja (unduh PNG) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
+| **QR Ordering** | Landing page menjelaskan alurnya + satu QR contoh. **Generator kartu meja (unduh PNG siap cetak: nomor meja besar + QR + instruksi) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
 
 ---
 
 ## 🧭 Alur pemesanan
 
+**QR di tiap meja adalah jalur pemesanan mandiri.** Pelanggan mencari tempat, duduk, lalu
+memesan dari mejanya sendiri — kasir bukan pintu masuk, melainkan tempat membayar di akhir.
+Pemesanan tambahan memakai pintu yang sama persis: pindai lagi, dan tambahannya menempel ke
+tagihan meja itu.
+
+```
+QR  →  Table ID = 07  →  Pilih menu  →  Sistem  →  Order  →  Meja 07  →  Kasir
+```
+
+Nomor meja terbaca dari QR-nya sendiri, jadi pelanggan tidak pernah mengetik atau menyebutkan
+nomor meja, dan kasir tidak pernah salah menempelkan pesanan ke meja yang keliru.
+
 Ada **dua jalan masuk**, dan keduanya berakhir di tagihan meja yang sama.
 
-### A. Datang langsung → pesan di kasir
+### A. Dilayani kasir (walk-up / pelanggan yang minta dibantu)
 
 ```
 Pelanggan datang  →  /admin/kasir      Kasir: pilih MEJA KOSONG → masukkan pesanan
@@ -59,25 +92,28 @@ status meja diturunkan dari ada-tidaknya pesanan pending, jadi pesanan yang lang
 akan membuat mejanya kembali “Tersedia” padahal pelanggan baru saja duduk di situ. Semua
 tambahan lewat QR menempel ke meja yang sama dan dilunasi sekali di akhir.
 
-### B. Scan QR di meja → pesan sendiri
+### B. Duduk → scan QR di meja → pesan sendiri *(jalur utama)*
 
 ```
-QR di meja  →  /meja?meja=07        POPUP langsung muncul, dua pilihan:
-                                      Tambah Pesanan  → /menu?meja=07&mode=tambah
-                                      Langsung Pesan  → /menu?meja=07
+QR di meja  →  /meja?meja=07&src=qr  POPUP langsung muncul, dua pilihan:
+                                      Langsung Pesan  → /menu?meja=07&src=qr
+                                      Tambah Pesanan  → /menu?meja=07&src=qr&mode=tambah
+                                      (urutannya dibalik bila meja sudah punya tagihan)
                                     Popup ditutup → LAYAR HUB di belakangnya:
-                                      📖 Menu    → /katalog      lihat menu & harga (baca saja)
-                                      🛒 Order   → /menu?meja=07 pesan dari meja ini
+                                      📖 Lihat Menu → /katalog?meja=07 menu & harga (baca saja)
+                                      🛒 Pesan      → /menu?meja=07&src=qr pesan dari meja ini
                                       💳 Bayar   → /bayar?meja=07 tagihan berjalan meja ini
                                       🔥 Promo   → /promo?meja=07 menu yang sedang diskon
-            →  /menu?meja=07        Pilih menu, isi nama, checkout
-            →  /struk/INV-…         Bukti pesanan digital
+            →  /menu?meja=07&src=qr Pilih menu, isi nama, checkout
+            →  /struk/INV-…?src=qr  Bukti pesanan digital
             →  /admin/transaksi     Kasir menandai "Lunas" → meja otomatis kosong lagi
 ```
 
-Mana yang jadi tombol utama di popup ditentukan keadaan meja, bukan tebakan: kalau meja itu
-sudah punya tagihan berjalan, **Tambah Pesanan** yang ditonjolkan beserta jumlah dan totalnya.
-Kalau belum ada apa-apa, **Langsung Pesan** yang di atas.
+Mana yang jadi tombol utama di popup ditentukan keadaan meja, bukan tebakan. Meja yang masih
+bersih — pelanggan yang baru duduk — menonjolkan **Langsung Pesan**. Begitu meja itu punya
+tagihan berjalan, judulnya berganti jadi **“Mau nambah pesanan?”** dan **Tambah Pesanan** yang
+naik ke atas beserta jumlah dan totalnya. Satu QR melayani dua keadaan tanpa pelanggan perlu
+memilih mana yang berlaku untuknya.
 
 Cabang `mode=tambah` bukan sekadar beda kata: halaman menu berganti judul jadi “Tambah pesanan
 untuk Meja 07” dan memunculkan tagihan yang sedang berjalan, supaya jelas tambahannya menempel
@@ -86,6 +122,15 @@ ke situ — bukan jadi tagihan terpisah. Apa pun cabangnya, **pembayaran tetap s
 Yang memindai QR meja 07 memang sedang duduk di meja 07, jadi ia tidak disuruh memilih meja
 lagi. Grid ketersediaan meja tetap ada di **`/meja` tanpa parameter** (dari navbar, atau lewat
 tautan “Duduk di meja lain?” di bawah hub).
+
+**Penanda `src=qr`.** Meja bisa sampai ke `/menu` lewat dua jalan yang berbeda maknanya:
+dipilih sendiri dari denah, atau ditentukan tempat duduk lalu terbaca dari QR. Hanya jalan
+pertama yang layak disebut “Pilih meja” di stepper; bagi pemindai QR, langkah itu tidak pernah
+ada — menandainya selesai membuat alurnya terasa mengada-ada dan tautan mundurnya menawarkan
+pekerjaan fiktif. Penanda ini dipasang oleh `ScanHub`/`ScanIntentDialog`, **bukan dibaca dari
+URL yang masuk**, sehingga QR lama yang terlanjur tercetak tanpa `src` tetap ikut benar: sampai
+di layar hub itu sendiri sudah berarti habis memindai. Penanda dibawa terus sampai `/struk`
+supaya asal-usulnya tidak putus di langkah terakhir.
 
 Pesanan yang masuk lewat QR berstatus **`pending`** dan menandai mejanya **terisi**.
 Begitu kasir menandainya **lunas** (atau **batal**), trigger database membebaskan meja itu kembali.
@@ -177,9 +222,74 @@ order by p.role, u.email;
 
 ---
 
+## 💳 Metode pembayaran — tinggal dua
+
+| Metode | Yang terjadi |
+| --- | --- |
+| **QRIS** | Kode QRIS muncul di halaman bukti pesanan (`/k/<slug>/struk/INV-…`), pelanggan memindainya dari HP-nya sendiri |
+| **Bayar di kasir** | Pelanggan menunjukkan nomor pesanan di kasir dan membayar tunai di sana |
+
+**Transfer bank dihapus dari pilihan.** Ia satu-satunya metode yang tidak bisa
+diselesaikan di tempat: pelanggan pergi ke aplikasi banknya, kasir menunggu bukti
+transfer yang tidak pernah masuk ke sistem, dan status pesanan menggantung tanpa ada
+yang tahu sudah dibayar atau belum.
+
+> ### ⚠️ Kode QRIS-nya SIMULASI
+>
+> `src/components/pos/QrisPayment.jsx` **tidak** membangun muatan EMVCo/QRIS dan tidak
+> terhubung ke penyedia pembayaran mana pun. Isinya teks biasa berisi nomor pesanan,
+> nama outlet, dan nominalnya; dipindai dengan kamera HP, yang muncul adalah keterangan
+> itu — bukan layar bayar. Peringatannya ditulis menempel pada kodenya di layar, bukan di
+> catatan kaki.
+>
+> Ini keputusan sadar. Membuat muatan yang menyerupai QRIS sungguhan berarti mencetak
+> sesuatu yang bisa dikira alat pembayaran, dan kegagalannya baru ketahuan setelah ada
+> pelanggan yang merasa sudah membayar. Saat integrasi asli dipasang nanti, yang berubah
+> cukup fungsi `muatanQris()` dan label peringatannya.
+
+---
+
+## 🔒 Nomor meja tidak bisa diketik
+
+Satu barcode untuk satu meja: QR di meja 07 memuat `?meja=07`, dan nomor itu masuk ke
+keranjang dalam keadaan **terkunci** — tidak ada dropdown, tidak ada kolom isian.
+
+Dropdown lama membuat nomor meja bisa diganti jadi meja mana pun, dan itu sumber
+kesalahan yang paling mahal: minuman diantar ke meja yang salah, atau tagihan menempel ke
+meja orang lain.
+
+Ada dua jalan yang sah untuk menentukannya, dan keduanya mengunci hasilnya:
+
+| Jalan | URL | Stepper |
+| --- | --- | --- |
+| Pindai QR di meja | `/menu?meja=07&src=qr` | Langkah 1 berbunyi “Meja 07 · Terbaca dari QR”, tidak bisa diklik |
+| Pilih dari denah `/meja` | `/menu?meja=07` | Langkah 1 berbunyi “Pilih meja”, ditandai selesai & bisa diklik |
+
+Yang membuka `/menu` tanpa nomor meja tidak diberi kolom untuk mengarangnya — ia
+disuguhi kartu “Meja belum diketahui” beserta tautan ke denah. Server action
+`createOrder()` juga menolak pesanan tanpa nomor meja, jadi penjaganya tidak bergantung
+pada tampilan.
+
+---
+
 ## ⚠️ Sudah pernah menjalankan schema versi lama? Jalankan ulang.
 
-Fitur **Bayar** dan **Promo Hari Ini** menambah hal baru di database:
+**v4 mengubah skema secara besar.** Jalankan ulang seluruh isi
+[`supabase/schema.sql`](supabase/schema.sql) — file-nya idempotent dan sudah berisi
+migrasinya sendiri: tabel `tenants` dibuat, outlet `to-do` dibentuk, lalu SELURUH produk,
+meja, transaksi, pesan kontak, dan akun yang sudah ada dipindahkan ke sana sebelum kolom
+`tenant_id`-nya dijadikan `NOT NULL`. **Tidak ada data yang hilang.**
+
+| Tambahan v4 | Dipakai oleh |
+| --- | --- |
+| Tabel `tenants` | Seluruh URL `/k/<slug>`, identitas outlet (dulu di `src/lib/site.js`) |
+| Kolom `tenant_id` di 5 tabel | Penyaring setiap kueri + seluruh RLS policy |
+| `cafe_tables` unik **(tenant_id, table_no)** | Meja 01 boleh ada di banyak outlet — constraint global lama di-drop |
+| `is_admin_of()` / `is_staff_of()` / `current_tenant_id()` | Policy yang menyaring per outlet |
+| RPC menerima `p_tenant_slug` | `create_order`, `get_table_bill` |
+| `handle_new_user()` membaca `tenant_slug` | Pendaftaran di `/k/<slug>/register` |
+
+Tambahan dari versi sebelumnya yang tetap berlaku:
 
 | Tambahan | Dipakai oleh |
 | --- | --- |
@@ -246,29 +356,66 @@ Buka <http://localhost:3000>.
 
 ### 6. Jadikan akun Anda admin
 
-1. Daftar lewat halaman `/register`.
+Skema membuat outlet pertama ber-slug **`to-do`**, jadi seluruh alamat di bawah memakai
+`/k/to-do/…`. Ganti dengan slug outlet Anda sendiri bila sudah menambah yang lain.
+
+1. Daftar lewat **`/k/to-do/register`**. Halaman ini menitipkan slug outlet ke metadata
+   pendaftaran, sehingga akunnya langsung menempel ke outlet yang benar.
 2. Kembali ke **SQL Editor** Supabase, jalankan (ganti emailnya):
 
 ```sql
-update public.profiles set role = 'admin'
+update public.profiles
+set role = 'admin', tenant_id = (select id from public.tenants where slug = 'to-do')
 where id = (select id from auth.users where email = 'emailkamu@gmail.com');
 ```
 
-3. Buka **`/login`** langsung lewat address bar (tautannya sengaja tidak ada di situs publik —
-   lihat [Isolasi sisi pelanggan ↔ admin](#-isolasi-sisi-pelanggan--admin)), lalu masuk.
-   Setelah masuk sebagai admin, `/login` menampilkan tombol **Buka Dashboard Admin**.
-4. Admin berikutnya cukup ditambahkan lewat halaman **`/admin/akses`** — tidak perlu SQL lagi.
+3. Buka **`/k/to-do/login`** langsung lewat address bar (tautannya sengaja tidak ada di
+   situs publik — lihat [Isolasi sisi pelanggan ↔ admin](#-isolasi-sisi-pelanggan--admin)),
+   lalu masuk. Setelah masuk sebagai admin outlet itu, halaman tersebut menampilkan
+   tombol **Buka Dashboard**.
+4. Admin berikutnya cukup ditambahkan lewat **`/k/to-do/admin/akses`** — tidak perlu SQL lagi.
+
+> Akun terikat pada **satu** outlet. Admin Kopi Pagi yang membuka `/k/roti-88/admin`
+> ditolak middleware, dan `/k/roti-88/login` menjelaskan bahwa akunnya milik outlet lain
+> alih-alih menawarkan tombol dashboard yang pasti gagal.
+
+### 6b. Menambah UMKM kedua
+
+```sql
+insert into public.tenants (slug, name, address, phone, hours, wa_number)
+values ('kopi-pagi', 'Kopi Pagi Bandung', 'Jl. Braga No. 12, Bandung',
+        '+62 812-0000-0000', 'Setiap hari, 07.00 – 22.00 WIB', '628120000000');
+```
+
+Outletnya langsung hidup di `/k/kopi-pagi` dengan menu & denah meja kosong. Daftarkan
+adminnya lewat `/k/kopi-pagi/register`, naikkan rolenya seperti langkah 2 di atas
+(ganti slug-nya), lalu isi produk dan mejanya dari dashboard.
 
 > Jika ingin login langsung tanpa konfirmasi email, matikan **Confirm email** di
 > Supabase → Authentication → Providers → Email.
 
-**Uji coba tanpa email pribadi.** Email di `/register` hanya dipakai sebagai nama pengguna
-untuk masuk ke dashboard — tidak pernah tampil di halaman pelanggan maupun di struk.
-Untuk sesi uji coba atau demo, matikan **Confirm email** lebih dulu (lihat catatan di atas),
-lalu daftar memakai alamat contoh seperti `kasir@todocoffee.id`. Tanpa konfirmasi email,
-alamat itu tidak perlu benar-benar ada dan akunnya langsung bisa dipakai login.
-Kalau **Confirm email** dibiarkan menyala, alamatnya harus asli karena tautan konfirmasi
-dikirim ke sana.
+**Soal email pendaftaran.** Email di `/register` hanya dipakai sebagai nama pengguna untuk
+masuk ke dashboard — tidak pernah tampil di halaman pelanggan maupun di struk.
+
+Perlu diketahui: **alamat karangan tidak selalu bisa dipakai.** Supabase punya validasi sendiri
+yang menolak alamat yang dianggap email percobaan — termasuk pola `admin@`, `test@`, dan `demo@`
+walau domainnya asli, serta domain cadangan seperti `example.com`. Penolakannya muncul sebagai
+`email_address_invalid` dan sudah diterjemahkan di `src/lib/authErrors.js`.
+
+Yang berlaku:
+
+| Kondisi | Yang bisa dipakai |
+| --- | --- |
+| **Confirm email** menyala | Alamat asli yang kotak masuknya bisa kamu buka — tautan konfirmasi dikirim ke sana |
+| **Confirm email** mati | Alamat mana pun yang lolos validasi Supabase. Hindari pola `admin@`/`test@`/`demo@` |
+
+Kalau SMTP masih memakai bawaan Supabase, pengiriman hanya sampai ke anggota organisasi
+Supabase kamu sendiri (`email_address_not_authorized`). Untuk demo, cara paling mulus tetap
+mematikan **Confirm email**.
+
+> Alamat contoh yang tampil di footer, halaman kontak, dan placeholder formulir memakai
+> `example.com` — domain yang dicadangkan permanen oleh RFC 2606, jadi tidak mungkin menunjuk
+> ke kotak masuk milik orang lain.
 
 ### 7. Mencoba alur QR dari HP
 
@@ -285,31 +432,37 @@ terlanjur tertempel di semua meja.
 
 ## 🗂️ Struktur Proyek
 
+Seluruh halaman outlet hidup di bawah `src/app/k/[slug]/`. Yang tersisa di akar hanyalah
+milik platform: direktori outlet, favicon, dan gambar OG.
+
 ```
 src/
 ├─ app/
-│  ├─ (site)/                 # Halaman publik (pakai Navbar + Footer)
-│  │  ├─ page.jsx             # Home / landing (semua section)
-│  │  ├─ loading.jsx          # Kerangka bawaan semua halaman publik
-│  │  ├─ katalog/             # Daftar menu BACA SAJA (tanpa keranjang)
-│  │  ├─ promo/               # Menu yang sedang diskon (kolom promo_price)
-│  │  ├─ bayar/               # Tagihan berjalan sebuah meja (RPC get_table_bill)
-│  │  ├─ meja/                # Hub hasil scan QR + ketersediaan meja (+ loading.jsx)
-│  │  ├─ menu/                # Menu pelanggan + server action checkout (+ loading.jsx)
-│  │  ├─ fitur/               # Redirect ke /menu (menjaga QR lama tetap jalan)
-│  │  ├─ kontak/              # Form kontak + server action simpan pesan
-│  │  └─ about/
-│  ├─ struk/[invoice]/        # Struk digital 80mm — halaman cetak berdiri sendiri
-│  ├─ (auth)/                 # Login & Register (layout split-screen)
-│  ├─ admin/                  # Area admin (dilindungi middleware + layout)
-│  │  ├─ page.jsx             # Dashboard
-│  │  ├─ loading.jsx          # Kerangka semua halaman admin
-│  │  ├─ kasir/               # Buat pesanan untuk pelanggan walk-in
-│  │  ├─ produk/              # CRUD + Search produk
-│  │  ├─ meja/                # CRUD denah meja + status + generator QR
-│  │  ├─ transaksi/           # Daftar & kelola transaksi
-│  │  └─ akses/               # Daftar akun + ID + matriks hak akses
-│  ├─ layout.jsx              # Root layout + metadata + font
+│  ├─ page.jsx                # Direktori outlet (beranda platform)
+│  ├─ icon.svg                # Favicon
+│  ├─ opengraph-image.jsx     # Preview tautan (next/og, runtime edge)
+│  └─ k/[slug]/               # ← SEMUA halaman outlet ada di sini
+│     ├─ layout.jsx           # Memvalidasi slug + TenantProvider
+│     ├─ (site)/              # Halaman publik (pakai Navbar + Footer)
+│     │  ├─ page.jsx          # Home / landing (semua section)
+│     │  ├─ katalog/          # Daftar menu BACA SAJA (ikut membawa ?meja=)
+│     │  ├─ promo/            # Menu yang sedang diskon (kolom promo_price)
+│     │  ├─ bayar/            # Tagihan berjalan sebuah meja (RPC get_table_bill)
+│     │  ├─ meja/             # Hub hasil scan QR + ketersediaan meja
+│     │  ├─ menu/             # Menu pelanggan + server action checkout
+│     │  ├─ fitur/            # Redirect ke /menu (menjaga QR lama tetap jalan)
+│     │  ├─ kontak/           # Form kontak + server action simpan pesan
+│     │  └─ about/
+│     ├─ struk/[invoice]/     # Bukti pesanan + kode QRIS + struk 80mm (kasir)
+│     ├─ (auth)/              # Login & Register (layout split-screen)
+│     └─ admin/               # Area admin (dilindungi middleware + layout)
+│        ├─ page.jsx          # Dashboard
+│        ├─ kasir/            # Buat pesanan untuk pelanggan walk-in
+│        ├─ produk/           # CRUD + Search produk
+│        ├─ meja/             # CRUD denah meja + status + generator QR
+│        ├─ transaksi/        # Daftar & kelola transaksi
+│        └─ akses/            # Daftar akun + ID + matriks hak akses
+│  ├─ layout.jsx              # Root layout + metadata PLATFORM
 │  ├─ not-found.jsx
 │  └─ globals.css             # Tema + aturan @media print untuk struk
 ├─ components/
@@ -320,20 +473,29 @@ src/
 │  ├─ tables/                 # TableAvailability (grid meja pelanggan)
 │  ├─ pos/                    # ScanIntentDialog, ScanHub, FlowSteps, PosClient,
 │  │                          # ProductCard, CartPanel, ReceiptModal, ReceiptPaper,
-│  │                          # PrintReceiptBar
+│  │                          # QrisPayment, PrintReceiptBar
+│  ├─ tenant/                 # TenantProvider — identitas outlet untuk sisi klien
 │  ├─ auth/                   # LoginForm, RegisterForm, SessionPanel
 │  └─ admin/                  # AdminShell, CashierClient, ProductManager, TableManager,
 │                             # TableQrPanel, TransactionManager, AccessManager, ...
 ├─ lib/
 │  ├─ supabase/               # client.js (browser), server.js (SSR + createPublicClient),
 │  │                          # middleware.js
-│  ├─ site.js                 # Identitas bisnis, nomor WA, kategori produk
+│  ├─ tenant.js               # tenantPath(), slugValid(), waLinkOf() — MURNI, boleh di klien
+│  ├─ tenant.server.js        # getTenant(), requireTenant(), listTenants() — server saja
+│  ├─ site.js                 # Identitas PLATFORM (bukan identitas kedai)
+│  ├─ adminGuard.js           # Penjaga halaman & server action, selalu per outlet
 │  ├─ promo.js                # Aturan harga promo (dipakai semua halaman)
-│  ├─ tables.js               # Status meja + label pembayaran/pesanan
-│  ├─ access.js               # Matriks hak akses (sumber data /admin/akses)
+│  ├─ tables.js               # Status meja + metode bayar + status pesanan
+│  ├─ access.js               # Matriks hak akses + stripTenantPrefix()
 │  └─ format.js               # rupiah(), formatDate(), initials()
-└─ middleware.js              # Refresh session + proteksi /admin
+└─ middleware.js              # Refresh session + proteksi /k/<slug>/admin
 ```
+
+> **Kenapa `tenant.js` dan `tenant.server.js` dipisah?** `Footer` dan `Logo` adalah
+> komponen klien yang tetap butuh helper outlet. Kalau keduanya satu berkas, satu impor
+> dari sisi klien menyeret `lib/supabase/server.js` (yang menyentuh `next/headers`) ke
+> bundle browser dan build-nya berhenti.
 
 ---
 
@@ -350,14 +512,14 @@ src/
 | Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` (buka langsung; tidak ditautkan dari situs publik, lihat [Isolasi](#-isolasi-sisi-pelanggan--admin)) |
 | Halaman **Register** | ✅ | `/register` — `src/app/(auth)/register/page.jsx` (buka langsung) |
 | User Side — **Home** | ✅ | `/` — `src/app/(site)/page.jsx` |
-| User Side — **Fitur Utama (jual beli)** | ✅ | `/menu` — `src/app/(site)/menu/page.jsx` (rute lama `/fitur` diarahkan ke sini) |
+| User Side — **Fitur Utama (jual beli)** | ✅ | `/menu` — `src/app/(site)/menu/page.jsx` (rute lama `/fitur` diarahkan ke sini). **Di antarmuka pelanggan halaman ini bernama “Pesan”** — istilah “Fitur Utama” milik dokumen lomba, bukan bahasa yang dimengerti pengunjung kedai |
 | User Side — **Kontak + form** | ✅ | `/kontak` — form tervalidasi ganda, tersimpan ke tabel `contact_messages` |
 | User Side — **About** | ✅ | `/about` — `src/app/(site)/about/page.jsx` |
 | Admin Side — **Dashboard** | ✅ | `/admin` — omzet, pesanan pending, status meja, stok menipis |
 | Admin Side — **Daftar Produk** | ✅ | `/admin/produk` — CRUD + search + filter + pagination |
 | Admin Side — **Daftar Transaksi** | ✅ | `/admin/transaksi` — search, ubah status, detail, hapus, cetak struk |
 | Stack dicantumkan di dokumentasi | ✅ | Bagian [Tech Stack](#-tech-stack) di atas |
-| Validasi input | ✅ | Divalidasi 2× — di client (UX) dan di Server Action (keamanan) |
+| Validasi input | ✅ | Divalidasi 2× — di client (UX) dan di Server Action (keamanan). Checkout menolak nama pemesan kosong, meja kosong, dan metode bayar asing di `createOrder()`; formulir kontak memeriksa nama, email, dan nomor WhatsApp di `sendMessage()` |
 | Keamanan dasar | ✅ | 4 lapis: middleware → layout → server action → Row Level Security |
 
 **Di luar ketentuan (nilai tambah inovasi):** layar hub 4 pilihan hasil scan QR meja
@@ -414,6 +576,40 @@ Catatan lain:
 
 ---
 
+## 🧪 Automation Test (Playwright E2E)
+
+```bash
+npm test              # jalankan seluruh suite (Chrome desktop + Pixel 7)
+npm run test:ui       # mode interaktif, enak untuk menelusuri kegagalan
+npm run test:report   # buka laporan HTML hasil eksekusi terakhir
+```
+
+Playwright menyalakan `npm run dev` sendiri bila belum jalan, dan menempel ke
+server yang sudah ada bila sudah — jadi tidak bentrok dengan sesi pengembangan.
+
+**Suite ini read-only terhadap Supabase.** Tidak ada checkout, pendaftaran akun,
+maupun pesan kontak yang benar-benar terkirim: form hanya diuji dengan isian yang
+pasti ditolak validasi, sehingga eksekusinya berhenti sebelum menyentuh database.
+Konsekuensinya harus disadari — yang terbukti adalah alur dan antarmukanya, bukan
+bahwa `create_order` menulis baris yang benar. Karena itu suite ini aman
+dijalankan kapan saja, termasuk beberapa menit sebelum demo.
+
+| Berkas | Yang dijaga |
+|---|---|
+| `tests/e2e/kriteria-halaman.spec.js` | Seluruh halaman wajib lomba terbuka · navbar memuat semuanya · `/login` & `/register` ada tapi **tidak** ditautkan dari sisi publik · tiga halaman admin tertutup bagi yang belum masuk |
+| `tests/e2e/qr-scan.spec.js` | Popup niat mengenali nomor meja · layar hub tidak lagi menampilkan status ketersediaan · penanda `src=qr` terbawa ke `/menu` · **pemindai QR tidak disuruh memilih meja**, sedangkan yang datang dari denah tetap melihat langkah itu · QR tak terdaftar jatuh ke denah |
+| `tests/e2e/validasi-form.spec.js` | Validasi sisi klien form kontak & pendaftaran, termasuk pesan galat yang hilang begitu kolomnya diperbaiki |
+| `tests/e2e/helpers.js` | Nomor meja diambil dari denah saat test berjalan, bukan ditulis tetap — denah meja itu data yang bisa diganti pemilik kedai kapan saja |
+
+Dijalankan di dua lebar layar. QR meja dipindai dari HP, jadi kerusakan layout di
+lebar ponsel justru yang paling merugikan — profil `mobile` (Pixel 7) ada untuk itu.
+
+Yang **belum** tercakup dan masih perlu diuji manual: checkout sampai struk
+terbit, login staf sungguhan, CRUD produk, dan tata letak kartu meja hasil
+`drawTableCard()` (dirender canvas di browser).
+
+---
+
 ## 📦 Perintah
 
 ```bash
@@ -421,4 +617,5 @@ npm run dev      # mode pengembangan
 npm run build    # build produksi
 npm run start    # jalankan hasil build
 npm run lint     # cek lint
+npm test         # automation test E2E (Playwright)
 ```

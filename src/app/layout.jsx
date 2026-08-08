@@ -1,17 +1,25 @@
 import './globals.css';
-import { site } from '@/lib/site';
+import { platform } from '@/lib/site';
 
+/*
+  Metadata di sini adalah metadata PLATFORM.
+
+  Judul dan deskripsi tiap outlet ditimpa oleh `generateMetadata` di
+  src/app/k/[slug]/layout.jsx — yang membacanya dari database, karena satu
+  pemasangan melayani banyak UMKM dan nama kedainya baru diketahui per
+  permintaan.
+*/
 export const metadata = {
-  metadataBase: new URL(site.siteUrl),
+  metadataBase: new URL(platform.siteUrl),
   title: {
-    default: `${site.name} — ${site.tagline}`,
-    template: `%s | ${site.name}`,
+    default: `${platform.name} — ${platform.tagline}`,
+    template: `%s | ${platform.name}`,
   },
-  description: site.description,
-  keywords: ['point of sale', 'pos coffee shop', 'kasir digital', 'qr ordering', 'to do pos'],
+  description: platform.description,
+  keywords: ['point of sale', 'pos coffee shop', 'kasir digital', 'qr ordering', 'umkm'],
   openGraph: {
-    title: `${site.name} — ${site.tagline}`,
-    description: site.description,
+    title: `${platform.name} — ${platform.tagline}`,
+    description: platform.description,
     type: 'website',
     locale: 'id_ID',
   },

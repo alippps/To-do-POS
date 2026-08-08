@@ -1,6 +1,5 @@
 import { rupiah, formatDate } from '@/lib/format';
 import { PAYMENT_LABEL, ORDER_STATUS } from '@/lib/tables';
-import { site } from '@/lib/site';
 
 const STATUS_STYLE = {
   pending: {
@@ -33,7 +32,7 @@ const STATUS_STYLE = {
  * tidak memakai kelas `receipt-paper`, sehingga tidak ikut tercetak sebagai
  * struk thermal. Pencetakan struk resmi adalah wewenang kasir.
  */
-export default function OrderStatusCard({ transaction, items = [] }) {
+export default function OrderStatusCard({ transaction, items = [], outlet }) {
   if (!transaction) return null;
 
   const style = STATUS_STYLE[transaction.status] || STATUS_STYLE.pending;
@@ -109,7 +108,7 @@ export default function OrderStatusCard({ transaction, items = [] }) {
       </div>
 
       <p className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 text-center text-xs text-slate-500">
-        Terima kasih sudah ngopi di {site.name} ☕
+        Terima kasih sudah ngopi di {outlet.name} ☕
       </p>
     </div>
   );

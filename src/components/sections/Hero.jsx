@@ -1,14 +1,29 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
-import { waLink } from '@/lib/site';
+import { tenantPath, waLinkOf } from '@/lib/tenant';
 
+/*
+  Angka di sini harus sama artinya dengan yang tampil di /about.
+
+  Sebelumnya hero menulis "12.400+ Transaksi diproses" (terbaca sebagai total
+  sepanjang waktu) sementara /about menulis "12.4rb Transaksi/bulan" — angka
+  yang sama dengan dua satuan waktu berbeda. Satuannya sekarang ditulis
+  eksplisit di label supaya tidak bisa lagi dibaca dua cara.
+*/
 const STATS = [
-  { value: '12.400+', label: 'Transaksi diproses' },
+  { value: '12.400+', label: 'Transaksi / bulan' },
   { value: '4.9/5', label: 'Rating pelanggan' },
   { value: '< 30 dtk', label: 'Rata-rata antrean' },
 ];
 
-export default function Hero() {
+/*
+  Outlet diterima sebagai prop, bukan dibaca dari context.
+
+  Section ini komponen SERVER — ia tidak boleh memakai `useTenant()`. Yang
+  mengirimnya adalah landing outlet (src/app/k/[slug]/(site)/page.jsx), yang
+  memang sudah memegang datanya.
+*/
+export default function Hero({ tenant }) {
   return (
     <section className="relative overflow-hidden bg-white">
       {/* dekorasi latar */}
@@ -44,13 +59,21 @@ export default function Hero() {
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
-            <strong className="font-semibold text-slate-700">To Do</strong> membantu UMKM kuliner naik
-            kelas ke digital: pemesanan via QR, kasir digital, manajemen produk, dan laporan penjualan
-            real-time — semuanya rapi dalam satu dashboard yang ringan, murah, dan mudah dipakai.
+            <strong className="font-semibold text-slate-700">{tenant.name}</strong> membantu UMKM
+            kuliner naik kelas ke digital: pemesanan via QR, kasir digital, manajemen produk, dan
+            laporan penjualan real-time — semuanya rapi dalam satu dashboard yang ringan, murah, dan
+            mudah dipakai.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button as="a" href={waLink()} target="_blank" rel="noreferrer" variant="whatsapp" size="lg">
+            <Button
+              as="a"
+              href={waLinkOf(tenant)}
+              target="_blank"
+              rel="noreferrer"
+              variant="whatsapp"
+              size="lg"
+            >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
               </svg>
@@ -61,15 +84,26 @@ export default function Hero() {
               yang selalu tampil. Di sini cukup arahkan ke katalog — pengunjung
               yang baru mendarat biasanya mau lihat-lihat dulu, bukan checkout.
             */}
-            <Button href="/katalog" variant="secondary" size="lg">
+            <Button href={tenantPath(tenant.slug, '/katalog')} variant="secondary" size="lg">
               Lihat Menu Kami
             </Button>
           </div>
 
-          <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-slate-200 pt-8">
+          {/*
+            Tiga kolom baru dipakai mulai `sm`.
+
+            Di 320px, tiga kolom `gap-6` menyisakan ~80px per kolom sementara
+            "12.400+" dan "< 30 dtk" pada ukuran `text-xl` membutuhkan lebih
+            dari itu — dengan `whitespace-nowrap` angkanya meluber keluar
+            kolom. Dua kolom memberi ruang yang cukup, dan `nowrap` hanya
+            dipasang sejak lebar itu benar-benar tersedia.
+          */}
+          <dl className="mt-12 grid max-w-lg grid-cols-2 gap-6 border-t border-slate-200 pt-8 sm:grid-cols-3">
             {STATS.map((s) => (
               <div key={s.label}>
-                <dt className="whitespace-nowrap text-xl font-extrabold text-slate-900 sm:text-3xl">{s.value}</dt>
+                <dt className="text-xl font-extrabold text-slate-900 sm:whitespace-nowrap sm:text-3xl">
+                  {s.value}
+                </dt>
                 <dd className="mt-1 text-xs leading-snug text-slate-500 sm:text-sm">{s.label}</dd>
               </div>
             ))}
@@ -85,7 +119,9 @@ export default function Hero() {
               <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
               <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              <span className="ml-3 text-xs font-medium text-slate-400">todo-pos.app/admin</span>
+              <span className="ml-3 truncate text-xs font-medium text-slate-400">
+                /k/{tenant.slug}/admin
+              </span>
             </div>
 
             <div className="space-y-5 p-5 sm:p-6">

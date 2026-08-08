@@ -1,6 +1,6 @@
 import { rupiah, formatDate } from '@/lib/format';
 import { PAYMENT_LABEL, ORDER_STATUS } from '@/lib/tables';
-import { site } from '@/lib/site';
+import { platform } from '@/lib/site';
 
 /**
  * Kertas struk 80mm — DIPAKAI OLEH KASIR/ADMIN saja.
@@ -11,7 +11,7 @@ import { site } from '@/lib/site';
  *
  * Pelanggan memakai `OrderStatusCard` yang tidak berformat struk.
  */
-export default function ReceiptPaper({ transaction, items = [] }) {
+export default function ReceiptPaper({ transaction, items = [], outlet }) {
   if (!transaction) return null;
 
   const status = ORDER_STATUS[transaction.status] || ORDER_STATUS.pending;
@@ -23,11 +23,11 @@ export default function ReceiptPaper({ transaction, items = [] }) {
       {/* Kepala struk */}
       <div className="text-center">
         <p className="font-sans text-lg font-extrabold uppercase tracking-[0.2em] text-slate-900">
-          {site.name}
+          {outlet.name}
         </p>
-        <p className="mt-1 text-[11px] text-slate-500">{site.tagline}</p>
-        <p className="mt-2 text-[11px] leading-snug text-slate-500">{site.address}</p>
-        <p className="text-[11px] text-slate-500">{site.phone}</p>
+        <p className="mt-1 text-[11px] text-slate-500">{outlet.tagline}</p>
+        <p className="mt-2 text-[11px] leading-snug text-slate-500">{outlet.address}</p>
+        <p className="text-[11px] text-slate-500">{outlet.phone}</p>
 
         {/*
           Jenis cetakan dibedakan supaya tidak ada pesanan belum bayar yang
@@ -104,10 +104,11 @@ export default function ReceiptPaper({ transaction, items = [] }) {
             BELUM LUNAS — bukan bukti pembayaran.
           </p>
         )}
-        <p>Terima kasih sudah ngopi di {site.name} ☕</p>
-        <p>{site.hours}</p>
+        <p>Terima kasih sudah ngopi di {outlet.name} ☕</p>
+        <p>{outlet.hours}</p>
         <p className="pt-2 text-[10px] tracking-wide">
-          {site.siteUrl.replace(/^https?:\/\//, '')}/struk/{transaction.invoice_no}
+          {platform.siteUrl.replace(/^https?:\/\//, '')}
+          /k/{outlet.slug}/struk/{transaction.invoice_no}
         </p>
       </div>
     </div>

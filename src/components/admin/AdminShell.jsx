@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Logo from '@/components/layout/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { initials } from '@/lib/format';
-import { canOpenAdminPath, ROLES } from '@/lib/access';
+import { canOpenAdminPath, ROLES, stripTenantPrefix } from '@/lib/access';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 const MENU = [
   {
@@ -78,19 +79,22 @@ const MENU = [
   },
 ];
 
-export default function AdminShell({ profile, email, role = 'admin', children }) {
+export default function AdminShell({ profile, email, role = 'admin', tenant, children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTenantHref();
   const [open, setOpen] = useState(false);
 
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push(t('/login'));
     router.refresh();
   }
 
-  const isActive = (href) => (href === '/admin' ? pathname === '/admin' : pathname.startsWith(href));
+  // Dibandingkan tanpa awalan outlet — ADMIN_PAGES ditulis tanpa slug.
+  const rute = stripTenantPrefix(pathname);
+  const isActive = (href) => (href === '/admin' ? rute === '/admin' : rute.startsWith(href));
 
   /*
     Menu disaring, bukan sekadar dinonaktifkan. Kasir tidak perlu melihat
@@ -107,7 +111,7 @@ export default function AdminShell({ profile, email, role = 'admin', children })
       {menu.map((item) => (
         <Link
           key={item.href}
-          href={item.href}
+          href={t(item.href)}
           onClick={() => setOpen(false)}
           className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
             isActive(item.href)
@@ -127,19 +131,27 @@ export default function AdminShell({ profile, email, role = 'admin', children })
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-200 bg-white p-6 lg:flex">
+      {/*
+        `overflow-y-auto` bukan pemanis: sidebar ini `inset-y-0`, jadi tingginya
+        terkunci setinggi layar. Di laptop berlayar pendek (≤700px), enam item
+        menu + kartu profil + tombol Keluar melewati batas itu dan bagian
+        bawahnya terpotong tanpa cara apa pun untuk dijangkau.
+      */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-y-auto scroll-slim border-r border-slate-200 bg-white p-6 lg:flex">
         <Logo />
 
         <div className="mt-8 flex-1">
-          <p className="mb-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Menu Admin
+          {/* Nama outlet ditulis eksplisit: satu orang bisa memegang lebih dari
+              satu outlet, dan dashboard keduanya terlihat identik. */}
+          <p className="mb-3 truncate px-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            {tenant?.name || 'Menu Admin'}
           </p>
           {nav}
         </div>
 
         <div className="space-y-3 border-t border-slate-100 pt-5">
           <Link
-            href="/"
+            href={t('/')}
             className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
           >
             ← Lihat website
@@ -190,7 +202,7 @@ export default function AdminShell({ profile, email, role = 'admin', children })
           {nav}
           <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
             <Link
-              href="/"
+              href={t('/')}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-600"
             >
               Website

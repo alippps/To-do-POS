@@ -1,16 +1,19 @@
 /**
- * Konfigurasi identitas bisnis.
- * Ubah di sini sekali, terpakai di seluruh halaman.
+ * Identitas PLATFORM — bukan identitas kedai.
+ *
+ * Sampai v3 berkas ini memegang nama, alamat, jam buka, dan nomor WhatsApp satu
+ * kedai. Sejak satu pemasangan melayani banyak UMKM (v4), semua itu pindah ke
+ * tabel `tenants` di database dan dibaca lewat `src/lib/tenant.js` — sebab
+ * jawabannya berbeda per permintaan, dan berkas yang dibundel saat build tidak
+ * bisa berbeda per permintaan.
+ *
+ * Yang tersisa di sini hanyalah hal yang memang sama untuk semua penyewa.
  */
-export const site = {
-  name: 'To Do',
-  tagline: 'Coffee Shop & Point of Sale',
+export const platform = {
+  name: 'To Do POS',
+  tagline: 'Satu sistem kasir untuk banyak UMKM',
   description:
-    'To Do adalah coffee shop modern dengan sistem Point of Sale terintegrasi — pesan lewat QR, kasir otomatis, laporan real-time.',
-  address: 'Jl. Merdeka No. 45, Bandung, Jawa Barat',
-  email: 'halo@todocoffee.id',
-  phone: '+62 812-3456-7890',
-  hours: 'Setiap hari, 08.00 – 23.00 WIB',
+    'Sistem Point of Sale untuk UMKM kuliner — pesan lewat QR di meja, kasir digital, dan laporan penjualan real-time. Satu pemasangan melayani banyak outlet.',
   /*
     Nilai dari .env.local dirapikan sebelum dipakai.
 
@@ -18,24 +21,12 @@ export const site = {
     terbawa ke nilai variabelnya. Untuk `siteUrl` akibatnya fatal: alamat itu
     dicetak permanen ke dalam QR meja, dan spasi di tengah URL membuat hasil
     pindaian tidak bisa dibuka. Garis miring di ujung juga dibuang supaya tidak
-    pernah terbentuk "//meja".
+    pernah terbentuk "//k".
   */
-  waNumber: (process.env.NEXT_PUBLIC_WA_NUMBER || '6281234567890').trim(),
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
     .trim()
     .replace(/\/+$/, ''),
-  social: {
-    instagram: 'https://instagram.com/',
-    tiktok: 'https://tiktok.com/',
-    maps: 'https://maps.google.com/',
-  },
 };
 
-export const WA_MESSAGE_DEFAULT =
-  'Halo To Do! Saya ingin konsultasi gratis soal sistem Point of Sale untuk usaha saya.';
-
-export function waLink(message = WA_MESSAGE_DEFAULT) {
-  return `https://wa.me/${site.waNumber}?text=${encodeURIComponent(message)}`;
-}
-
+/** Kategori produk bawaan — dipakai form admin di semua outlet. */
 export const CATEGORIES = ['Kopi', 'Non-Kopi', 'Snack', 'Makanan'];

@@ -10,13 +10,11 @@ import ConfirmDialog from './ConfirmDialog';
 import TransactionDetailModal from './TransactionDetailModal';
 import Toast from './Toast';
 import { rupiah, formatDate } from '@/lib/format';
-import { updateTransactionStatus, deleteTransaction } from '@/app/admin/transaksi/actions';
+import { ORDER_STATUS_LIST, PAYMENT_LABEL_SHORT, orderStatus } from '@/lib/tables';
+import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
+import { updateTransactionStatus, deleteTransaction } from '@/app/k/[slug]/admin/transaksi/actions';
 
 const PER_PAGE = 10;
-
-const STATUS_TONE = { paid: 'green', pending: 'amber', cancelled: 'rose' };
-const STATUS_LABEL = { paid: 'Lunas', pending: 'Pending', cancelled: 'Batal' };
-const PAYMENT_LABEL = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer' };
 
 const PERIODS = [
   { value: 'all', label: 'Semua waktu' },
@@ -27,6 +25,10 @@ const PERIODS = [
 
 export default function TransactionManager({ transactions = [], canDelete = false }) {
   const router = useRouter();
+  const tenant = useTenant();
+  // Sengaja BUKAN `t`: daftar di bawah sudah memakai `t` sebagai satu baris
+  // transaksi di dalam `.map()`, dan nama yang sama akan tertutup di sana.
+  const hrefOutlet = useTenantHref();
   const [, startTransition] = useTransition();
 
   const [keyword, setKeyword] = useState('');
@@ -84,7 +86,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
   const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   async function handleStatus(trx, nextStatus) {
-    const res = await updateTransactionStatus(trx.id, nextStatus);
+    const res = await updateTransactionStatus(tenant.slug, trx.id, nextStatus);
     setToast({ ok: res.ok, message: res.message });
     if (res.ok) startTransition(() => router.refresh());
   }
@@ -92,7 +94,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
   async function handleDelete() {
     if (!deleting) return;
     setLoading(true);
-    const res = await deleteTransaction(deleting.id);
+    const res = await deleteTransaction(tenant.slug, deleting.id);
     setLoading(false);
     setToast({ ok: res.ok, message: res.message });
     if (res.ok) {
@@ -132,9 +134,11 @@ export default function TransactionManager({ transactions = [], canDelete = fals
               className="input-base cursor-pointer lg:w-40"
             >
               <option value="Semua">Semua status</option>
-              <option value="paid">Lunas</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Batal</option>
+              {ORDER_STATUS_LIST.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.short}
+                </option>
+              ))}
             </select>
             <select
               value={period}
@@ -205,7 +209,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                       </td>
                       <td className="px-5 py-4 text-slate-500">{formatDate(t.created_at)}</td>
                       <td className="px-5 py-4 text-slate-500">
-                        {PAYMENT_LABEL[t.payment_method] || t.payment_method}
+                        {PAYMENT_LABEL_SHORT[t.payment_method] || t.payment_method}
                       </td>
                       <td className="px-5 py-4 font-bold text-slate-900">{rupiah(t.total)}</td>
                       <td className="px-5 py-4">
@@ -220,9 +224,11 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                               : 'border-rose-200 bg-rose-50 text-rose-700'
                           }`}
                         >
-                          <option value="paid">Lunas</option>
-                          <option value="pending">Pending</option>
-                          <option value="cancelled">Batal</option>
+                          {ORDER_STATUS_LIST.map((s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.short}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td className="px-5 py-4">
@@ -236,7 +242,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                           </button>
                           {/* Membuka halaman struk khusus supaya hanya struknya yang tercetak */}
                           <a
-                            href={`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`}
+                            href={hrefOutlet(`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`)}
                             target="_blank"
                             rel="noreferrer"
                             className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
@@ -274,7 +280,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                     </p>
                     <p className="mt-0.5 text-xs text-slate-400">{formatDate(t.created_at)}</p>
                   </div>
-                  <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+                  <Badge tone={orderStatus(t.status).tone}>{orderStatus(t.status).short}</Badge>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
@@ -284,11 +290,19 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                   <span className="text-lg font-extrabold text-slate-900">{rupiah(t.total)}</span>
                 </div>
 
-                <div className="mt-3 flex gap-2">
+                {/*
+                  Dua kolom, bukan satu baris berisi empat tombol.
+
+                  Di lebar 360px, empat tombol `flex-1` menyisakan ~76px untuk
+                  masing-masing — label "Set Pending" membungkus jadi dua baris
+                  dan tinggi tombolnya jadi tidak rata. Grid membuat setiap
+                  tombol cukup lebar untuk labelnya sendiri.
+                */}
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setDetail(t)}
-                    className="flex-1 rounded-lg bg-brand-600 py-2 text-xs font-semibold text-white"
+                    className="rounded-lg bg-brand-600 py-2.5 text-xs font-semibold text-white"
                   >
                     Detail
                   </button>
@@ -296,14 +310,16 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                     href={`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex-1 rounded-lg border border-slate-200 py-2 text-center text-xs font-semibold text-slate-600"
+                    className="rounded-lg border border-slate-200 py-2.5 text-center text-xs font-semibold text-slate-600"
                   >
                     Cetak
                   </a>
                   <button
                     type="button"
                     onClick={() => handleStatus(t, t.status === 'paid' ? 'pending' : 'paid')}
-                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600"
+                    className={`rounded-lg border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 ${
+                      canDelete ? '' : 'col-span-2'
+                    }`}
                   >
                     {t.status === 'paid' ? 'Set Pending' : 'Set Lunas'}
                   </button>
@@ -311,7 +327,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                     <button
                       type="button"
                       onClick={() => setDeleting(t)}
-                      className="flex-1 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-600"
+                      className="rounded-lg border border-rose-200 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600"
                     >
                       Hapus
                     </button>

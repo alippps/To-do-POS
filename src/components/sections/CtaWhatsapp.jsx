@@ -1,10 +1,10 @@
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
-import { site, waLink } from '@/lib/site';
+import { tenantPath, waLinkOf } from '@/lib/tenant';
 
 const PERKS = ['Tanpa biaya konsultasi', 'Demo sistem langsung', 'Dibalas < 15 menit di jam kerja'];
 
-export default function CtaWhatsapp() {
+export default function CtaWhatsapp({ tenant }) {
   return (
     <section className="py-20 sm:py-24">
       <Container>
@@ -15,22 +15,30 @@ export default function CtaWhatsapp() {
           </div>
 
           <div className="relative mx-auto max-w-2xl">
+            {/*
+              Klaim yang tidak bergantung kalender.
+
+              "Slot konsultasi minggu ini masih tersedia" ditulis permanen di
+              kode — urgensi yang tidak pernah berubah bukan urgensi, dan
+              pengunjung yang kembali sebulan lagi melihat kalimat yang sama
+              persis. Diganti janji yang memang selalu benar.
+            */}
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur">
-              Slot konsultasi minggu ini masih tersedia
+              Konsultasi tanpa biaya & tanpa kontrak
             </span>
 
             <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
               Siap merapikan operasional kedai Anda?
             </h2>
             <p className="mt-4 text-base leading-relaxed text-brand-100">
-              Ceritakan kondisi usaha Anda sekarang. Tim {site.name} akan bantu petakan kebutuhan sistem
-              POS-nya — gratis, tanpa kewajiban berlangganan.
+              Ceritakan kondisi usaha Anda sekarang. Tim {tenant.name} akan bantu petakan kebutuhan
+              sistem POS-nya — gratis, tanpa kewajiban berlangganan.
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button
                 as="a"
-                href={waLink()}
+                href={waLinkOf(tenant)}
                 target="_blank"
                 rel="noreferrer"
                 variant="whatsapp"
@@ -43,9 +51,10 @@ export default function CtaWhatsapp() {
                 Konsultasi Gratis via WhatsApp
               </Button>
               <Button
-                href="/kontak"
+                href={tenantPath(tenant.slug, '/kontak')}
+                variant="glass"
                 size="lg"
-                className="w-full bg-white/10 text-white shadow-none backdrop-blur hover:bg-white/20 sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 Kirim Pesan
               </Button>

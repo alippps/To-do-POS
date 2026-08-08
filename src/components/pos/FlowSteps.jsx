@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
  * Penunjuk langkah alur pemesanan pelanggan.
@@ -14,7 +17,9 @@ import Link from 'next/link';
 const STEPS = [
   { key: 'meja', title: 'Pilih meja', hint: 'Cek meja yang kosong' },
   { key: 'menu', title: 'Pesan menu', hint: 'Isi keranjang & nama' },
-  { key: 'struk', title: 'Bayar di kasir', hint: 'Tunjukkan nomor pesanan' },
+  // "Bayar", bukan "Bayar di kasir": sejak QRIS jadi pilihan, kasir bukan
+  // lagi satu-satunya tempat pembayaran diselesaikan.
+  { key: 'struk', title: 'Bayar', hint: 'Tunjukkan nomor pesanan' },
 ];
 
 /**
@@ -30,28 +35,58 @@ const LANGKAH_BAYAR = {
   cancelled: { title: 'Pesanan dibatalkan', hint: 'Hubungi kasir bila keliru' },
 };
 
+/**
+ * Langkah pertama berganti arti bagi pelanggan yang datang lewat QR meja.
+ *
+ * Ia tidak pernah "memilih meja" — ia sudah duduk, lalu memindai QR yang
+ * menempel di situ. Menandai langkah itu selesai seolah ia mengerjakannya
+ * membuat alurnya terasa mengada-ada, dan tautan mundurnya malah menawarkan
+ * pekerjaan yang tidak pernah ada. Jadi teksnya berubah dari perintah menjadi
+ * penegasan ("Meja 07 · Terbaca dari QR") dan langkahnya tidak bisa diklik.
+ *
+ * Yang datang dari denah `/meja` tetap melihat "Pilih meja" — bagi mereka itu
+ * memang langkah yang betul-betul dijalani.
+ */
+const langkahMejaQr = (tableNo) => ({
+  title: tableNo ? `Meja ${tableNo}` : 'Meja ini',
+  hint: 'Terbaca dari QR',
+});
+
 export default function FlowSteps({
   current = 'meja',
   tableNo = '',
   paymentStatus = null,
+  fromScan = false,
   className = '',
 }) {
+  const t = useTenantHref();
   const found = STEPS.findIndex((s) => s.key === current);
   const activeIndex = found === -1 ? 0 : found;
 
   const lunas = paymentStatus === 'paid';
   const batal = paymentStatus === 'cancelled';
 
-  // Nomor meja ikut dibawa saat mundur, supaya pilihan pelanggan tidak hilang.
-  const suffix = tableNo ? `?meja=${encodeURIComponent(tableNo)}` : '';
-  const hrefOf = (key) => (key === 'meja' ? `/meja${suffix}` : `/menu${suffix}`);
+  /*
+    Nomor meja ikut dibawa saat mundur, supaya pilihan pelanggan tidak hilang.
+    `src=qr` ikut juga: tanpa itu, pelanggan yang mundur ke menu akan disambut
+    stepper versi "Pilih meja" lagi — asal-usulnya hilang di tengah jalan.
+  */
+  const suffix = tableNo
+    ? `?meja=${encodeURIComponent(tableNo)}${fromScan ? '&src=qr' : ''}`
+    : '';
+  const hrefOf = (key) => t(key === 'meja' ? `/meja${suffix}` : `/menu${suffix}`);
 
   return (
     <nav aria-label="Langkah pemesanan" className={`no-print ${className}`}>
       <ol className="flex items-stretch gap-2 sm:gap-3">
         {STEPS.map((step, i) => {
           const langkahBayar = step.key === 'struk';
-          const teks = (langkahBayar && LANGKAH_BAYAR[paymentStatus]) || step;
+          const langkahMeja = step.key === 'meja';
+          const mejaDariQr = langkahMeja && fromScan;
+          const teks =
+            (langkahBayar && LANGKAH_BAYAR[paymentStatus]) ||
+            (mejaDariQr && langkahMejaQr(tableNo)) ||
+            step;
 
           // Lunas membuat langkah terakhir ikut dihitung selesai, bukan aktif.
           const done = i < activeIndex || (lunas && i === activeIndex);
@@ -104,8 +139,9 @@ export default function FlowSteps({
           const shell = `flex h-full items-center gap-2.5 rounded-2xl border px-3 py-2.5 transition ${box}`;
 
           // Hanya dua langkah pertama yang punya halaman untuk dituju kembali;
-          // langkah bayar yang sudah lunas bukan tautan ke mana-mana.
-          const bolehDiklik = done && !langkahBayar;
+          // langkah bayar yang sudah lunas bukan tautan ke mana-mana. Meja hasil
+          // scan juga bukan — mejanya ditentukan tempat duduk, bukan halaman.
+          const bolehDiklik = done && !langkahBayar && !mejaDariQr;
 
           return (
             <li key={step.key} className="min-w-0 flex-1">

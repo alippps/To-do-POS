@@ -60,6 +60,26 @@ export const ADMIN_PAGES = {
 export const STAFF_ROLES = ['admin', 'kasir'];
 
 /**
+ * Buang awalan outlet dari sebuah path: `/k/kopi-pagi/admin/produk` → `/admin/produk`.
+ *
+ * ADMIN_PAGES di atas sengaja ditulis tanpa slug. Aturan "kasir tidak boleh
+ * membuka Daftar Produk" tidak berubah karena outletnya berganti, jadi
+ * mencantumkan slug di dalam daftarnya berarti menyalin aturan yang sama
+ * sebanyak jumlah penyewa. Yang berpindah cukup path-nya, sekali, di sini.
+ */
+export function stripTenantPrefix(pathname = '') {
+  const cocok = /^\/k\/[^/]+(\/.*)?$/.exec(pathname);
+  if (!cocok) return pathname;
+  return cocok[1] || '/';
+}
+
+/** Slug outlet dari sebuah path, atau '' bila path-nya di luar `/k/`. */
+export function tenantSlugFromPath(pathname = '') {
+  const cocok = /^\/k\/([^/]+)/.exec(pathname);
+  return cocok ? decodeURIComponent(cocok[1]) : '';
+}
+
+/**
  * Apakah `role` boleh membuka `pathname`?
  *
  * Pencocokan memakai awalan supaya sub-rute ikut terjaga, tapi hanya pada batas

@@ -11,11 +11,16 @@ const FAQS = [
   },
   {
     q: 'Bagaimana cara pelanggan memesan lewat QR?',
-    a: 'Setiap meja ditempel QR yang mengarah ke halaman Ketersediaan Meja. Pelanggan scan, melihat meja mana yang masih kosong, memilih menu, lalu memesan — semuanya tanpa perlu membuat akun. Pesanan langsung muncul di Daftar Transaksi admin.',
+    /*
+      Jawaban lama masih menceritakan alur lama: scan → lihat denah → pilih
+      meja. Itu justru yang dihapus ScanHub — yang memindai QR meja 07 memang
+      sudah duduk di meja 07 dan tidak perlu memilih apa pun.
+    */
+    a: 'Setiap meja punya QR-nya sendiri. Pelanggan yang sudah duduk cukup memindainya: nomor mejanya langsung terbaca, tinggal pilih menu lalu pesan — tanpa membuat akun dan tanpa antre di kasir. Pesanannya seketika muncul di Daftar Transaksi. Mau menambah nanti? Pindai lagi, tambahannya menempel ke tagihan meja yang sama dan dibayar sekali di akhir.',
   },
   {
     q: 'Apakah data penjualan saya aman?',
-    a: 'Aman. Autentikasi ditangani Supabase Auth dan setiap tabel dilindungi Row Level Security, sehingga hanya akun dengan role admin yang bisa melihat serta mengubah data transaksi.',
+    a: 'Aman. Autentikasi ditangani Supabase Auth dan setiap tabel dilindungi Row Level Security. Aksesnya berjenjang: kasir bisa memproses pesanan dan menandai lunas, sementara mengubah produk, denah meja, hak akses, dan menghapus transaksi tetap khusus admin.',
   },
   {
     q: 'Perlu perangkat khusus untuk menjalankannya?',
@@ -23,7 +28,7 @@ const FAQS = [
   },
   {
     q: 'Apakah bisa dipakai lebih dari satu kasir sekaligus?',
-    a: 'Bisa. Buat akun untuk tiap staf, lalu naikkan rolenya sesuai kebutuhan. Semua transaksi tercatat beserta akun yang memprosesnya.',
+    a: 'Bisa. Buat akun untuk tiap staf, lalu naikkan rolenya jadi Kasir atau Admin lewat halaman Hak Akses. Kasir hanya melihat layar yang ia butuhkan; semua transaksi tercatat beserta akun yang memprosesnya.',
   },
   {
     q: 'Berapa lama proses setup sampai siap dipakai?',

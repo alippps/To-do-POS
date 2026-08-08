@@ -1,7 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import ScanIntentDialog from './ScanIntentDialog';
 import { rupiah } from '@/lib/format';
-import { tableStatus } from '@/lib/tables';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
  * Layar pertama setelah pelanggan men-scan QR meja.
@@ -15,22 +17,33 @@ import { tableStatus } from '@/lib/tables';
  * di bawah untuk kasus "saya pindah meja".
  */
 export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCount = 0 }) {
+  const t = useTenantHref();
   const meja = table.table_no;
   const q = `?meja=${encodeURIComponent(meja)}`;
-  const s = tableStatus(table.status);
+
+  /*
+    Halaman menu perlu tahu mejanya datang dari QR, bukan dari denah — di sana
+    stepper berhenti menyuruh "pilih meja". Ditandai di sini, bukan dibaca dari
+    URL masuk, supaya QR lama yang terlanjur tercetak (tanpa `src`) tetap ikut
+    benar: sampai di layar ini artinya memang habis memindai.
+  */
+  const qQr = `${q}&src=qr`;
 
   const TILES = [
     {
-      href: '/katalog',
+      // Nomor meja ikut dibawa: katalog memakainya untuk menawarkan "Pesan
+      // untuk Meja 07" di ujung halaman, alih-alih memulangkan pelanggan ke
+      // denah untuk memilih meja yang sedang ia duduki.
+      href: t(`/katalog${q}`),
       emoji: '📖',
-      title: 'Menu',
-      desc: 'Lihat semua menu & harga',
+      title: 'Lihat Menu',
+      desc: 'Semua menu & harga — baca saja',
       tone: 'border-slate-200 bg-white hover:border-brand-200',
     },
     {
-      href: `/menu${q}`,
+      href: t(`/menu${qQr}`),
       emoji: '🛒',
-      title: 'Order',
+      title: 'Pesan',
       /*
         Pelanggan yang sudah memesan di kasir lalu duduk akan melihat kalimat
         yang berbeda: tugas QR baginya bukan "mulai memesan" tapi "nambah",
@@ -44,7 +57,7 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
       primary: true,
     },
     {
-      href: `/bayar${q}`,
+      href: t(`/bayar${q}`),
       emoji: '💳',
       title: 'Bayar',
       desc:
@@ -55,7 +68,7 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
       tone: 'border-slate-200 bg-white hover:border-brand-200',
     },
     {
-      href: `/promo${q}`,
+      href: t(`/promo${q}`),
       emoji: '🔥',
       title: 'Promo Hari Ini',
       desc: promoCount > 0 ? `${promoCount} menu sedang diskon` : 'Cek penawaran hari ini',
@@ -86,14 +99,28 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
             <h1 className="mt-2 truncate text-2xl font-extrabold text-slate-900">
               {table.label || `Meja ${meja}`}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {table.area} · kapasitas {table.capacity} orang
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{table.area}</p>
+            {/*
+              Dulu di sini terpampang status ketersediaan meja. Bagi yang sedang
+              menduduki meja itu kalimatnya justru berlawanan dengan kenyataan —
+              "Tersedia" dibaca oleh orang yang jelas-jelas sudah memakainya, dan
+              kapasitas kursi tidak menjawab apa pun yang sedang ia butuhkan.
+              Yang benar-benar berguna baginya cuma satu: meja ini sudah punya
+              tagihan berjalan atau belum.
+            */}
             <span
-              className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${s.ring} ${s.text}`}
+              className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                billCount > 0
+                  ? 'border-amber-200 bg-amber-50/70 text-amber-700'
+                  : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
             >
-              <span className={`h-2 w-2 rounded-full ${s.dot}`} />
-              {s.label}
+              <span
+                className={`h-2 w-2 rounded-full ${billCount > 0 ? 'bg-amber-500' : 'bg-slate-300'}`}
+              />
+              {billCount > 0
+                ? `Tagihan berjalan · ${billCount} pesanan · ${rupiah(billTotal)}`
+                : 'Belum ada pesanan di meja ini'}
             </span>
           </div>
         </div>
@@ -103,7 +130,16 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
         Mau mulai dari mana? Semua bisa dilakukan tanpa membuat akun.
       </p>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      {/*
+        Diberi landmark bernama, bukan sekadar <div>.
+
+        Empat kartu ini adalah navigasi utama layar hasil scan — pembaca layar
+        bisa melompat langsung ke sini alih-alih menyusuri kartu identitas meja
+        lebih dulu. Namanya juga memberi test e2e pegangan yang stabil: sebelum
+        ada ini, satu-satunya cara menunjuk kartu "Pesan" adalah menebak awalan
+        namanya, dan tautan "Pesan Online" di footer ikut tersangkut.
+      */}
+      <nav aria-label="Pilihan untuk meja ini" className="mt-4 grid gap-4 sm:grid-cols-2">
         {TILES.map((t) => (
           <Link
             key={t.title}
@@ -145,10 +181,10 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
             </span>
           </Link>
         ))}
-      </div>
+      </nav>
 
       <p className="mt-8 text-center text-sm">
-        <Link href="/meja" className="link-muted">
+        <Link href={t('/meja')} className="link-muted">
           Duduk di meja lain? Lihat meja yang kosong →
         </Link>
       </p>

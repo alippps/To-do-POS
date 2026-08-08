@@ -4,11 +4,18 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { rupiah, formatDate } from '@/lib/format';
 import { PAYMENT_LABEL } from '@/lib/tables';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
-export default function ReceiptModal({ open, onClose, transaction, items }) {
+export default function ReceiptModal({ open, onClose, transaction, items, fromScan = false }) {
+  const t = useTenantHref();
+
   if (!transaction) return null;
 
-  const strukUrl = `/struk/${encodeURIComponent(transaction.invoice_no)}`;
+  // Asal-usul meja dibawa sampai ke bukti pesanan: tanpa ini stepper di halaman
+  // struk kembali menuntut "Pilih meja" pada orang yang datang lewat QR.
+  const strukUrl = t(
+    `/struk/${encodeURIComponent(transaction.invoice_no)}${fromScan ? '?src=qr' : ''}`
+  );
 
   return (
     <Modal
@@ -81,13 +88,25 @@ export default function ReceiptModal({ open, onClose, transaction, items }) {
         <ol className="mt-2.5 space-y-2 text-xs leading-snug text-slate-600">
           <li className="flex gap-2.5">
             <span className="font-bold text-brand-700">1.</span>
-            <span>Barista mulai meracik pesananmu sekarang.</span>
+            <span>
+              Pesanan sudah <span className="font-semibold text-slate-800">masuk ke kasir</span> dan
+              barista mulai meracik — kamu tidak perlu memberitahu siapa pun.
+            </span>
           </li>
           <li className="flex gap-2.5">
             <span className="font-bold text-brand-700">2.</span>
             <span>
-              Bayar di kasir sambil menyebut nomor{' '}
-              <span className="font-semibold text-slate-800">{transaction.invoice_no}</span>.
+              {transaction.payment_method === 'qris' ? (
+                <>
+                  Buka bukti pesanan untuk memindai{' '}
+                  <span className="font-semibold text-slate-800">kode QRIS</span>-nya.
+                </>
+              ) : (
+                <>
+                  Bayar di kasir sambil menyebut nomor{' '}
+                  <span className="font-semibold text-slate-800">{transaction.invoice_no}</span>.
+                </>
+              )}
             </span>
           </li>
           <li className="flex gap-2.5">

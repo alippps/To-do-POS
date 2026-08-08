@@ -17,7 +17,8 @@ import {
   updateProduct,
   deleteProduct,
   toggleProductActive,
-} from '@/app/admin/produk/actions';
+} from '@/app/k/[slug]/admin/produk/actions';
+import { useTenant } from '@/components/tenant/TenantProvider';
 
 const PER_PAGE = 8;
 
@@ -31,6 +32,7 @@ const SORTS = [
 
 export default function ProductManager({ products = [] }) {
   const router = useRouter();
+  const tenant = useTenant();
   const [isPending, startTransition] = useTransition();
 
   const [keyword, setKeyword] = useState('');
@@ -88,7 +90,9 @@ export default function ProductManager({ products = [] }) {
 
   async function handleSubmit(values) {
     setLoading(true);
-    const res = editing ? await updateProduct(editing.id, values) : await createProduct(values);
+    const res = editing
+      ? await updateProduct(tenant.slug, editing.id, values)
+      : await createProduct(tenant.slug, values);
     setLoading(false);
 
     setToast({ ok: res.ok, message: res.message });
@@ -102,7 +106,7 @@ export default function ProductManager({ products = [] }) {
   async function handleDelete() {
     if (!deleting) return;
     setLoading(true);
-    const res = await deleteProduct(deleting.id);
+    const res = await deleteProduct(tenant.slug, deleting.id);
     setLoading(false);
 
     setToast({ ok: res.ok, message: res.message });
@@ -113,7 +117,7 @@ export default function ProductManager({ products = [] }) {
   }
 
   async function handleToggle(product) {
-    const res = await toggleProductActive(product.id, !product.is_active);
+    const res = await toggleProductActive(tenant.slug, product.id, !product.is_active);
     setToast({ ok: res.ok, message: res.message });
     if (res.ok) startTransition(() => router.refresh());
   }

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 import { initials } from '@/lib/format';
+import { STAFF_ROLES } from '@/lib/access';
+import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
  * Panel sesi staf — tampil di `/login` saat sudah ada yang masuk.
@@ -16,10 +18,21 @@ import { initials } from '@/lib/format';
  * dari sesinya. Tanpa panel ini, akun ber-role `user` akan terkunci: tidak
  * bisa membuka /admin, tidak bisa keluar dari mana pun.
  */
-export default function SessionPanel({ email, fullName, role }) {
+export default function SessionPanel({ email, fullName, role, outletSendiri = true }) {
   const router = useRouter();
+  const tenant = useTenant();
+  const t = useTenantHref();
   const [loading, setLoading] = useState(false);
-  const isAdmin = role === 'admin';
+
+  /*
+    Staf = admin ATAU kasir — DI OUTLET INI.
+
+    Sejak satu pemasangan melayani banyak UMKM, role saja tidak cukup: admin
+    Kopi Pagi yang membuka /k/roti-88/login memang sedang masuk, tapi dashboard
+    yang ada di halaman ini bukan miliknya. Menawarkan tombolnya hanya
+    mengantar ke penolakan middleware.
+  */
+  const isStaf = STAFF_ROLES.includes(role) && outletSendiri;
 
   async function handleLogout() {
     setLoading(true);
@@ -48,10 +61,10 @@ export default function SessionPanel({ email, fullName, role }) {
         </div>
       </div>
 
-      {isAdmin ? (
+      {isStaf ? (
         <div className="mt-5 space-y-3">
-          <Button href="/admin" size="lg" className="w-full">
-            Buka Dashboard Admin
+          <Button href={t('/admin')} size="lg" className="w-full">
+            Buka Dashboard
           </Button>
           <Button variant="secondary" size="lg" className="w-full" onClick={handleLogout} disabled={loading}>
             {loading ? 'Keluar...' : 'Keluar'}
@@ -60,11 +73,28 @@ export default function SessionPanel({ email, fullName, role }) {
       ) : (
         <div className="mt-5 space-y-3">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5">
-            <p className="text-sm font-semibold text-amber-900">Akun ini belum punya akses admin</p>
-            <p className="mt-1 text-xs leading-snug text-amber-800">
-              Role <span className="font-bold">user</span> belum bisa membuka dashboard. Minta admin
-              yang sudah ada menaikkan role akun ini lewat halaman Hak Akses.
-            </p>
+            {outletSendiri ? (
+              <>
+                <p className="text-sm font-semibold text-amber-900">
+                  Akun ini belum punya akses staf
+                </p>
+                <p className="mt-1 text-xs leading-snug text-amber-800">
+                  Role <span className="font-bold">user</span> belum bisa membuka dashboard. Minta
+                  admin {tenant.name} menaikkan role akun ini menjadi{' '}
+                  <span className="font-bold">Kasir</span> atau <span className="font-bold">Admin</span>{' '}
+                  lewat halaman Hak Akses.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-amber-900">Akun ini milik outlet lain</p>
+                <p className="mt-1 text-xs leading-snug text-amber-800">
+                  Kamu sedang masuk dengan akun yang terdaftar di outlet berbeda, jadi dashboard{' '}
+                  <span className="font-bold">{tenant.name}</span> tidak bisa dibuka dari sini. Buka
+                  halaman masuk outletmu sendiri, atau keluar lalu masuk dengan akun yang benar.
+                </p>
+              </>
+            )}
           </div>
           <Button size="lg" className="w-full" onClick={handleLogout} disabled={loading}>
             {loading ? 'Keluar...' : 'Keluar dari akun ini'}
@@ -73,7 +103,7 @@ export default function SessionPanel({ email, fullName, role }) {
       )}
 
       <p className="mt-6 text-center text-sm">
-        <Link href="/menu" className="link-muted">
+        <Link href={t('/menu')} className="link-muted">
           Buka halaman pemesanan pelanggan →
         </Link>
       </p>

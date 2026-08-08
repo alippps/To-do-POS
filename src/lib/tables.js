@@ -54,14 +54,80 @@ export function tableStatus(value) {
   return TABLE_STATUS[value] || TABLE_STATUS.available;
 }
 
-export const PAYMENT_LABEL = {
-  cash: 'Tunai di kasir',
-  qris: 'QRIS',
-  transfer: 'Transfer Bank',
+/**
+ * Metode pembayaran — SATU sumber untuk struk, halaman bayar, dan panel admin.
+ *
+ * Dua bentuk, bukan dua daftar: `label` untuk pelanggan (menjelaskan di mana
+ * uangnya dibayar), `short` untuk tabel admin yang kolomnya sempit. Sebelumnya
+ * ketiga tempat itu menulis daftarnya sendiri-sendiri, sehingga satu transaksi
+ * yang sama terbaca "Tunai di kasir" di struk, "Tunai" di tabel, dan
+ * "Transfer Bank" vs "Transfer" tergantung layar mana yang dibuka.
+ *
+ * TINGGAL DUA. Transfer bank dihapus dari pilihan: ia satu-satunya metode yang
+ * tidak bisa diselesaikan di tempat — pelanggan pergi ke aplikasi banknya,
+ * kasir menunggu bukti transfer yang tidak pernah masuk ke sistem, dan status
+ * pesanan menggantung tanpa ada yang tahu sudah dibayar atau belum. QRIS
+ * menyelesaikan pembayaran non-tunai di layar yang sama, dan tunai
+ * diselesaikan di kasir dengan menunjukkan nomor pesanan.
+ */
+export const PAYMENT_METHOD = {
+  qris: {
+    value: 'qris',
+    label: 'QRIS',
+    short: 'QRIS',
+    hint: 'Pindai kode QRIS yang muncul di bukti pesanan.',
+  },
+  cash: {
+    value: 'cash',
+    label: 'Bayar di kasir',
+    short: 'Kasir',
+    hint: 'Tunjukkan nomor pesanan di kasir, bayar tunai di sana.',
+  },
 };
 
-export const ORDER_STATUS = {
-  pending: { label: 'Menunggu diproses', tone: 'amber' },
-  paid: { label: 'Lunas', tone: 'green' },
-  cancelled: { label: 'Dibatalkan', tone: 'rose' },
+/**
+ * Metode yang tidak lagi ditawarkan, tapi masih ada di arsip.
+ *
+ * Transaksi lama yang terlanjur tercatat 'transfer' adalah riwayat penjualan
+ * sungguhan. Menghapus labelnya berarti tabel admin menampilkan kata mentah
+ * "transfer" pada baris-baris itu; menulis ulang nilainya berarti memalsukan
+ * catatan keuangan. Jadi labelnya tetap ada, pilihannya yang hilang.
+ */
+export const PAYMENT_METHOD_ARCHIVED = {
+  transfer: { value: 'transfer', label: 'Transfer Bank', short: 'Transfer' },
 };
+
+const SEMUA_METODE = { ...PAYMENT_METHOD, ...PAYMENT_METHOD_ARCHIVED };
+
+export const PAYMENT_LABEL = Object.fromEntries(
+  Object.entries(SEMUA_METODE).map(([key, m]) => [key, m.label])
+);
+
+export const PAYMENT_LABEL_SHORT = Object.fromEntries(
+  Object.entries(SEMUA_METODE).map(([key, m]) => [key, m.short])
+);
+
+/** Metode yang boleh dipilih untuk pesanan BARU — dipakai validasi server action. */
+export const PAYMENT_METHOD_VALUES = Object.keys(PAYMENT_METHOD);
+
+/** Daftar untuk dropdown pelanggan & kasir, berurutan seperti tampil di layar. */
+export const PAYMENT_METHOD_LIST = Object.values(PAYMENT_METHOD);
+
+/**
+ * Status pesanan — dipakai struk pelanggan DAN badge admin.
+ *
+ * `label` bercerita ke pelanggan, `short` muat di badge tabel admin. Nilai
+ * `tone` menyatukan warnanya supaya badge di dashboard, tabel, dan modal detail
+ * tidak lagi punya peta warna masing-masing.
+ */
+export const ORDER_STATUS = {
+  pending: { value: 'pending', label: 'Menunggu diproses', short: 'Pending', tone: 'amber' },
+  paid: { value: 'paid', label: 'Lunas', short: 'Lunas', tone: 'green' },
+  cancelled: { value: 'cancelled', label: 'Dibatalkan', short: 'Batal', tone: 'rose' },
+};
+
+export const ORDER_STATUS_LIST = Object.values(ORDER_STATUS);
+
+export function orderStatus(value) {
+  return ORDER_STATUS[value] || ORDER_STATUS.pending;
+}

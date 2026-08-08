@@ -1,18 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import { Input, Select, Textarea } from '@/components/ui/Field';
+import { Input, Select, Textarea, Wajib } from '@/components/ui/Field';
 import { rupiah } from '@/lib/format';
-import { tableStatus } from '@/lib/tables';
-
-/** Penanda kolom wajib — dipakai di label supaya terlihat sebelum diisi. */
-function Wajib({ children }) {
-  return (
-    <>
-      {children} <span className="font-bold text-rose-500">*</span>
-    </>
-  );
-}
+import { PAYMENT_METHOD_LIST, tableStatus } from '@/lib/tables';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 export default function CartPanel({
   items,
@@ -27,18 +20,17 @@ export default function CartPanel({
   onCloseSheet,
   loading,
   error,
-  missing = [],
+  fieldErrors = {},
+  nameRef,
 }) {
+  const t = useTenantHref();
   const total = items.reduce((acc, i) => acc + i.price * i.qty, 0);
   const totalQty = items.reduce((acc, i) => acc + i.qty, 0);
 
-  // Nomor meja hasil scan QR bisa saja belum terdaftar di denah —
-  // tetap tampilkan sebagai opsi supaya pilihannya tidak hilang diam-diam.
-  const knownTable = tables.some((t) => t.table_no === form.tableNo);
-  const selectedTable = tables.find((t) => t.table_no === form.tableNo);
+  const selectedTable = tables.find((tb) => tb.table_no === form.tableNo);
 
   return (
-    <div className="card flex max-h-[92vh] flex-col overflow-hidden p-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)]">
+    <div className="card flex max-h-[92dvh] flex-col overflow-hidden p-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)]">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div>
           <h2 className="font-bold text-slate-900">Keranjang</h2>
@@ -156,50 +148,105 @@ export default function CartPanel({
         </div>
 
         <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+        {/*
+          Nama pemesan memegang `ref` supaya bisa DIFOKUSKAN, bukan cuma
+          diberi warna merah.
+
+          Dulu kolom kosong hanya memicu satu kalimat di footer keranjang.
+          Di HP, footer itu menempel di bawah layar sementara kolom namanya
+          bisa berada jauh di atas area gulir — pelanggan membaca "lengkapi
+          nama pemesan" tanpa tahu kolom itu ada di mana, dan menekan tombolnya
+          berulang kali. Sekarang pesannya menempel pada kolomnya sendiri, dan
+          PosClient menggulir ke sana begitu pengiriman ditolak.
+        */}
         <Input
+          ref={nameRef}
           label={<Wajib>Nama pemesan</Wajib>}
           value={form.customerName}
           onChange={(e) => onFormChange('customerName', e.target.value)}
           placeholder="Nama Anda"
           hint="Dipakai barista untuk memanggil pesanan."
+          error={fieldErrors.customerName}
         />
 
-        <Select
-          label={<Wajib>Nomor meja</Wajib>}
-          hint="Supaya pesanan diantar ke tempat yang benar."
-          value={form.tableNo}
-          onChange={(e) => onFormChange('tableNo', e.target.value)}
-        >
-          <option value="">— Pilih meja —</option>
-          {tables.map((t) => {
-            const s = tableStatus(t.status);
-            return (
-              <option key={t.id} value={t.table_no}>
-                Meja {t.table_no} · {t.label || t.area} ({s.label})
-              </option>
-            );
-          })}
-          {form.tableNo && !knownTable && <option value={form.tableNo}>Meja {form.tableNo}</option>}
-        </Select>
+        {/*
+          Nomor meja DIBACA, tidak dipilih.
+
+          Nomornya ditentukan QR yang tertempel di meja tempat pelanggan duduk —
+          satu barcode untuk satu meja. Dropdown lama membuat nomor itu bisa
+          diketik ulang jadi meja mana pun, dan itu justru sumber kesalahan yang
+          paling mahal: minuman diantar ke meja yang salah, atau tagihan
+          menempel ke meja orang lain. Yang tidak punya nomor meja tidak
+          diberi kolom untuk mengarangnya — ia diarahkan memindai atau memilih
+          dari denah.
+        */}
+        {form.tableNo ? (
+          <div>
+            <span className="label-base">
+              <Wajib>Nomor meja</Wajib>
+            </span>
+            <div className="flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/60 px-4 py-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
+                {form.tableNo}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-slate-900">Meja {form.tableNo}</p>
+                <p className="truncate text-xs text-slate-500">
+                  {selectedTable?.label || selectedTable?.area || 'Terbaca dari QR di meja ini'}
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                title="Nomor meja terkunci"
+                className="ml-auto shrink-0 text-base text-brand-500"
+              >
+                🔒
+              </span>
+            </div>
+            <span className="mt-1.5 block text-xs text-slate-400">
+              Terkunci mengikuti QR meja ini — tidak bisa diubah dari sini.
+            </span>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+            <p className="text-sm font-bold text-amber-900">Meja belum diketahui</p>
+            <p className="mt-1 text-xs leading-snug text-amber-800">
+              Pindai QR yang tertempel di mejamu, atau pilih meja yang kosong dari denah. Nomor meja
+              tidak bisa diketik manual supaya pesanan tidak pernah salah antar.
+            </p>
+            <Link
+              href={t('/meja')}
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
+            >
+              Lihat meja yang kosong →
+            </Link>
+          </div>
+        )}
 
         {selectedTable && selectedTable.status !== 'available' && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800">
             Meja {selectedTable.table_no} sedang{' '}
-            {tableStatus(selectedTable.status).label.toLowerCase()}. Kamu masih bisa memesan, atau
-            ganti ke meja lain.
+            {tableStatus(selectedTable.status).label.toLowerCase()} — mungkin pesananmu sendiri yang
+            belum dilunasi. Kamu tetap bisa menambah pesanan dari meja ini.
           </p>
         )}
 
         <Select
           label="Metode pembayaran"
-          hint="Belum ada uang keluar sekarang — semuanya dibayar di kasir."
+          hint="Belum ada uang keluar sekarang — pilihannya menentukan cara membayar nanti."
           value={form.paymentMethod}
           onChange={(e) => onFormChange('paymentMethod', e.target.value)}
         >
-          <option value="cash">Tunai (bayar di kasir)</option>
-          <option value="qris">QRIS</option>
-          <option value="transfer">Transfer Bank</option>
+          {PAYMENT_METHOD_LIST.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
         </Select>
+
+        <p className="rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs leading-snug text-slate-500">
+          {PAYMENT_METHOD_LIST.find((m) => m.value === form.paymentMethod)?.hint}
+        </p>
 
         <Textarea
           label="Catatan (opsional)"
@@ -219,18 +266,19 @@ export default function CartPanel({
         pelanggan cuma melihat tombol yang seolah tidak bereaksi.
       */}
       <div className="space-y-3 border-t border-slate-200 bg-white px-5 py-4">
-        {items.length > 0 && missing.length > 0 && !error && (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800">
-            Tinggal satu langkah — isi <span className="font-bold">{missing.join(' dan ')}</span>,
-            lalu tekan Pesan Sekarang.
-          </p>
-        )}
-
-        {error && (
-          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">
-            {error}
-          </p>
-        )}
+        {/*
+          `aria-live` supaya penolakan terdengar, bukan cuma terlihat. Tombolnya
+          tidak dinonaktifkan saat ada kolom kosong — tombol mati tidak bisa
+          menjelaskan APA yang kurang. Ditekan, ditolak, lalu diberi tahu
+          persis kolom mana: itu yang menuntun, bukan tombol yang diam.
+        */}
+        <div aria-live="polite">
+          {error && (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">
+              {error}
+            </p>
+          )}
+        </div>
 
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-500">Total</span>

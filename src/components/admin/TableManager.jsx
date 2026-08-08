@@ -10,12 +10,14 @@ import { Input, Select } from '@/components/ui/Field';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import { TABLE_AREAS, TABLE_STATUS_LIST, tableStatus } from '@/lib/tables';
-import { createTable, updateTable, deleteTable, setTableStatus } from '@/app/admin/meja/actions';
+import { useTenant } from '@/components/tenant/TenantProvider';
+import { createTable, updateTable, deleteTable, setTableStatus } from '@/app/k/[slug]/admin/meja/actions';
 
 const EMPTY = { table_no: '', label: '', area: 'Indoor', capacity: 2, is_active: true };
 
 export default function TableManager({ tables = [] }) {
   const router = useRouter();
+  const tenant = useTenant();
 
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState('Semua');
@@ -79,7 +81,9 @@ export default function TableManager({ tables = [] }) {
     setLoading(true);
 
     const payload = { ...values, capacity: Number(values.capacity) };
-    const res = editing ? await updateTable(editing.id, payload) : await createTable(payload);
+    const res = editing
+      ? await updateTable(tenant.slug, editing.id, payload)
+      : await createTable(tenant.slug, payload);
 
     setLoading(false);
     setErrors(res.errors || {});
@@ -94,7 +98,7 @@ export default function TableManager({ tables = [] }) {
   async function handleDelete() {
     if (!deleting) return;
     setLoading(true);
-    const res = await deleteTable(deleting.id);
+    const res = await deleteTable(tenant.slug, deleting.id);
     setLoading(false);
     setDeleting(null);
     if (res.ok) router.refresh();
@@ -102,7 +106,7 @@ export default function TableManager({ tables = [] }) {
   }
 
   async function handleStatus(table, next) {
-    const res = await setTableStatus(table.id, next);
+    const res = await setTableStatus(tenant.slug, table.id, next);
     if (res.ok) router.refresh();
     setToast({ ok: res.ok, message: res.message });
   }

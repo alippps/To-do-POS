@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { rupiah, formatDate } from '@/lib/format';
-import { getTransactionItems } from '@/app/admin/transaksi/actions';
-
-const STATUS_TONE = { paid: 'green', pending: 'amber', cancelled: 'rose' };
-const STATUS_LABEL = { paid: 'Lunas', pending: 'Pending', cancelled: 'Batal' };
-const PAYMENT_LABEL = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer Bank' };
+import { PAYMENT_LABEL_SHORT, orderStatus } from '@/lib/tables';
+import { useTenant } from '@/components/tenant/TenantProvider';
+import { getTransactionItems } from '@/app/k/[slug]/admin/transaksi/actions';
 
 export default function TransactionDetailModal({ open, onClose, transaction }) {
+  const tenant = useTenant();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,7 @@ export default function TransactionDetailModal({ open, onClose, transaction }) {
     let cancelled = false;
     setLoading(true);
 
-    getTransactionItems(transaction.id).then((res) => {
+    getTransactionItems(tenant.slug, transaction.id).then((res) => {
       if (cancelled) return;
       setItems(res.items || []);
       setLoading(false);
@@ -29,7 +28,7 @@ export default function TransactionDetailModal({ open, onClose, transaction }) {
     return () => {
       cancelled = true;
     };
-  }, [open, transaction?.id]);
+  }, [open, transaction?.id, tenant.slug]);
 
   if (!transaction) return null;
 
@@ -39,7 +38,10 @@ export default function TransactionDetailModal({ open, onClose, transaction }) {
         {[
           ['Pemesan', transaction.customer_name],
           ['Nomor meja', transaction.table_no || '-'],
-          ['Pembayaran', PAYMENT_LABEL[transaction.payment_method] || transaction.payment_method],
+          [
+            'Pembayaran',
+            PAYMENT_LABEL_SHORT[transaction.payment_method] || transaction.payment_method,
+          ],
           ['Waktu', formatDate(transaction.created_at)],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl bg-slate-50 px-4 py-3">
@@ -51,7 +53,9 @@ export default function TransactionDetailModal({ open, onClose, transaction }) {
 
       <div className="mt-4 flex items-center gap-2">
         <span className="text-sm text-slate-500">Status:</span>
-        <Badge tone={STATUS_TONE[transaction.status]}>{STATUS_LABEL[transaction.status]}</Badge>
+        <Badge tone={orderStatus(transaction.status).tone}>
+          {orderStatus(transaction.status).short}
+        </Badge>
       </div>
 
       <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">

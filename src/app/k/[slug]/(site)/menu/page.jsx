@@ -1,0 +1,176 @@
+import Link from 'next/link';
+import Container from '@/components/ui/Container';
+import FlowSteps from '@/components/pos/FlowSteps';
+import PosClient from '@/components/pos/PosClient';
+import { createClient } from '@/lib/supabase/server';
+import { rupiah } from '@/lib/format';
+import { tenantPath } from '@/lib/tenant';
+import { requireTenant } from '@/lib/tenant.server';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata = {
+  title: 'Menu & Pesan',
+  description: 'Pilih menu favorit Anda dan pesan langsung dari meja — tanpa perlu membuat akun.',
+};
+
+/**
+ * Halaman menu untuk PELANGGAN. Sepenuhnya bisa diakses tanpa login:
+ * lihat menu → masukkan keranjang → pesan → struk keluar.
+ */
+export default async function MenuPage({ params, searchParams }) {
+  const tenant = await requireTenant(params.slug);
+  const t = (path) => tenantPath(tenant.slug, path);
+  const supabase = createClient();
+
+  const [productsRes, tablesRes] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, name, category, price, promo_price, stock, description, image_url')
+      .eq('tenant_id', tenant.id)
+      .eq('is_active', true)
+      .order('name', { ascending: true }),
+    supabase
+      .from('cafe_tables')
+      .select('id, table_no, label, area, capacity, status')
+      .eq('tenant_id', tenant.id)
+      .eq('is_active', true)
+      .order('table_no', { ascending: true }),
+  ]);
+
+  const list = productsRes.data || [];
+  const tables = tablesRes.data || [];
+  const categories = [...new Set(list.map((p) => p.category))].sort();
+  const defaultTable = typeof searchParams?.meja === 'string' ? searchParams.meja : '';
+
+  const activeTable = tables.find((t) => t.table_no === defaultTable);
+
+  /*
+    Meja bisa sampai ke halaman ini lewat dua jalan yang berbeda maknanya:
+    dipilih sendiri dari denah `/meja`, atau ditentukan oleh tempat duduk lalu
+    terbaca dari QR. Hanya jalan pertama yang layak disebut "Pilih meja" di
+    stepper — penandanya `src=qr`, dipasang oleh ScanHub & ScanIntentDialog.
+  */
+  const fromScan = searchParams?.src === 'qr' && Boolean(defaultTable);
+
+  /*
+    `mode=tambah` datang dari popup hasil scan QR. Bedanya bukan cuma kata-kata:
+    pelanggan yang menambah perlu melihat tagihan meja yang SUDAH berjalan,
+    supaya jelas tambahannya menempel ke situ dan bukan tagihan baru.
+  */
+  const modeTambah = searchParams?.mode === 'tambah' && Boolean(defaultTable);
+  let tagihan = null;
+
+  if (modeTambah) {
+    const { data } = await supabase.rpc('get_table_bill', {
+      p_tenant_slug: tenant.slug,
+      p_table_no: defaultTable,
+    });
+    const orders = data?.orders || [];
+    if (orders.length > 0) tagihan = { count: orders.length, total: Number(data?.total || 0) };
+  }
+
+  return (
+    <div className="bg-slate-50 pb-28 pt-8 sm:pt-12 lg:pb-14">
+      <Container>
+        <FlowSteps current="menu" tableNo={defaultTable} fromScan={fromScan} className="mb-8" />
+
+        <header className="mb-8">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="eyebrow">Langkah 2 dari 3 · Pesan</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Tanpa login
+            </span>
+          </div>
+
+          <h1 className="mt-4 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            {modeTambah ? `Tambah pesanan untuk Meja ${defaultTable}` : 'Mau ngopi apa hari ini?'}
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-base text-slate-500">
+            {modeTambah
+              ? 'Pilih tambahannya seperti biasa — tidak perlu memanggil pelayan. Begitu dikirim, pesanan langsung masuk ke kasir dan menempel ke tagihan meja yang sama, dibayar sekali di akhir.'
+              : 'Pilih menu, masukkan ke keranjang, lalu pesan. Kamu tidak perlu membuat akun — cukup isi nama dan nomor meja, struk langsung terbit.'}
+          </p>
+
+          {/* Tagihan yang sudah berjalan — bukti bahwa tambahan ini menyatu ke situ. */}
+          {tagihan && (
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+              <span className="font-semibold text-amber-900">
+                Tagihan berjalan Meja {defaultTable}: {tagihan.count} pesanan
+              </span>
+              <span className="font-bold text-amber-900">{rupiah(tagihan.total)}</span>
+              <Link
+                href={t(`/bayar?meja=${encodeURIComponent(defaultTable)}`)}
+                className="text-xs font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900"
+              >
+                Lihat rinciannya
+              </Link>
+            </div>
+          )}
+
+          {/* Konteks meja hasil scan QR */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            {defaultTable ? (
+              <span className="inline-flex items-center gap-2.5 rounded-2xl border border-brand-200 bg-white px-4 py-2.5 text-sm shadow-card">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+                  {defaultTable}
+                </span>
+                <span className="text-slate-600">
+                  Memesan dari <span className="font-bold text-slate-900">Meja {defaultTable}</span>
+                  {activeTable?.label ? ` · ${activeTable.label}` : ''}
+                </span>
+              </span>
+            ) : (
+              /*
+                Kalimatnya tidak lagi menjanjikan "bisa dipilih nanti di
+                keranjang" — sejak nomor meja terkunci mengikuti QR, keranjang
+                tidak punya kolom itu lagi. Yang ditawarkan sekarang jalan yang
+                benar-benar ada: pindai, atau pilih dari denah.
+              */
+              <span className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 shadow-card">
+                <span aria-hidden="true" className="text-base leading-none">📍</span>
+                <span>
+                  <span className="font-bold">Meja belum terbaca.</span> Pindai QR di mejamu, atau
+                  pilih meja yang kosong dari denah.
+                </span>
+              </span>
+            )}
+
+            <Link
+              href={t('/meja')}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 shadow-card transition hover:border-brand-200 hover:bg-brand-50"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+              {defaultTable ? 'Ganti meja' : 'Lihat meja tersedia'}
+            </Link>
+          </div>
+        </header>
+
+        {productsRes.error && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            Gagal memuat produk: {productsRes.error.message}. Pastikan variabel Supabase di{' '}
+            <code className="font-semibold">.env.local</code> sudah benar dan{' '}
+            <code className="font-semibold">supabase/schema.sql</code> sudah dijalankan.
+          </div>
+        )}
+
+        <PosClient
+          products={list}
+          categories={categories}
+          tables={tables}
+          defaultTable={defaultTable}
+          fromScan={fromScan}
+        />
+      </Container>
+    </div>
+  );
+}

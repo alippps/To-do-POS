@@ -7,6 +7,8 @@ import Button from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { createClient } from '@/lib/supabase/client';
 import { authErrorMessage } from '@/lib/authErrors';
+import { STAFF_ROLES } from '@/lib/access';
+import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
  * Hanya izinkan tujuan redirect yang berada di dalam situs ini.
@@ -23,6 +25,8 @@ function safeNext(value) {
 
 export default function LoginForm() {
   const router = useRouter();
+  const tenant = useTenant();
+  const t = useTenantHref();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get('next'));
 
@@ -50,22 +54,30 @@ export default function LoginForm() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, tenant_id')
       .eq('id', data.user.id)
       .single();
 
     /*
-      Hanya admin yang punya tujuan setelah login. Akun ber-role `user` sengaja
-      TIDAK dilempar ke /menu: sisi publik kini tanpa tombol keluar, jadi mereka
-      akan terkunci di sesi yang tidak bisa dipakai apa-apa. Cukup refresh —
-      halaman ini berganti jadi panel sesi yang menjelaskan situasinya.
+      Yang punya tujuan setelah login adalah SELURUH staf — admin maupun kasir.
+      Daftarnya diambil dari STAFF_ROLES, bukan ditulis ulang di sini, supaya
+      penambahan peran staf berikutnya tidak lagi terlewat di tempat ini.
+
+      Akun ber-role `user` sengaja TIDAK dilempar ke /menu: sisi publik tanpa
+      tombol keluar, jadi mereka akan terkunci di sesi yang tidak bisa dipakai
+      apa-apa. Cukup refresh — halaman ini berganti jadi panel sesi yang
+      menjelaskan situasinya sekaligus menyediakan tombol keluar.
     */
-    if (profile?.role !== 'admin') {
+    // Staf outlet LAIN diperlakukan sama seperti role `user`: tetap di halaman
+    // ini, dan `SessionPanel` menjelaskan kenapa dashboardnya tidak terbuka.
+    const stafDiSini = STAFF_ROLES.includes(profile?.role) && profile?.tenant_id === tenant.id;
+
+    if (!stafDiSini) {
       router.refresh();
       return;
     }
 
-    router.push(next !== '/' ? next : '/admin');
+    router.push(next !== '/' ? next : t('/admin'));
     router.refresh();
   }
 
@@ -73,7 +85,8 @@ export default function LoginForm() {
     <div>
       <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Selamat datang kembali</h1>
       <p className="mt-2 text-sm text-slate-500">
-        Masuk untuk mengelola outlet Anda. Pelanggan tidak perlu akun untuk memesan.
+        Masuk untuk mengelola <span className="font-semibold text-slate-700">{tenant.name}</span>.
+        Pelanggan tidak perlu akun untuk memesan.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
@@ -83,29 +96,30 @@ export default function LoginForm() {
           autoComplete="email"
           value={form.email}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-          placeholder="kasir@todocoffee.id"
+          placeholder="nama@emailkamu.com"
           hint="Email akun staf — bukan email pelanggan."
           required
         />
 
-        <div className="relative">
-          <Input
-            label="Kata sandi"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="current-password"
-            value={form.password}
-            onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-            placeholder="••••••••"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-[38px] text-xs font-semibold text-slate-400 transition hover:text-brand-600"
-          >
-            {showPassword ? 'Sembunyikan' : 'Lihat'}
-          </button>
-        </div>
+        <Input
+          label="Kata sandi"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          value={form.password}
+          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+          placeholder="••••••••"
+          required
+          adornment={
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-pressed={showPassword}
+              className="text-xs font-semibold text-slate-400 transition hover:text-brand-600"
+            >
+              {showPassword ? 'Sembunyikan' : 'Lihat'}
+            </button>
+          }
+        />
 
         {error && (
           <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
@@ -120,7 +134,7 @@ export default function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-slate-500">
         Belum punya akun?{' '}
-        <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
+        <Link href={t('/register')} className="font-semibold text-brand-600 hover:text-brand-700">
           Daftar gratis
         </Link>
       </p>

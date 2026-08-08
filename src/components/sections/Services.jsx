@@ -30,8 +30,13 @@ const SERVICES = [
   {
     icon: '🔐',
     title: 'Multi User & Role',
-    text: 'Akun pelanggan dan admin terpisah dengan autentikasi Supabase serta proteksi Row Level Security.',
-    points: ['Login & register', 'Role admin/user', 'Session aman'],
+    /*
+      Pelanggan tidak punya akun sama sekali di sistem ini — itu justru
+      nilai jualnya. Kalimat lama ("akun pelanggan dan admin terpisah") ikut
+      menyebut role yang sudah tidak lengkap sejak `kasir` ditambahkan.
+    */
+    text: 'Pelanggan memesan tanpa akun sama sekali. Akun hanya untuk tim Anda, dengan hak akses berjenjang dan proteksi Row Level Security.',
+    points: ['Role Admin & Kasir', 'Pelanggan tanpa login', 'Sesi aman'],
   },
   {
     icon: '☕',

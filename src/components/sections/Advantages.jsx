@@ -1,12 +1,20 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 
+/*
+  Genap enam, bukan lima.
+
+  Grid di bawah dua kolom; jumlah ganjil menyisakan satu kartu yatim di baris
+  terakhir. Item pertama pernah dihapus karena isinya bicara soal framework —
+  bahasa developer di halaman yang dibaca pemilik warung. Yang dikembalikan di
+  sini menyampaikan manfaat yang sama tanpa menyebut satu pun nama teknologi.
+*/
 const ITEMS = [
-  // {
-  //   title: 'Cepat & Ringan',
-  //   text: 'Dibangun dengan Next.js App Router. Halaman terbuka instan bahkan di jaringan warung sebelah.',
-  //   icon: '⚡',
-  // },
+  {
+    title: 'Cepat & Ringan',
+    text: 'Halaman terbuka seketika, bahkan di sinyal seadanya. Kasir tidak menunggu, antrean tidak menumpuk.',
+    icon: '⚡',
+  },
   {
     title: 'Data Aman',
     text: 'Supabase Auth + Row Level Security memastikan data transaksi hanya bisa diakses yang berhak.',

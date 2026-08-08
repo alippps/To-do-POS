@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductCard from './ProductCard';
 import CartPanel from './CartPanel';
@@ -9,7 +9,8 @@ import SearchInput from '@/components/ui/SearchInput';
 import EmptyState from '@/components/ui/EmptyState';
 import { rupiah } from '@/lib/format';
 import { promoInfo } from '@/lib/promo';
-import { createOrder } from '@/app/(site)/menu/actions';
+import { useTenant } from '@/components/tenant/TenantProvider';
+import { createOrder } from '@/app/k/[slug]/(site)/menu/actions';
 
 const SORTS = [
   { value: 'name-asc', label: 'Nama A–Z' },
@@ -24,12 +25,20 @@ const SORTS = [
  */
 const CARA_PESAN = [
   { title: 'Tambah menu', text: 'Tekan “Tambah ke keranjang” pada menu yang kamu mau.' },
-  { title: 'Isi nama & meja', text: 'Dua kolom itu ada di keranjang dan wajib diisi.' },
-  { title: 'Tekan “Pesan Sekarang”', text: 'Bukti pesanan langsung terbit — bayar di kasir.' },
+  // Nomor meja sudah terbaca dari QR, jadi yang tersisa diisi cuma namanya.
+  { title: 'Isi nama pemesan', text: 'Satu kolom di keranjang — dipakai barista memanggilmu.' },
+  { title: 'Tekan “Pesan Sekarang”', text: 'Bukti pesanan langsung terbit — bayar sesuai pilihanmu.' },
 ];
 
-export default function PosClient({ products = [], categories = [], tables = [], defaultTable = '' }) {
+export default function PosClient({
+  products = [],
+  categories = [],
+  tables = [],
+  defaultTable = '',
+  fromScan = false,
+}) {
   const router = useRouter();
+  const tenant = useTenant();
 
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('Semua');
@@ -38,16 +47,28 @@ export default function PosClient({ products = [], categories = [], tables = [],
   const [cart, setCart] = useState([]);
   const [form, setForm] = useState({
     customerName: '',
+    // Nomor meja datang dari QR/denah dan tidak pernah diketik — lihat
+    // catatan kolom terkunci di CartPanel.
     tableNo: defaultTable,
-    paymentMethod: 'cash',
+    paymentMethod: 'qris',
     note: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [receipt, setReceipt] = useState(null);
   const [receiptItems, setReceiptItems] = useState([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  /*
+    Kolom nama dipegang supaya bisa difokuskan saat pengiriman ditolak.
+
+    Keluhannya jelas: pesan "lengkapi nama pemesan" muncul di footer keranjang
+    sementara kolomnya berada di area gulir yang bisa saja sedang di luar layar.
+    Pelanggan membaca larangannya tanpa tahu harus mengetik di mana.
+  */
+  const nameRef = useRef(null);
 
   // Keranjang tampil sebagai bottom sheet di HP — kunci scroll latar saat terbuka.
   useEffect(() => {
@@ -72,9 +93,17 @@ export default function PosClient({ products = [], categories = [], tables = [],
       return cocokKategori && cocokKata;
     });
 
+    /*
+      Diurutkan berdasarkan harga yang BENAR-BENAR dibayar, bukan harga coret.
+
+      Kartu menu menampilkan `finalPrice` (harga promo bila ada), jadi
+      mengurutkan pakai `p.price` membuat "Harga termurah" tampil acak di mata
+      pelanggan: menu promo Rp 18.000 bisa berada di bawah menu biasa
+      Rp 20.000 hanya karena harga aslinya lebih mahal.
+    */
     return [...list].sort((a, b) => {
-      if (sort === 'price-asc') return a.price - b.price;
-      if (sort === 'price-desc') return b.price - a.price;
+      if (sort === 'price-asc') return promoInfo(a).finalPrice - promoInfo(b).finalPrice;
+      if (sort === 'price-desc') return promoInfo(b).finalPrice - promoInfo(a).finalPrice;
       return a.name.localeCompare(b.name);
     });
   }, [products, keyword, category, sort]);
@@ -131,21 +160,60 @@ export default function PosClient({ products = [], categories = [], tables = [],
 
   function handleFormChange(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // Pesan galat hilang begitu kolomnya disentuh — memarahi orang yang sedang
+    // memperbaiki kesalahannya tidak menolong siapa pun.
+    setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+    setError('');
   }
 
   /**
-   * Kolom wajib yang belum diisi. Dipakai dua kali: sebagai pengingat yang
-   * tampil terus di keranjang, dan sebagai penjaga sebelum pesanan dikirim —
-   * tanpa ini pesanan bisa masuk atas nama "Guest" tanpa meja, dan kasir yang
-   * kebingungan mencari pemiliknya.
+   * Penjaga sebelum pesanan dikirim.
+   *
+   * Hasilnya BUKAN satu kalimat gabungan seperti dulu ("Lengkapi dulu nama
+   * pemesan dan nomor meja"). Kalimat itu benar tapi tidak menuntun: ia tidak
+   * menunjukkan kolomnya, tidak memindahkan fokus, dan di bottom sheet HP bisa
+   * muncul jauh dari kolom yang dimaksud. Sekarang tiap kolom memegang pesannya
+   * sendiri, dan yang pertama bermasalah langsung difokuskan.
    */
-  const missing = [];
-  if (!form.customerName.trim()) missing.push('nama pemesan');
-  if (!form.tableNo) missing.push('nomor meja');
+  function periksaForm() {
+    const errors = {};
+
+    const nama = form.customerName.trim();
+    if (!nama) {
+      errors.customerName = 'Nama pemesan belum diisi.';
+    } else if (nama.length < 2) {
+      errors.customerName = 'Nama terlalu pendek — minimal 2 huruf.';
+    }
+
+    return errors;
+  }
 
   async function handleSubmit() {
-    if (missing.length > 0) {
-      setError(`Lengkapi dulu ${missing.join(' dan ')} di bawah, baru pesanan bisa dikirim.`);
+    const errors = periksaForm();
+    setFieldErrors(errors);
+
+    if (errors.customerName) {
+      setError('Nama pemesan wajib diisi supaya barista bisa memanggilmu.');
+
+      /*
+        Fokus dipindahkan, bukan cuma diwarnai merah. `scrollIntoView` menjaga
+        kolomnya benar-benar terlihat di dalam area gulir keranjang — di HP,
+        memfokuskan kolom yang berada di luar layar hanya memunculkan keyboard
+        tanpa memperlihatkan apa yang sedang diketik.
+      */
+      const el = nameRef.current;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus({ preventScroll: true });
+      }
+      return;
+    }
+
+    // Meja tidak divalidasi sebagai "kolom yang belum diisi": ia tidak pernah
+    // bisa diketik. Yang sampai ke sini tanpa nomor meja datang lewat jalan
+    // yang salah, jadi arahannya berbeda — bukan "isi", tapi "pindai".
+    if (!form.tableNo) {
+      setError('Meja belum diketahui. Pindai QR di mejamu atau pilih meja dari denah dulu.');
       return;
     }
 
@@ -153,6 +221,7 @@ export default function PosClient({ products = [], categories = [], tables = [],
     setError('');
 
     const result = await createOrder({
+      tenantSlug: tenant.slug,
       customerName: form.customerName.trim(),
       tableNo: form.tableNo,
       paymentMethod: form.paymentMethod,
@@ -193,7 +262,8 @@ export default function PosClient({ products = [], categories = [], tables = [],
       onCloseSheet={() => setSheetOpen(false)}
       loading={loading}
       error={error}
-      missing={missing}
+      fieldErrors={fieldErrors}
+      nameRef={nameRef}
     />
   );
 
@@ -341,7 +411,12 @@ export default function PosClient({ products = [], categories = [], tables = [],
             onClick={() => setSheetOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] animate-fade-up overflow-hidden rounded-t-3xl bg-white shadow-lift">
+          {/*
+            `dvh`, bukan `vh`. Keranjang berisi kolom nama & meja yang harus
+            diketik; begitu keyboard HP naik, `vh` tidak ikut menyusut dan
+            kolom yang sedang diisi bisa tertutup keyboard.
+          */}
+          <div className="absolute inset-x-0 bottom-0 max-h-[92dvh] animate-fade-up overflow-hidden rounded-t-3xl bg-white shadow-lift">
             {cartPanel}
           </div>
         </div>
@@ -352,6 +427,7 @@ export default function PosClient({ products = [], categories = [], tables = [],
         onClose={() => setReceipt(null)}
         transaction={receipt}
         items={receiptItems}
+        fromScan={fromScan}
       />
     </>
   );

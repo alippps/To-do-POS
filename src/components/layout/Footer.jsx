@@ -1,14 +1,28 @@
+'use client';
+
 import Link from 'next/link';
 import Logo from './Logo';
-import { site, waLink } from '@/lib/site';
+import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
+import { waLinkOf } from '@/lib/tenant';
 
+/*
+  Komponen klien sejak v4.
+
+  Bukan karena butuh interaktivitas — isinya tetap statis — melainkan karena
+  identitas outlet datang dari `TenantProvider`, dan context hanya terbaca di
+  sisi klien. Alternatifnya menurunkan objek tenant sebagai prop dari layout
+  server melewati setiap lapisan; untuk footer yang isinya memang cuma teks,
+  itu ongkos yang lebih besar daripada manfaatnya.
+*/
+
+// Nama halaman sama persis dengan yang dipakai navbar — lihat catatan
+// istilah di src/components/layout/Navbar.jsx.
 const COLUMNS = [
   {
     title: 'Halaman',
     links: [
       { href: '/', label: 'Home' },
-      { href: '/katalog', label: 'Katalog Menu' },
-      { href: '/menu', label: 'Menu (Fitur Utama)' },
+      { href: '/katalog', label: 'Menu' },
       { href: '/about', label: 'About' },
       { href: '/kontak', label: 'Kontak' },
     ],
@@ -18,6 +32,7 @@ const COLUMNS = [
     links: [
       { href: '/meja', label: 'Ketersediaan Meja' },
       { href: '/menu', label: 'Pesan Online' },
+      { href: '/promo', label: 'Promo Hari Ini' },
       { href: '/#qr', label: 'QR Ordering' },
       { href: '/#faq', label: 'FAQ' },
     ],
@@ -28,23 +43,36 @@ const COLUMNS = [
 ];
 
 export default function Footer() {
+  const tenant = useTenant();
+  const t = useTenantHref();
+
   return (
     <footer className="mt-24 border-t border-slate-200 bg-slate-50">
       <div className="container-page py-14">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Logo />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-500">{site.description}</p>
+            {tenant.description && (
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-500">
+                {tenant.description}
+              </p>
+            )}
             <div className="mt-6 space-y-2 text-sm text-slate-500">
-              <p className="flex items-start gap-2">
-                <span className="mt-0.5 text-brand-600">📍</span> {site.address}
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="text-brand-600">🕘</span> {site.hours}
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="text-brand-600">✉️</span> {site.email}
-              </p>
+              {tenant.address && (
+                <p className="flex items-start gap-2">
+                  <span className="mt-0.5 text-brand-600">📍</span> {tenant.address}
+                </p>
+              )}
+              {tenant.hours && (
+                <p className="flex items-center gap-2">
+                  <span className="text-brand-600">🕘</span> {tenant.hours}
+                </p>
+              )}
+              {tenant.email && (
+                <p className="flex items-center gap-2">
+                  <span className="text-brand-600">✉️</span> {tenant.email}
+                </p>
+              )}
             </div>
           </div>
 
@@ -56,7 +84,7 @@ export default function Footer() {
               <ul className="space-y-2.5 text-sm">
                 {col.links.map((link) => (
                   <li key={link.href + link.label}>
-                    <Link href={link.href} className="link-muted">
+                    <Link href={t(link.href)} className="link-muted">
                       {link.label}
                     </Link>
                   </li>
@@ -68,18 +96,29 @@ export default function Footer() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row">
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} {site.name}. Seluruh hak cipta dilindungi.
+            © {new Date().getFullYear()} {tenant.name}. Seluruh hak cipta dilindungi.
           </p>
           <div className="flex items-center gap-4 text-sm">
-            <a href={site.social.instagram} target="_blank" rel="noreferrer" className="link-muted">
-              Instagram
-            </a>
-            <a href={site.social.tiktok} target="_blank" rel="noreferrer" className="link-muted">
-              TikTok
-            </a>
-            <a href={waLink()} target="_blank" rel="noreferrer" className="font-semibold text-emerald-600 hover:text-emerald-700">
-              WhatsApp
-            </a>
+            {tenant.instagram && (
+              <a href={tenant.instagram} target="_blank" rel="noreferrer" className="link-muted">
+                Instagram
+              </a>
+            )}
+            {tenant.tiktok && (
+              <a href={tenant.tiktok} target="_blank" rel="noreferrer" className="link-muted">
+                TikTok
+              </a>
+            )}
+            {tenant.wa_number && (
+              <a
+                href={waLinkOf(tenant)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-emerald-600 hover:text-emerald-700"
+              >
+                WhatsApp
+              </a>
+            )}
           </div>
         </div>
       </div>

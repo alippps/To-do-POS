@@ -1,7 +1,8 @@
 import QRCode from 'qrcode';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
-import { site } from '@/lib/site';
+import { platform } from '@/lib/site';
+import { tenantUrl } from '@/lib/tenant';
 
 /**
  * Section QR di landing page — PENJELASAN saja.
@@ -14,28 +15,41 @@ import { site } from '@/lib/site';
  * Dirender di server: isinya tetap, jadi tidak perlu mengirim library QR ke
  * browser pengunjung.
  */
+/*
+  Empat langkah ini menceritakan alur DUDUK DULU, bukan re-order.
+
+  Pelanggan mencari tempat, duduk, lalu memesan dari mejanya sendiri — kasir
+  bukan lagi pintu masuk, melainkan tempat membayar di akhir. Pemesanan tambahan
+  memakai pintu yang sama persis dan karena itu tidak diceritakan terpisah:
+  cukup pindai lagi, dan `ScanIntentDialog` yang menyesuaikan tawarannya
+  berdasarkan ada-tidaknya tagihan berjalan di meja itu.
+*/
 const STEPS = [
   {
-    title: 'Scan QR di meja',
-    text: 'Arahkan kamera HP ke QR. Tanpa install aplikasi, tanpa buat akun.',
+    title: 'Duduk, lalu scan QR di meja',
+    text: 'Arahkan kamera HP. Tanpa install aplikasi, tanpa buat akun, tanpa antre di kasir.',
   },
   {
-    title: 'Lihat meja yang tersedia',
-    text: 'Layar langsung menampilkan denah meja beserta status kosong / terisi.',
+    title: 'Nomor meja terbaca sendiri',
+    text: 'Sistem langsung tahu ini Meja 07 — pelanggan tidak perlu mengetik atau menyebutkannya.',
   },
   {
-    title: 'Pilih menu favorit',
+    title: 'Pilih menu, langsung pesan',
     text: 'Daftar menu selalu terbaru — item yang habis otomatis tidak bisa dipesan.',
   },
   {
-    title: 'Bukti pesanan langsung terbit',
-    text: 'Barista menerima pesanan seketika; struk resminya dicetak kasir saat pembayaran.',
+    // Judul dan isinya sempat menceritakan dua langkah berbeda: judulnya soal
+    // pesanan yang masuk ke kasir, teksnya soal cara menambah pesanan.
+    title: 'Pesanan masuk ke kasir',
+    text: 'Langsung terbaca di dashboard beserta nomor mejanya. Mau nambah? Pindai lagi — tambahannya menempel ke tagihan meja itu, dibayar sekali di akhir.',
   },
 ];
 
-export default async function QrOrder() {
-  // QR contoh mengarah ke halaman ketersediaan meja tanpa nomor meja tertentu.
-  const sampleUrl = `${site.siteUrl}/meja`;
+export default async function QrOrder({ tenant }) {
+  // QR contoh mengarah ke halaman ketersediaan meja OUTLET INI, tanpa nomor
+  // meja tertentu. Slug-nya wajib ikut: tanpa itu, QR contoh di landing Kopi
+  // Pagi akan membuka denah meja milik entah siapa.
+  const sampleUrl = tenantUrl(platform.siteUrl, tenant.slug, '/meja');
 
   const dataUrl = await QRCode.toDataURL(sampleUrl, {
     width: 520,
@@ -53,8 +67,8 @@ export default async function QrOrder() {
               <SectionHeading
                 align="left"
                 eyebrow="QR Ordering"
-                title="Scan, lihat meja kosong, pesan"
-                description="Cetak QR untuk setiap meja, tempel, selesai. Pelanggan memesan sendiri tanpa login sementara kasir fokus meracik."
+                title="Duduk, pindai, pesan — tanpa antre di kasir"
+                description="QR di tiap meja adalah jalur pemesanan mandiri. Pelanggan yang baru duduk cukup memindai, memilih menu, lalu pesanannya otomatis masuk ke dashboard kasir — meja mana yang memesan sudah ikut terbaca. Mau menambah nanti? Pintunya sama, dan tambahannya menyatu ke tagihan meja itu."
               />
 
               <ol className="mt-8 space-y-5">
@@ -99,6 +113,28 @@ export default async function QrOrder() {
                   yang langsung menandai nomor mejanya.
                 </p>
               </div>
+
+              {/* Rantai perjalanan satu pesanan, dari pindaian sampai kasir. */}
+              <ol className="flex w-full max-w-xs flex-wrap items-center justify-center gap-x-1.5 gap-y-2 text-[11px] font-semibold">
+                {[
+                  'Scan QR',
+                  'Meja 07',
+                  'Pilih menu',
+                  'Tagihan Meja 07',
+                  'Kasir',
+                ].map((langkah, i, arr) => (
+                  <li key={langkah} className="flex items-center gap-1.5">
+                    <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700 ring-1 ring-brand-100">
+                      {langkah}
+                    </span>
+                    {i < arr.length - 1 && (
+                      <span aria-hidden="true" className="text-brand-300">
+                        →
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
 
               <p className="max-w-xs text-center text-[11px] leading-snug text-slate-400">
                 QR per meja dibuat dan dicetak oleh pemilik kedai dari panel pengelolaan meja.

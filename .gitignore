@@ -71,3 +71,11 @@ $RECYCLE.BIN/
 *.pem
 *.key
 *.p12
+
+# --- Playwright (E2E) ---
+# Laporan & jejak hasil test: dibuat ulang setiap kali suite dijalankan,
+# berisi screenshot kegagalan, dan cepat menggemukkan repositori.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

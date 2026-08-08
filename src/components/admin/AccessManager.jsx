@@ -9,7 +9,8 @@ import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import { formatDate } from '@/lib/format';
 import { ROLES, ASSIGNABLE_ROLES } from '@/lib/access';
-import { setUserRole } from '@/app/admin/akses/actions';
+import { useTenant } from '@/components/tenant/TenantProvider';
+import { setUserRole } from '@/app/k/[slug]/admin/akses/actions';
 
 /** Akibat nyata dari tiap pilihan — ditulis di dialog konfirmasi. */
 const PENJELASAN_ROLE = {
@@ -26,6 +27,7 @@ const PENJELASAN_ROLE = {
  */
 export default function AccessManager({ users = [], currentUserId }) {
   const router = useRouter();
+  const tenant = useTenant();
 
   const [keyword, setKeyword] = useState('');
   const [roleFilter, setRoleFilter] = useState('Semua');
@@ -52,7 +54,7 @@ export default function AccessManager({ users = [], currentUserId }) {
   async function handleConfirm() {
     if (!pending) return;
     setLoading(true);
-    const res = await setUserRole(pending.user.id, pending.nextRole);
+    const res = await setUserRole(tenant.slug, pending.user.id, pending.nextRole);
     setLoading(false);
     setPending(null);
     if (res.ok) router.refresh();

@@ -4,8 +4,9 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { rupiah } from '@/lib/format';
 import { promoInfo } from '@/lib/promo';
+import { tenantPath } from '@/lib/tenant';
 
-export default function BestSeller({ products = [] }) {
+export default function BestSeller({ tenant, products = [] }) {
   return (
     <section className="py-20 sm:py-24">
       <Container>
@@ -14,11 +15,11 @@ export default function BestSeller({ products = [] }) {
             align="left"
             eyebrow="Menu Favorit"
             title="Yang paling sering dipesan"
-            description="Data menu di bawah diambil langsung dari database Supabase — sama persis dengan yang dikelola admin."
+            description="Empat menu yang paling sering keluar dari dapur kami minggu ini. Harga dan ketersediaannya selalu yang terbaru."
             className="max-w-xl"
           />
           {/* Ke katalog (baca saja), bukan ke halaman pemesanan. */}
-          <Button href="/katalog" variant="secondary" className="shrink-0">
+          <Button href={tenantPath(tenant.slug, '/katalog')} variant="secondary" className="shrink-0">
             Lihat semua menu →
           </Button>
         </div>

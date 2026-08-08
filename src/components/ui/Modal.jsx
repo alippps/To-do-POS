@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, title, description, children, siz
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative z-10 max-h-[92vh] w-full ${width} overflow-y-auto scroll-slim rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl animate-fade-up`}
+        className={`relative z-10 max-h-[92dvh] w-full ${width} overflow-y-auto scroll-slim rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl animate-fade-up`}
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>

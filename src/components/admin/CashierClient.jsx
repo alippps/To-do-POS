@@ -12,7 +12,8 @@ import Toast from './Toast';
 import { rupiah } from '@/lib/format';
 import { promoInfo } from '@/lib/promo';
 import { tableStatus } from '@/lib/tables';
-import { createCashierOrder } from '@/app/admin/kasir/actions';
+import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
+import { createCashierOrder } from '@/app/k/[slug]/admin/kasir/actions';
 
 /**
  * Layar kasir — pelanggan yang datang langsung memesan di konter.
@@ -28,6 +29,8 @@ import { createCashierOrder } from '@/app/admin/kasir/actions';
  */
 export default function CashierClient({ products = [], tables = [], categories = [] }) {
   const router = useRouter();
+  const tenant = useTenant();
+  const hrefOutlet = useTenantHref();
 
   const [tableNo, setTableNo] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -108,7 +111,7 @@ export default function CashierClient({ products = [], tables = [], categories =
     setLoading(true);
     setError('');
 
-    const res = await createCashierOrder({
+    const res = await createCashierOrder(tenant.slug, {
       customerName,
       tableNo,
       paymentMethod,
@@ -151,7 +154,7 @@ export default function CashierClient({ products = [], tables = [], categories =
             </div>
             <div className="flex shrink-0 gap-2">
               <Link
-                href={`/struk/${encodeURIComponent(lastOrder.invoice)}`}
+                href={hrefOutlet(`/struk/${encodeURIComponent(lastOrder.invoice)}`)}
                 className="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
               >
                 Buka struk
