@@ -43,6 +43,7 @@ Menambah outlet baru cukup satu baris `insert` — lihat [bagian 11 di `supabase
 | **QR Code** | [`qrcode`](https://www.npmjs.com/package/qrcode) | 1.5 | Generator QR per nomor meja (PNG) |
 | **Font** | Plus Jakarta Sans · Fraunces | — | Dimuat via Google Fonts, fallback ke font sistem |
 | **Bahasa** | JavaScript (JSX) + SQL (PL/pgSQL) | ES2022 | — |
+| **Lint** | ESLint + `eslint-config-next` | 8.57 / 14.2 | `no-undef` & aturan React/Next — ikut jalan saat `npm run build` |
 | **Runtime** | Node.js | ≥ 18 (diuji di 22) | — |
 
 Tanpa dependensi UI pihak ketiga — seluruh komponen (Button, Modal, Badge, Field, Toast,
@@ -56,7 +57,7 @@ Table, Card, dsb.) ditulis sendiri di `src/components/ui/`.
 | --- | --- |
 | **Landing page** | Navbar · Hero · Tentang CoffeeShop & Software House · Layanan Utama · Keunggulan · Menu Favorit · Portfolio · Testimoni · QR Pemesanan · FAQ · CTA WhatsApp · Footer |
 | **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja (ikut membawa `?meja=` supaya ajakan pesannya kembali ke meja yang sama) · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · Kontak · About |
-| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `admin`. Dibuka lewat URL langsung `/login` & `/register`; tidak ditautkan dari situs publik |
+| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `kasir` / `admin`. `/login` dijangkau lewat tautan **Masuk Staf** di baris paling bawah footer; `/register` tetap hanya lewat URL langsung |
 | **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · **Kasir** (buat pesanan untuk pelanggan walk-in) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status + generator QR) · Daftar Transaksi · **Hak Akses** |
 | **QR Ordering** | Landing page menjelaskan alurnya + satu QR contoh. **Generator kartu meja (unduh PNG siap cetak: nomor meja besar + QR + instruksi) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
 
@@ -149,26 +150,49 @@ yang sedang login.
 | Navbar: tautan **Dashboard** (untuk admin) | Dihapus |
 | Navbar: tautan **Login staf** | Dihapus |
 | Navbar: chip identitas akun + tombol **Keluar** | Dihapus |
-| Footer: kolom **Staf & Admin** (`/login`, `/register`, `/admin`) | Dihapus |
+| Footer: kolom **Staf & Admin** (`/login`, `/register`, `/admin`) | Dihapus — disisakan **satu** tautan `Masuk Staf` → `/login` di baris paling bawah |
 | Menu Favorit: “tambahkan produk dari Dashboard Admin” | Diganti kalimat netral untuk pelanggan |
 | Section QR: pilih meja mana pun → **unduh QR-nya** | Generator pindah ke `/admin/meja`; landing tinggal penjelasan + 1 QR contoh |
 
-**Pintu masuk staf:** ketik `/login` langsung di address bar. Halaman itu tidak ditautkan
-dari mana pun, tapi tetap publik dan berfungsi normal — tidak ada rahasia yang bergantung
-pada URL ini, seluruh proteksi tetap dijaga 4 lapis (lihat [Keamanan](#-keamanan)).
+**Pintu masuk staf: tautan `Masuk Staf` di baris paling bawah footer.** Satu tautan, ke
+`/login` saja, dan sengaja hanya di sana.
+
+Menghapusnya sama sekali — seperti sebelumnya — memindahkan cara masuk ke luar produk:
+kasir baru di hari pertamanya harus diberi tahu lisan untuk mengetik `/login`. Sebaliknya,
+menaruhnya di navbar bersebelahan dengan **Pesan Sekarang** adalah cara paling cepat
+membuat pelanggan yang baru memindai QR mengira ia harus punya akun dulu — padahal seluruh
+alur pemesanan justru dibangun supaya ia tidak perlu. Footer bagian bawah menyelesaikan
+keduanya: staf tahu tempat mencarinya, pelanggan yang sedang memesan tidak pernah
+menggulung sejauh itu.
+
+`/register` tetap tidak ditautkan dari mana pun — penambahan staf berikutnya memang
+lewat `/admin/akses`, bukan pendaftaran mandiri. Keduanya tetap publik dan berfungsi
+normal: tidak ada rahasia yang bergantung pada URL-nya, seluruh proteksi tetap dijaga
+4 lapis (lihat [Keamanan](#-keamanan)).
 
 **Kendali sesi pindah ke `/login`.** Karena sisi publik tidak lagi punya tombol Keluar,
 `/login` berperan ganda: saat belum ada sesi ia menampilkan form login, saat sesi aktif ia
-menampilkan panel sesi — siapa yang masuk, role-nya, tombol **Buka Dashboard Admin** (khusus
-admin), dan tombol **Keluar**. Tanpa panel ini akun ber-role `user` akan terkunci: tidak bisa
-membuka `/admin`, tidak bisa keluar dari mana pun.
+menampilkan panel sesi — siapa yang masuk, role-nya, tombol masuk area staf, dan tombol
+**Keluar**. Tanpa panel ini akun ber-role `user` akan terkunci: tidak bisa membuka `/admin`,
+tidak bisa keluar dari mana pun.
+
+**Tujuan sesudah masuk ditentukan role, bukan satu alamat untuk semua.** Admin mendarat di
+Dashboard (`/admin`), kasir langsung di layar kasir (`/admin/kasir`). Alasannya sederhana:
+yang dikerjakan kasir sepanjang shift adalah memasukkan pesanan, sedangkan dashboard berisi
+angka ringkasan yang gunanya bagi pemilik — mengantar kasir ke sana berarti menyuruhnya
+menekan satu menu lagi, setiap kali, seumur pemakaian. Pemetaannya ada di satu tempat,
+`STAFF_HOME` di [`src/lib/access.js`](src/lib/access.js), dan dipakai bersama oleh form
+login maupun panel sesi (yang tombolnya ikut berganti jadi **Buka Layar Kasir**) — supaya
+keduanya tidak bisa berbeda pendapat soal ke mana seorang kasir seharusnya pergi. Staf yang
+tiba lewat `?next=` tetap diantar ke halaman yang tadi ia coba buka.
 
 `SiteLayout` juga tidak lagi memanggil `getSessionUser()` — tidak ada elemen publik yang
 berubah karena status login, jadi query sesi per request itu murni beban tanpa guna.
 
 > **Catatan untuk penguji/juri:** halaman **Login** dan **Register** tetap ada dan tetap
-> memenuhi ketentuan lomba — buka `/login` dan `/register` langsung. Keduanya tidak
-> ditautkan dari situs publik semata-mata karena isolasi ini.
+> memenuhi ketentuan lomba. **Login** dijangkau lewat tautan **Masuk Staf** di baris paling
+> bawah footer (atau buka `/login` langsung); **Register** hanya lewat URL langsung
+> `/register` — tidak ditautkan, semata-mata karena isolasi ini.
 
 ---
 
@@ -369,8 +393,8 @@ set role = 'admin', tenant_id = (select id from public.tenants where slug = 'to-
 where id = (select id from auth.users where email = 'emailkamu@gmail.com');
 ```
 
-3. Buka **`/k/to-do/login`** langsung lewat address bar (tautannya sengaja tidak ada di
-   situs publik — lihat [Isolasi sisi pelanggan ↔ admin](#-isolasi-sisi-pelanggan--admin)),
+3. Buka **`/k/to-do/login`** — lewat tautan **Masuk Staf** di baris paling bawah footer,
+   atau langsung dari address bar (lihat [Isolasi sisi pelanggan ↔ admin](#-isolasi-sisi-pelanggan--admin)),
    lalu masuk. Setelah masuk sebagai admin outlet itu, halaman tersebut menampilkan
    tombol **Buka Dashboard**.
 4. Admin berikutnya cukup ditambahkan lewat **`/k/to-do/admin/akses`** — tidak perlu SQL lagi.
@@ -509,7 +533,7 @@ src/
 | Sistem **U**pdate | ✅ | `updateProduct()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()` |
 | Sistem **D**elete | ✅ | `deleteProduct()`, `deleteTable()`, `deleteTransaction()` |
 | Sistem **S**earch | ✅ | `ProductManager`, `TableManager`, `TransactionManager`, `AccessManager`, `PosClient` |
-| Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` (buka langsung; tidak ditautkan dari situs publik, lihat [Isolasi](#-isolasi-sisi-pelanggan--admin)) |
+| Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` (tautan **Masuk Staf** di baris paling bawah footer, lihat [Isolasi](#-isolasi-sisi-pelanggan--admin)) |
 | Halaman **Register** | ✅ | `/register` — `src/app/(auth)/register/page.jsx` (buka langsung) |
 | User Side — **Home** | ✅ | `/` — `src/app/(site)/page.jsx` |
 | User Side — **Fitur Utama (jual beli)** | ✅ | `/menu` — `src/app/(site)/menu/page.jsx` (rute lama `/fitur` diarahkan ke sini). **Di antarmuka pelanggan halaman ini bernama “Pesan”** — istilah “Fitur Utama” milik dokumen lomba, bukan bahasa yang dimengerti pengunjung kedai |
@@ -619,3 +643,19 @@ npm run start    # jalankan hasil build
 npm run lint     # cek lint
 npm test         # automation test E2E (Playwright)
 ```
+
+### Tentang `npm run lint`
+
+Konfigurasinya di [`.eslintrc.json`](.eslintrc.json), memperluas `eslint:recommended`
+**dan** `next/core-web-vitals`. Yang pertama sengaja disertakan: `next/core-web-vitals`
+sendirian tidak menyalakan **`no-undef`**, padahal justru aturan itu yang menangkap
+nama yang dipakai tanpa diimpor.
+
+Kasus nyatanya pernah terjadi — `TransactionManager` memanggil `PAYMENT_LABEL` sementara
+yang diimpor `PAYMENT_LABEL_SHORT`, dan `/admin/transaksi` gagal dirender setiap kali ada
+minimal satu transaksi. `next build` tidak menangkapnya: nama yang tidak ada baru meledak
+saat dirender, bukan saat di-bundle. Sejak lint terpasang, kekeliruan yang sama berhenti
+sebagai **error** dengan kode keluar bukan-nol.
+
+Cakupannya `src` dan `tests` (diatur lewat `eslint.dirs` di `next.config.mjs`) — `next lint`
+bawaan tidak menyentuh folder test.

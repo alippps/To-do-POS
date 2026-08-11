@@ -285,7 +285,7 @@ export default function TransactionManager({ transactions = [], canDelete = fals
 
                 <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                   <span className="text-xs text-slate-400">
-                    {PAYMENT_LABEL[t.payment_method] || t.payment_method}
+                    {PAYMENT_LABEL_SHORT[t.payment_method] || t.payment_method}
                   </span>
                   <span className="text-lg font-extrabold text-slate-900">{rupiah(t.total)}</span>
                 </div>

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
@@ -56,8 +57,17 @@ export function createPublicClient() {
  * `tenant_id` ikut dibaca sejak v4: role saja tidak lagi menjawab "boleh masuk
  * atau tidak". Seorang admin memang admin — tapi hanya di outletnya sendiri,
  * dan membuka /k/outlet-lain/admin harus tetap ditolak.
+ *
+ * DIBUNGKUS `cache()` — memo per permintaan, bukan cache lintas permintaan.
+ * Layout dan halaman di dalamnya sering-sering butuh jawaban yang sama persis:
+ * `(auth)/layout.jsx` perlu tahu apakah pembukanya staf, dan `login/page.jsx`
+ * di dalamnya menanyakan hal yang identik. Tanpa memo ini, satu kali membuka
+ * /login berarti dua kali `auth.getUser()` ke server Supabase plus dua kueri
+ * `profiles` — untuk jawaban yang tidak mungkin berbeda dalam satu render.
+ * Memo dibuang begitu permintaannya selesai, jadi tidak ada sesi basi yang
+ * ikut terbawa ke permintaan berikutnya.
  */
-export async function getSessionUser() {
+export const getSessionUser = cache(async () => {
   const supabase = createClient();
   const {
     data: { user },
@@ -72,7 +82,7 @@ export async function getSessionUser() {
     .single();
 
   return { user, profile };
-}
+});
 
 /**
  * Penjaga area admin sebuah outlet: mengembalikan profil hanya bila akun yang

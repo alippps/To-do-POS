@@ -148,7 +148,10 @@ export default function TableQrPanel({ tenant, tables = [] }) {
     return () => {
       cancelled = true;
     };
-  }, [dataUrl, tableNo]);
+    // `tenant.name` ikut jadi dependensi karena memang dipakai menggambar kartunya:
+    // tanpa itu, kartu yang sudah tergambar tetap memuat nama outlet lama kalau
+    // namanya berubah di tengah sesi.
+  }, [dataUrl, tableNo, tenant.name]);
 
   function handleDownload() {
     if (!cardUrl) return;

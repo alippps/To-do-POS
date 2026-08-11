@@ -37,9 +37,11 @@ const COLUMNS = [
       { href: '/#faq', label: 'FAQ' },
     ],
   },
-  // Kolom "Staf & Admin" sengaja dihapus. Footer sisi publik tidak boleh
-  // memuat tautan ke /login, /register, maupun /admin — lihat catatan
-  // isolasi di src/components/layout/Navbar.jsx.
+  // Tidak ada kolom "Staf & Admin" di sini, dan itu disengaja: daftar tautan
+  // yang sejajar dengan halaman pelanggan membuat pintu staf terbaca sebagai
+  // salah satu langkah pemesanan. Yang ada hanya SATU tautan "Masuk Staf" di
+  // baris paling bawah — lihat catatan di dekatnya. `/register` dan `/admin`
+  // tetap tidak pernah ditautkan dari sisi publik.
 ];
 
 export default function Footer() {
@@ -95,9 +97,37 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row">
-          <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} {tenant.name}. Seluruh hak cipta dilindungi.
-          </p>
+          <div className="flex flex-col items-center gap-x-4 gap-y-2 sm:flex-row">
+            <p className="text-sm text-slate-500">
+              © {new Date().getFullYear()} {tenant.name}. Seluruh hak cipta dilindungi.
+            </p>
+
+            {/*
+              Satu-satunya tautan ke sisi staf dari seluruh halaman publik.
+
+              Tempatnya di baris paling bawah, bukan di navbar: pelanggan yang
+              baru memindai QR di mejanya tidak pernah menggulung sejauh ini di
+              tengah memesan, sedangkan kasir yang mencarinya tahu footer adalah
+              tempat yang lazim. Menaruhnya di navbar — bersebelahan dengan
+              "Pesan Sekarang" — adalah cara paling cepat membuat pelanggan
+              mengira ia harus punya akun dulu, padahal justru sebaliknya.
+
+              Satu tautan untuk SEMUA staf, bukan satu per role: form login-nya
+              memang cuma satu, dan role-lah yang menentukan tujuannya setelah
+              masuk (STAFF_HOME di src/lib/access.js).
+
+              Diletakkan di sisi KIRI, sebaris dengan hak cipta, bukan ikut ke
+              kelompok kanan bersama kanal sosial. Tombol WhatsApp mengambang
+              (`fixed bottom-* right-*`, lihat WhatsappFloat.jsx) menutupi sudut
+              kanan-bawah tepat ketika halaman digulung sampai habis — persis
+              keadaan saat orang sedang mencari tautan ini.
+            */}
+            <span aria-hidden className="hidden h-4 w-px bg-slate-300 sm:block" />
+            <Link href={t('/login')} className="link-muted text-sm">
+              Masuk Staf
+            </Link>
+          </div>
+
           <div className="flex items-center gap-4 text-sm">
             {tenant.instagram && (
               <a href={tenant.instagram} target="_blank" rel="noreferrer" className="link-muted">

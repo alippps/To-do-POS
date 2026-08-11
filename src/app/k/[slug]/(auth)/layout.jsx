@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import Logo from '@/components/layout/Logo';
+import { STAFF_ROLES } from '@/lib/access';
+import { getSessionUser } from '@/lib/supabase/server';
 import { tenantPath } from '@/lib/tenant';
 import { requireTenant } from '@/lib/tenant.server';
 
@@ -12,6 +14,23 @@ const POINTS = [
 
 export default async function AuthLayout({ params, children }) {
   const tenant = await requireTenant(params.slug);
+
+  /*
+    Ajakan "pesan tanpa akun" di bawah ditujukan kepada satu orang saja:
+    pelanggan yang tersesat ke form login dan mengira harus mendaftar dulu
+    sebelum bisa memesan kopi. Admin dan kasir yang sesinya sedang aktif jelas
+    bukan orang itu — mereka membuka halaman ini untuk masuk ke dashboard atau
+    untuk keluar dari sesi, dan `SessionPanel` sudah menyediakan keduanya
+    lengkap dengan tautannya sendiri ke halaman pemesanan pelanggan.
+
+    Yang dipakai cuma role, bukan "staf di outlet ini". Admin outlet lain tetap
+    seorang admin; menawarinya "cuma mau pesan kopi?" sama salah sasarannya.
+
+    `getSessionUser()` di-memo per permintaan, jadi pertanyaan yang sama dari
+    halaman di dalam layout ini tidak menambah satu pun perjalanan ke Supabase.
+  */
+  const { profile } = await getSessionUser();
+  const pembukanyaStaf = STAFF_ROLES.includes(profile?.role);
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -61,19 +80,21 @@ export default async function AuthLayout({ params, children }) {
             Penegasan penting: login ini untuk STAF/ADMIN.
             Pelanggan yang cuma mau memesan sama sekali tidak butuh akun.
           */}
-          <div className="mt-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-4 text-center">
-            <p className="text-sm font-semibold text-slate-800">Cuma mau pesan kopi?</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Pelanggan <span className="font-semibold">tidak perlu akun</span>. Langsung pilih meja
-              dan pesan dari halaman menu.
-            </p>
-            <Link
-              href={tenantPath(tenant.slug, '/meja')}
-              className="mt-3 inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
-            >
-              Pesan tanpa login →
-            </Link>
-          </div>
+          {!pembukanyaStaf && (
+            <div className="mt-8 rounded-2xl border border-brand-100 bg-brand-50/60 p-4 text-center">
+              <p className="text-sm font-semibold text-slate-800">Cuma mau pesan kopi?</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Pelanggan <span className="font-semibold">tidak perlu akun</span>. Langsung pilih
+                meja dan pesan dari halaman menu.
+              </p>
+              <Link
+                href={tenantPath(tenant.slug, '/meja')}
+                className="mt-3 inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+              >
+                Pesan tanpa login →
+              </Link>
+            </div>
+          )}
 
           <p className="mt-6 text-center text-sm">
             <Link href={tenantPath(tenant.slug)} className="link-muted">

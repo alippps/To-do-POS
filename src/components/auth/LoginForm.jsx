@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { createClient } from '@/lib/supabase/client';
 import { authErrorMessage } from '@/lib/authErrors';
-import { STAFF_ROLES } from '@/lib/access';
+import { STAFF_ROLES, staffHomePath } from '@/lib/access';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
@@ -77,7 +77,13 @@ export default function LoginForm() {
       return;
     }
 
-    router.push(next !== '/' ? next : t('/admin'));
+    /*
+      Tanpa `next`, tujuannya ditentukan role — kasir mendarat di layar kasir,
+      admin di dashboard (STAFF_HOME). Yang datang dengan `next` tetap
+      diantar ke halaman yang tadi ia coba buka; kalau ternyata di luar
+      wewenangnya, middleware yang mengembalikannya.
+    */
+    router.push(next !== '/' ? next : t(staffHomePath(profile.role)));
     router.refresh();
   }
 

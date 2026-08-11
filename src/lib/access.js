@@ -56,6 +56,28 @@ export const ADMIN_PAGES = {
   user: [],
 };
 
+/**
+ * Halaman yang dibuka tiap role staf begitu ia masuk — bukan selalu dashboard.
+ *
+ * Kasir diarahkan ke layar kasir, bukan ke Dashboard: yang dikerjakannya
+ * sepanjang shift adalah memasukkan pesanan, sedangkan dashboard berisi angka
+ * ringkasan yang gunanya bagi pemilik. Admin tetap ke dashboard karena
+ * pekerjaannya memang bermula dari melihat keadaan hari itu.
+ *
+ * Tiap tujuan di sini WAJIB ada di ADMIN_PAGES role yang sama (lihat tepat di
+ * atas). Kalau tidak, login berakhir di lemparan balik oleh middleware — dan
+ * gejalanya terlihat seperti login gagal, bukan seperti salah tujuan.
+ */
+export const STAFF_HOME = {
+  admin: '/admin',
+  kasir: '/admin/kasir',
+};
+
+/** Tujuan `role` sesudah login, TANPA awalan outlet. */
+export function staffHomePath(role) {
+  return STAFF_HOME[role] || '/admin';
+}
+
 /** Role apa pun yang berhak masuk area /admin sama sekali. */
 export const STAFF_ROLES = ['admin', 'kasir'];
 

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 import { initials } from '@/lib/format';
-import { STAFF_ROLES } from '@/lib/access';
+import { STAFF_ROLES, staffHomePath } from '@/lib/access';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
@@ -63,8 +63,14 @@ export default function SessionPanel({ email, fullName, role, outletSendiri = tr
 
       {isStaf ? (
         <div className="mt-5 space-y-3">
-          <Button href={t('/admin')} size="lg" className="w-full">
-            Buka Dashboard
+          {/*
+            Tujuan & tulisannya mengikuti role, sama seperti sesudah login
+            (STAFF_HOME) — kalau tombol ini tetap "Buka Dashboard" ke /admin,
+            kasir yang sudah masuk mendarat di tempat berbeda dari kasir yang
+            baru saja masuk, lewat halaman yang sama persis.
+          */}
+          <Button href={t(staffHomePath(role))} size="lg" className="w-full">
+            {role === 'kasir' ? 'Buka Layar Kasir' : 'Buka Dashboard'}
           </Button>
           <Button variant="secondary" size="lg" className="w-full" onClick={handleLogout} disabled={loading}>
             {loading ? 'Keluar...' : 'Keluar'}

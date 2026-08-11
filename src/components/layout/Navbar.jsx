@@ -17,7 +17,10 @@ import { useTenantHref } from '@/components/tenant/TenantProvider';
  * ketika yang membuka adalah admin. Sisi publik hanya melayani pemesanan.
  *
  * Konsekuensinya yang harus diingat saat menyunting berkas ini:
- *   - Pintu masuk staf hanya lewat URL langsung `/login` (tidak ditautkan).
+ *   - Pintu masuk staf ada SATU dan bukan di sini: tautan "Masuk Staf" di
+ *     baris paling bawah footer (src/components/layout/Footer.jsx). Alasan
+ *     penempatannya ditulis di sana; yang penting di berkas ini, ia tidak
+ *     boleh ikut naik ke navbar.
  *   - Kendali sesi (siapa yang masuk, tombol keluar) ada di `/login` dan di
  *     AdminShell — bukan di sini. Jangan dikembalikan ke navbar.
  */

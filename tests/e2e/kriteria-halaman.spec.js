@@ -33,17 +33,59 @@ test.describe('Login & Register', () => {
   });
 
   /*
-    Isolasi yang disengaja, bukan kelalaian: `/login` dan `/register` tidak
-    ditautkan dari sisi publik supaya identitas staf tidak bocor ke antarmuka
-    pelanggan. Ditulis sebagai test agar keputusan itu tidak diam-diam
-    dibatalkan oleh perubahan navbar/footer di kemudian hari.
+    Isolasi yang disengaja, bukan kelalaian — dan sejak ada tautan "Masuk Staf"
+    di footer, isolasinya punya batas yang tepat, bukan sekadar "tidak ada di
+    mana-mana":
+
+      - NAVBAR tetap nol tautan staf. Di sanalah pelanggan membaca apa yang
+        harus ia lakukan, dan tombol Login di sebelah "Pesan Sekarang" membuat
+        ia mengira harus punya akun dulu.
+      - FOOTER memuat TEPAT SATU tautan, yaitu ke `/login`. Bukan nol, supaya
+        kasir tidak perlu menghafal URL; bukan lebih dari satu, supaya
+        pendaftaran dan dashboard tidak ikut merembes ke sisi pelanggan.
+
+    Ditulis sebagai test agar batas itu tidak bergeser diam-diam ke salah satu
+    arah — baik tautannya hilang lagi maupun berkembang jadi kolom "Staf".
   */
-  test('tidak ditautkan dari sisi publik', async ({ page }) => {
+  test('pintu staf: nol di navbar, tepat satu di footer', async ({ page }) => {
     await page.goto(url('/'));
+
     for (const p of ['/login', '/register', '/admin']) {
       await expect(page.locator(`header a[href="${url(p)}"]`)).toHaveCount(0);
+    }
+
+    await expect(page.locator(`footer a[href="${url('/login')}"]`)).toHaveCount(1);
+    await expect(page.getByRole('link', { name: 'Masuk Staf' })).toBeVisible();
+
+    for (const p of ['/register', '/admin']) {
       await expect(page.locator(`footer a[href="${url(p)}"]`)).toHaveCount(0);
     }
+
+    /*
+      `toBeVisible()` saja tidak cukup untuk tautan ini.
+
+      Tombol WhatsApp mengambang (`fixed bottom-* right-*`) menempati sudut
+      kanan-bawah layar, dan justru menutupi footer ketika halaman digulung
+      sampai habis — persis keadaan saat orang mencari pintu masuk staf.
+      Playwright menganggap elemen yang tertimpa tetap "visible", jadi versi
+      pertama tautan ini lolos test padahal di layar tidak bisa ditekan.
+      Yang ditanyakan di bawah adalah pertanyaan yang sebenarnya: kalau
+      seseorang menekan titik tengah tautan itu, dia yang kena atau bukan.
+    */
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const bisaDitekan = await page.evaluate(() => {
+      const a = [...document.querySelectorAll('footer a')].find(
+        (x) => x.textContent.trim() === 'Masuk Staf'
+      );
+      const r = a.getBoundingClientRect();
+      const atas = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return a === atas || a.contains(atas);
+    });
+    expect(bisaDitekan, '"Masuk Staf" tertimpa elemen lain saat digulung ke dasar').toBe(true);
+
+    await page.getByRole('link', { name: 'Masuk Staf' }).click();
+    await expect(page).toHaveURL(url('/login'));
   });
 });
 
