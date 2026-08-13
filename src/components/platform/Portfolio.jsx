@@ -1,6 +1,7 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import Badge from '@/components/ui/Badge';
+import { platform } from '@/lib/site';
 
 const PROJECTS = [
   {
@@ -31,12 +32,12 @@ const PROJECTS = [
 
 export default function Portfolio() {
   return (
-    <section id="portfolio" className="bg-slate-50/70 py-20 sm:py-24">
+    <section id="portfolio" className="py-20 sm:py-24">
       <Container>
         <SectionHeading
           eyebrow="Portfolio"
           title="Sudah dipakai bisnis seperti Anda"
-          description="Beberapa mitra yang tumbuh bersama sistem To Do."
+          description={`Beberapa mitra yang tumbuh bersama ${platform.name}.`}
         />
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">

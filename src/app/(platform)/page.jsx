@@ -1,0 +1,56 @@
+import PlatformHero from '@/components/platform/PlatformHero';
+import Services from '@/components/platform/Services';
+import HowItWorks from '@/components/platform/HowItWorks';
+import Advantages from '@/components/platform/Advantages';
+import Portfolio from '@/components/platform/Portfolio';
+import Testimonials from '@/components/platform/Testimonials';
+import OutletDirectory from '@/components/platform/OutletDirectory';
+import Faq from '@/components/platform/Faq';
+import PlatformContact from '@/components/platform/PlatformContact';
+import PlatformCta from '@/components/platform/PlatformCta';
+import { platform } from '@/lib/site';
+import { listTenants } from '@/lib/tenant.server';
+
+/*
+  Landing SISTEM — dan sejak v6, hanya sistem.
+
+  Sampai v5 alamat ini cuma sebuah direktori: satu daftar kartu outlet, tanpa
+  penjelasan apa pun tentang apa yang dijual. Seluruh cerita produknya —
+  layanan, keunggulan, portfolio, testimoni, FAQ — justru menumpang di landing
+  TIAP OUTLET, sehingga pengunjung Roti Bakar 88 yang cuma ingin melihat menu
+  malah membaca portfolio sebuah software house.
+
+  Dua pembaca itu sekarang punya halamannya masing-masing. Yang di sini:
+  pemilik usaha yang sedang menimbang. Yang di /k/<slug>: pelanggan yang sedang
+  duduk di kedai.
+
+  Direktori outletnya tetap tinggal di sini sebagai satu section — pelanggan
+  yang mengetik domainnya begitu saja tetap butuh menemukan kedainya, dan bagi
+  calon mitra daftar itu sekaligus jadi bukti bahwa sistemnya benar-benar
+  dipakai.
+*/
+export const revalidate = 60;
+
+export const metadata = {
+  title: `${platform.name} — ${platform.tagline}`,
+  description: platform.description,
+};
+
+export default async function PlatformLandingPage() {
+  const outlets = await listTenants();
+
+  return (
+    <>
+      <PlatformHero outletCount={outlets.length} />
+      <Services />
+      <HowItWorks />
+      <Advantages />
+      <Portfolio />
+      <Testimonials />
+      <OutletDirectory outlets={outlets} />
+      <Faq />
+      <PlatformContact />
+      <PlatformCta />
+    </>
+  );
+}

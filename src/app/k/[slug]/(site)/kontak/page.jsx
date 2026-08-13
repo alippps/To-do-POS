@@ -2,14 +2,30 @@ import Container from '@/components/ui/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ContactForm from '@/components/sections/ContactForm';
-import Faq from '@/components/sections/Faq';
-import { tenantPath, waLinkOf } from '@/lib/tenant';
+import { waLinkOf } from '@/lib/tenant';
 import { requireTenant } from '@/lib/tenant.server';
 
-export const metadata = {
-  title: 'Kontak',
-  description: 'Hubungi kami untuk pertanyaan seputar menu, pemesanan, dan acara.',
-};
+/*
+  Kontak KEDAI — kritik, saran, dan pertanyaan pelanggan.
+
+  Yang lama menyapa dengan "Mari ngobrol soal kedai Anda" dan menawarkan
+  "konsultasi pertama gratis, tanpa kewajiban apa pun", lalu ditutup FAQ tentang
+  keamanan data dan Row Level Security. Itu halaman kontak sebuah vendor,
+  dipasang di kedai — dan pelanggan yang mau melaporkan pesanannya keliru
+  membaca tawaran konsultasi bisnis.
+
+  FAQ sistemnya pindah ke landing platform. Yang menggantikannya di sini adalah
+  hal yang memang dicari pelanggan sebuah warung: ke mana mengeluh, ke mana
+  bertanya, dan di mana akun sosial medianya.
+*/
+export async function generateMetadata({ params }) {
+  const tenant = await requireTenant(params.slug);
+
+  return {
+    title: `Kontak ${tenant.name}`,
+    description: `Kirim kritik, saran, atau pertanyaan untuk ${tenant.name}.`,
+  };
+}
 
 /** Kanal kontak dibangun dari data outlet — yang kosong tidak ditampilkan. */
 function channelsOf(tenant) {
@@ -31,9 +47,19 @@ function channelsOf(tenant) {
   ].filter(Boolean);
 }
 
+/** Akun sosial outlet. Nama kanalnya ditulis, bukan cuma ikonnya. */
+function socialsOf(tenant) {
+  return [
+    tenant.instagram && { label: 'Instagram', href: tenant.instagram, icon: '📷' },
+    tenant.tiktok && { label: 'TikTok', href: tenant.tiktok, icon: '🎵' },
+    tenant.maps && { label: 'Google Maps', href: tenant.maps, icon: '🗺️' },
+  ].filter(Boolean);
+}
+
 export default async function KontakPage({ params }) {
   const tenant = await requireTenant(params.slug);
   const CHANNELS = channelsOf(tenant);
+  const SOCIALS = socialsOf(tenant);
 
   return (
     <>
@@ -44,11 +70,11 @@ export default async function KontakPage({ params }) {
               Kontak
             </span>
             <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-              Mari ngobrol soal kedai Anda
+              Kritik & saran untuk {tenant.name}
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-slate-500">
-              Isi formulir di bawah atau langsung sapa kami di WhatsApp. Konsultasi pertama gratis, tanpa
-              kewajiban apa pun.
+              Ada yang kurang pas dengan pesananmu, ada menu yang ingin kamu usulkan, atau sekadar
+              mau bilang terima kasih? Tulis di sini — semuanya kami baca.
             </p>
           </div>
         </Container>
@@ -60,22 +86,25 @@ export default async function KontakPage({ params }) {
             <ContactForm />
 
             <div className="space-y-5">
-              <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                <h2 className="text-lg font-bold">Lebih suka chat?</h2>
-                <p className="mt-2 text-sm text-emerald-50">
-                  Tim kami membalas rata-rata dalam 15 menit pada jam kerja.
-                </p>
-                <Button
-                  as="a"
-                  href={waLinkOf(tenant)}
-                  target="_blank"
-                  rel="noreferrer"
-                  variant="inverse"
-                  className="mt-5 w-full"
-                >
-                  Konsultasi Gratis via WhatsApp
-                </Button>
-              </Card>
+              {tenant.wa_number && (
+                <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                  <h2 className="text-lg font-bold">Butuh jawaban cepat?</h2>
+                  <p className="mt-2 text-sm text-emerald-50">
+                    Untuk hal yang mendesak — pesanan yang sedang berjalan, meja untuk rombongan —
+                    WhatsApp lebih cepat daripada formulir.
+                  </p>
+                  <Button
+                    as="a"
+                    href={waLinkOf(tenant)}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="inverse"
+                    className="mt-5 w-full"
+                  >
+                    Chat via WhatsApp
+                  </Button>
+                </Card>
+              )}
 
               <Card className="space-y-4">
                 <h2 className="text-lg font-bold text-slate-900">Informasi kontak</h2>
@@ -105,35 +134,45 @@ export default async function KontakPage({ params }) {
                 ))}
               </Card>
 
-              {/*
-                Ajakan diarahkan ke katalog, bukan ke halaman pemesanan.
+              {SOCIALS.length > 0 && (
+                <Card className="space-y-3">
+                  <h2 className="text-lg font-bold text-slate-900">Sosial media kami</h2>
+                  <p className="text-sm leading-snug text-slate-500">
+                    Menu baru, promo, dan jam buka yang berubah biasanya kami umumkan lebih dulu di
+                    sini.
+                  </p>
+                  <div className="space-y-2 pt-1">
+                    {SOCIALS.map((s) => (
+                      <a
+                        key={s.label}
+                        href={s.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700"
+                      >
+                        <span aria-hidden="true">{s.icon}</span>
+                        {s.label}
+                        <span aria-hidden="true" className="ml-auto text-slate-300">
+                          →
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </Card>
+              )}
 
-                Kalimat lama ("data yang Anda buat langsung tersimpan di
-                sistem") mengundang calon klien membuat pesanan sungguhan —
-                dan setiap percobaan itu mendarat sebagai tagihan `pending` di
-                antrean kasir yang sedang bekerja. Katalog memperlihatkan
-                sistemnya tanpa menitipkan pekerjaan palsu ke siapa pun.
+              {/*
+                Tanpa kartu "Lihat Katalog Menu" di penutup.
+
+                Menu sudah jadi tautan tetap di navbar, tampil di setiap halaman
+                termasuk yang ini. Kartu yang mengulanginya cuma memanjangkan
+                kolom kanan dan mendorong sosial media — satu-satunya hal di
+                halaman ini yang tidak ada di tempat lain — turun ke luar layar.
               */}
-              <Card className="bg-slate-900 text-white">
-                <h2 className="text-lg font-bold">Ingin lihat sistemnya?</h2>
-                <p className="mt-2 text-sm text-slate-300">
-                  Buka katalog menu kami — tampilan yang sama persis dengan yang dilihat pelanggan
-                  setelah memindai QR di mejanya.
-                </p>
-                <Button href={tenantPath(tenant.slug, '/katalog')} className="mt-5 w-full">
-                  Lihat Katalog Menu
-                </Button>
-                <p className="mt-3 text-center text-[11px] leading-snug text-slate-400">
-                  Mau demo alur pemesanan lengkap? Minta lewat WhatsApp — kami siapkan outlet uji
-                  coba supaya antrean kasir kami tetap bersih.
-                </p>
-              </Card>
             </div>
           </div>
         </Container>
       </section>
-
-      <Faq />
     </>
   );
 }

@@ -1,0 +1,151 @@
+import Button from '@/components/ui/Button';
+import Container from '@/components/ui/Container';
+import { tenantPath, waLinkOf } from '@/lib/tenant';
+
+/*
+  Hero KEDAI — bukan hero produk.
+
+  Yang berdiri di sini sampai v5 adalah hero platform: judulnya menawarkan
+  "kelola kedai kopi Anda tanpa ribet", tombolnya mengajak konsultasi POS
+  gratis, dan di sebelahnya terpampang mockup dashboard admin. Semua itu
+  ditujukan kepada pemilik usaha — padahal yang membuka halaman ini pelanggan
+  yang baru saja memindai QR di mejanya, atau yang sedang mencari tahu kedai
+  ini buka jam berapa.
+
+  Sekarang isinya menjawab pertanyaan pelanggan: ini kedai apa, buka kapan,
+  di mana, dan bagaimana cara memesannya.
+
+  Outlet diterima sebagai PROP, bukan lewat `useTenant()` — section ini
+  komponen server, dan context hanya hidup di klien.
+*/
+export default function OutletHero({ tenant }) {
+  return (
+    <section className="relative overflow-hidden bg-white">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-brand-100/60 blur-3xl" />
+        <div className="absolute -right-24 top-24 h-[360px] w-[360px] rounded-full bg-brand-50 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0ebe4_1px,transparent_1px),linear-gradient(to_bottom,#f0ebe4_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+      </div>
+
+      <Container className="grid items-center gap-14 py-16 lg:grid-cols-[1.15fr_1fr] lg:py-24">
+        <div className="animate-fade-up">
+          <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-600" />
+            </span>
+            {tenant.tagline}
+          </span>
+
+          <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+            {tenant.name}
+          </h1>
+
+          {tenant.description && (
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
+              {tenant.description}
+            </p>
+          )}
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            {/*
+              Tombol utama mengarah ke denah meja, bukan langsung ke /menu.
+
+              Pesanan wajib punya nomor meja — `createOrder()` menolak yang
+              tanpa itu — dan pengunjung yang mendarat di /menu tanpa nomor
+              meja disambut kartu "Meja belum diketahui". Mengirimnya ke denah
+              lebih dulu membuat langkah itu terjadi di tempat yang memang
+              disediakan untuknya. Yang datang dari QR tidak pernah lewat sini:
+              nomor mejanya sudah terbaca sejak dipindai.
+            */}
+            <Button href={tenantPath(tenant.slug, '/meja')} size="lg">
+              Pesan Sekarang
+            </Button>
+            <Button href={tenantPath(tenant.slug, '/katalog')} variant="secondary" size="lg">
+              Lihat Menu
+            </Button>
+          </div>
+
+          <p className="mt-6 text-sm text-slate-400">
+            Sudah duduk di meja? Pindai QR di mejamu — nomornya terbaca sendiri.
+          </p>
+        </div>
+
+        {/* Kartu informasi kedai */}
+        <div className="relative animate-fade-up">
+          <div className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-brand-600/10 via-brand-200/20 to-transparent blur-2xl" />
+
+          <div className="card space-y-5 p-6 sm:p-7">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+              Informasi kedai
+            </h2>
+
+            <dl className="space-y-4">
+              {tenant.hours && (
+                <Baris icon="🕘" label="Jam buka">
+                  {tenant.hours}
+                </Baris>
+              )}
+              {tenant.address && (
+                <Baris icon="📍" label="Alamat" href={tenant.maps}>
+                  {tenant.address}
+                </Baris>
+              )}
+              {tenant.phone && (
+                <Baris icon="📞" label="Telepon" href={`tel:${tenant.phone.replace(/\s|-/g, '')}`}>
+                  {tenant.phone}
+                </Baris>
+              )}
+            </dl>
+
+            {tenant.wa_number && (
+              <Button
+                as="a"
+                href={waLinkOf(tenant, `Halo ${tenant.name}! Saya mau tanya-tanya dulu.`)}
+                target="_blank"
+                rel="noreferrer"
+                variant="whatsapp"
+                className="w-full"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
+                </svg>
+                Chat via WhatsApp
+              </Button>
+            )}
+          </div>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+function Baris({ icon, label, href, children }) {
+  return (
+    <div className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-lg"
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <dt className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</dt>
+        <dd className="mt-0.5 text-sm font-medium leading-snug text-slate-700">
+          {href ? (
+            <a
+              href={href}
+              target={href.startsWith('http') ? '_blank' : undefined}
+              rel="noreferrer"
+              className="transition hover:text-brand-600"
+            >
+              {children}
+            </a>
+          ) : (
+            children
+          )}
+        </dd>
+      </div>
+    </div>
+  );
+}

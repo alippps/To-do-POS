@@ -12,20 +12,194 @@ Sejak **v4**, satu pemasangan sistem ini melayani **banyak outlet sekaligus**. S
 punya `slug` sendiri yang muncul di URL dan ikut tercetak permanen di QR mejanya:
 
 ```
-/                          direktori outlet
-/k/kopi-pagi               landing Kopi Pagi
-/k/kopi-pagi/meja?meja=07  hasil scan QR meja 07 Kopi Pagi
-/k/kopi-pagi/admin         dashboard Kopi Pagi
+/                          landing SISTEM + direktori outlet
+/daftar-outlet             pendaftaran UMKM baru
+/k/to-do                   beranda To Do (coffee shop)
+/k/to-do/meja?meja=07      hasil scan QR meja 07 To Do
+/k/to-do/admin             dashboard To Do
 
 /k/roti-88/meja?meja=03    outlet lain, denah & menu sendiri
 ```
 
+**Dua halaman depan untuk dua pembaca.** Sejak v6 landing sistem dan halaman kedai
+dipisah tegas — lihat [Siapa bicara kepada siapa](#-siapa-bicara-kepada-siapa).
+
 Pemisahannya **bukan sekadar penyaring di kueri aplikasi.** Seluruh RLS policy ikut
 disaring per outlet (`is_admin_of()` / `is_staff_of()`), nomor meja unik **per outlet**,
-dan ketiga RPC publik menerima slug — jadi admin Kopi Pagi tidak bisa membaca apalagi
+dan ketiga RPC publik menerima slug — jadi admin To Do tidak bisa membaca apalagi
 mengubah data Roti Bakar 88, sekalipun ia menebak id barisnya.
 
-Menambah outlet baru cukup satu baris `insert` — lihat [bagian 11 di `supabase/schema.sql`](supabase/schema.sql).
+**`supabase/schema.sql` menyemai DUA outlet, bukan satu.** Itu bukan contoh data yang
+berlebihan: selama tabel `tenants` cuma berisi satu baris, direktori di `/` menampilkan
+satu kartu dan seluruh sistem *terlihat* seperti aplikasi satu kedai — mesinnya jalan
+penuh tapi tidak ada yang bisa dilihat. Outlet kedua sengaja bukan coffee shop:
+
+| Outlet | Alamat | Isi |
+| --- | --- | --- |
+| **To Do** | `/k/to-do` | Coffee shop · 12 produk · 12 meja (Indoor & Outdoor) |
+| **Roti Bakar 88** | `/k/roti-88` | Warung roti bakar buka sampai dini hari · 10 produk · 6 meja, **mulai dari Meja 01 lagi** |
+
+Meja 01 yang ada di kedua outlet itu sendiri sebuah bukti: sampai v3 nomor meja unik
+secara global. Constraint-nya kini `(tenant_id, table_no)`.
+
+---
+
+## 🎭 Siapa bicara kepada siapa
+
+Sampai v5 hanya ada satu landing page, dan ia melayani dua orang sekaligus. Halaman
+outlet memuat Portfolio mitra, Testimoni pemilik kedai lain, daftar Layanan POS,
+Keunggulan teknis, dan FAQ tentang Row Level Security — sementara halaman About-nya
+berjudul *"Secangkir kopi yang berujung jadi sebuah sistem"* dan Kontak-nya menawarkan
+*"konsultasi pertama gratis"*.
+
+Semua teks itu ditulis tetap di dalam kode, jadi **setiap outlet menampilkan cerita yang
+sama persis**: warung roti bakar yang mendaftar kemarin ikut mengaku punya Engineering
+Lead, 38 outlet mitra, dan pengalaman tujuh tahun membangun perangkat lunak. Dan
+pelanggan yang baru memindai QR di mejanya — yang cuma ingin tahu harga roti bakar —
+harus melewati materi jualan sebuah software house sebelum sampai ke menu.
+
+**v6 memisahkan keduanya.**
+
+| | Landing platform `/` | Halaman outlet `/k/<slug>` |
+| --- | --- | --- |
+| **Pembaca** | Pemilik usaha yang sedang menimbang | Pelanggan yang sedang duduk di kedai |
+| **Isi** | Fitur · Cara Kerja · Keunggulan · Portfolio · Testimoni · Direktori Outlet · FAQ · **Kontak** | Beranda · Menu · Pesan · About · Kontak |
+| **Navbar** | Fitur · Cara Kerja · Keunggulan · Outlet · FAQ · Kontak + **Daftarkan UMKM** | Home · Menu · Pesan · About · Kontak |
+| **Kotak masuk** | `platform_messages` — pertanyaan soal sistemnya | `contact_messages` — kritik & saran untuk kedai itu |
+| **Footer** | Tautan platform + daftar outlet. **Tanpa** pintu staf | Info kedai + **Masuk Staf** |
+| **Sumber teks** | Ditulis tetap — memang cuma ada satu platform | Kolom di tabel `tenants`, disunting pemiliknya |
+
+Lima halaman outlet, dan **“Meja” bukan salah satunya**. Denah meja tetap hidup di
+`/meja` — ia tujuan tombol *Pesan Sekarang*, jalan keluar kartu “Meja belum diketahui”
+di `/menu`, dan tautan “Duduk di meja lain?” pada layar hasil pindai. Yang dicabut hanya
+tempatnya di navbar: memilih meja bukan halaman yang orang tuju melainkan satu langkah
+di tengah memesan, dan yang memindai QR sudah melewatinya tanpa sadar.
+
+Batas ini dijaga [`tests/e2e/pemisahan-platform.spec.js`](tests/e2e/pemisahan-platform.spec.js)
+dari kedua arah — section yang hilang dari platform sama merugikannya dengan section yang
+merembes kembali ke outlet.
+
+### Halaman outlet kini bercerita tentang dirinya sendiri
+
+| Halaman | Isinya sekarang | Datanya dari |
+| --- | --- | --- |
+| **Home** | Nama & tagline kedai, jam buka, alamat, tombol WhatsApp · menu favorit · cerita ringkas · cara pesan lewat QR | `tenants` + 4 produk teratas |
+| **Menu** `/katalog` | Daftar produk baca-saja beserta harga & promo | `products` |
+| **Pesan** `/menu` | Pilih produk, isi keranjang, checkout | `products` + `create_order` |
+| **About** | Cerita panjang kedai, informasi praktis, akun sosial media | `tenants.story` dkk. |
+| **Kontak** | Formulir kritik & saran, kanal kontak, sosial media | `tenants` + `contact_messages` |
+
+Kolom `tenants.story` diisi pemilik outlet lewat **`/admin/profil`** — halaman admin baru
+di v6. Tanpa itu, setiap UMKM yang mendaftar lewat `/daftar-outlet` akan punya About
+kosong selamanya, sebab satu-satunya cara mengisinya adalah `update` manual di SQL Editor.
+Outlet yang belum menulis ceritanya tidak menampilkan halaman rusak: About-nya tetap
+memuat jam buka, alamat, dan kontak, plus satu kalimat jujur bahwa ceritanya belum ditulis.
+
+### Dua kotak masuk, dan sengaja tidak disatukan
+
+Formulir kontak ada di dua tempat, tapi yang mengisinya orang yang berbeda — dan
+karena itu tabelnya juga berbeda:
+
+| | Landing `/` (bagian Kontak) | Outlet `/k/<slug>/kontak` |
+| --- | --- | --- |
+| **Pengirim** | Calon mitra yang belum punya outlet | Pelanggan sebuah kedai |
+| **Isi** | "Warung saya cuma 4 meja, masuk akal pakai QR?" | "Pesanan saya keliru", "tolong tambah menu X" |
+| **Tabel** | `platform_messages` | `contact_messages` |
+| **Dibaca** | SQL Editor (belum ada dashboard platform) | Admin outlet tujuan, lewat RLS |
+
+Menyatukan keduanya terdengar rapi sampai dilihat kolomnya: setiap baris
+`contact_messages` **wajib** menempel pada satu outlet, sebab yang berhak
+membacanya adalah admin outlet itu. Pertanyaan orang yang belum punya outlet
+tidak punya `tenant_id` yang benar — menitipkannya ke sana berarti memilih satu
+outlet secara sembarang lalu membocorkan pesan itu, beserta email dan nomor
+telepon pengirimnya, ke admin yang tidak ada urusannya.
+
+`platform_messages` ber-RLS dengan **satu policy saja, `insert`**. Tidak ada
+policy baca, dan itu bukan yang terlupa: belum ada peran "pemilik platform" di
+sistem ini, jadi tidak ada siapa pun yang bisa disebut di dalam `using (...)`.
+Menulis policy baca yang longgar demi kelengkapan justru membuka isi kotak
+masuknya kepada siapa pun yang memegang anon key.
+
+```sql
+-- Membaca pertanyaan yang masuk, sampai dashboard platform ada:
+select created_at, name, email, phone, business, message
+from public.platform_messages order by created_at desc;
+```
+
+Kanal cepatnya tetap WhatsApp — nomornya dari `NEXT_PUBLIC_WA_NUMBER`, variabel
+yang sudah lama ada di `.env.local` tapi tidak pernah dibaca satu berkas pun
+sejak identitas kedai pindah ke tabel `tenants` di v4.
+
+> **Slug tetap terkunci di `/admin/profil`.** Ia tercetak permanen di QR tiap meja, jadi
+> kolomnya sengaja tidak disediakan — dan trigger `tenants_slug_immutable` menolaknya di
+> database sekalipun ada yang mengirimnya lewat jalan lain.
+
+---
+
+## 🆕 Menambah UMKM baru
+
+Ada dua jalan, dan yang pertama tidak menyentuh database sama sekali.
+
+### A. Lewat halaman pendaftaran *(cara biasanya)*
+
+```
+/daftar-outlet             isi nama usaha → slug terisi sendiri → kode undangan
+      ↓                    create_tenant() — outlet jadi, langsung muncul di /
+/k/<slug>/register         akun PERTAMA outlet ini otomatis jadi adminnya
+      ↓
+/k/<slug>/admin/produk     isi menunya
+/k/<slug>/admin/meja       buat denah meja + unduh kartu QR siap cetak
+```
+
+Sampai v4, menambah UMKM berarti membuka SQL Editor dan menempelkan satu `insert`.
+Masalahnya bukan kerumitan SQL-nya, melainkan siapa yang mampu menjalankannya: sistem
+yang mengaku melayani banyak UMKM tapi menuntut akses database untuk menerima UMKM
+berikutnya belum benar-benar melayani banyak UMKM.
+
+**Pendaftarannya dijaga kode undangan**, dan kodenya disimpan di tabel
+`platform_settings` — **bukan** di `.env`. Alasannya bukan selera: `create_tenant()`
+adalah fungsi `SECURITY DEFINER` yang terbuka lewat PostgREST, jadi siapa pun yang
+memegang anon key — dan anon key memang publik, ia ikut terkirim ke browser — bisa
+memanggilnya langsung tanpa pernah menyentuh formulirnya. Kode yang hanya diperiksa di
+Server Action akan terlewati oleh panggilan seperti itu. Pemeriksaannya karena itu
+duduk di dalam fungsinya, di tempat yang tidak bisa dilangkahi.
+
+Tabelnya sendiri ber-RLS **tanpa satu pun policy** — di PostgreSQL itu berarti tertutup
+rapat untuk semua pembaca lewat API, termasuk admin outlet. Yang tetap bisa
+mencocokkannya hanyalah fungsi `SECURITY DEFINER` tadi.
+
+```sql
+-- Kode bawaan: UMKM-2026. GANTI sebelum dipakai sungguhan.
+update public.platform_settings set value = 'kode-rahasiamu', updated_at = now()
+where key = 'invite_code';
+```
+
+**Akun pertama sebuah outlet lahir sebagai admin** — dan hanya yang pertama. Tanpa
+aturan itu outlet baru terkunci sejak lahir: seluruh area admin butuh role `admin`, tapi
+satu-satunya cara menaikkan role adalah halaman `/admin/akses` yang butuh admin.
+Konsekuensinya jujur disebut di sini: ada jeda antara outlet dibuat dan akun pertamanya
+mendaftar, dan siapa pun yang mendaftar lebih dulu di jeda itu yang jadi adminnya —
+karena itulah pembuatan outletnya dijaga kode undangan, dan register sebaiknya langsung
+dilakukan sesudahnya.
+
+**Outlet baru lahir kosong** — tanpa produk, tanpa meja. Menyalin menu contoh ke dalamnya
+akan membuat setiap outlet baru mengaku menjual Espresso dan Nasi Goreng Kampung, dan
+pemiliknya menghabiskan menit-menit pertamanya menghapus barang dagangan yang bukan
+miliknya.
+
+### B. Lewat SQL Editor *(pemulihan & pemindahan akun)*
+
+Tetap ada dan tetap didukung — lihat [bagian 11 di `supabase/schema.sql`](supabase/schema.sql).
+Dipakai saat memulihkan outlet yang adminnya hilang, memindahkan akun antar-outlet, atau
+menonaktifkan outlet. Tiga hal yang memang tidak diberi tombol.
+
+> **Slug itu permanen.** Ia ikut tercetak ke dalam QR setiap meja. Menggantinya setelah
+> kartu meja dicetak = mencetak ulang semuanya. Peringatan ini menempel pada kolomnya di
+> formulir, bukan disimpan di syarat & ketentuan.
+>
+> **Menonaktifkan outlet jangan pakai `delete`.** Seluruh FK-nya `on delete cascade` —
+> menghapus satu baris `tenants` ikut menghapus produk, meja, dan seluruh riwayat
+> transaksinya. Pakai `update public.tenants set is_active = false`.
 
 ---
 
@@ -55,11 +229,13 @@ Table, Card, dsb.) ditulis sendiri di `src/components/ui/`.
 
 | Area | Isi |
 | --- | --- |
-| **Landing page** | Navbar · Hero · Tentang CoffeeShop & Software House · Layanan Utama · Keunggulan · Menu Favorit · Portfolio · Testimoni · QR Pemesanan · FAQ · CTA WhatsApp · Footer |
-| **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja (ikut membawa `?meja=` supaya ajakan pesannya kembali ke meja yang sama) · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · Kontak · About |
-| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `kasir` / `admin`. `/login` dijangkau lewat tautan **Masuk Staf** di baris paling bawah footer; `/register` tetap hanya lewat URL langsung |
-| **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · **Kasir** (buat pesanan untuk pelanggan walk-in) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status + generator QR) · Daftar Transaksi · **Hak Akses** |
-| **QR Ordering** | Landing page menjelaskan alurnya + satu QR contoh. **Generator kartu meja (unduh PNG siap cetak: nomor meja besar + QR + instruksi) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
+| **Landing sistem** `/` | Navbar platform · Hero · Layanan Utama · Cara Kerja · Keunggulan · Portfolio · Testimoni · **Direktori Outlet** · FAQ · **Kontak (formulir + WhatsApp)** · CTA Daftarkan UMKM · Footer platform |
+| **Pendaftaran** | `/daftar-outlet` — UMKM baru mendaftar sendiri, dijaga kode undangan; outlet langsung hidup tanpa deploy ulang |
+| **Beranda outlet** `/k/<slug>` | Navbar kedai · Hero (nama, jam buka, alamat, WhatsApp) · Menu Favorit · Cerita ringkas · QR Pemesanan · CTA WhatsApp · Footer kedai |
+| **Pelanggan (tanpa login)** | `/meja?meja=07` layar hub hasil scan QR · `/katalog` daftar menu baca-saja (ikut membawa `?meja=` supaya ajakan pesannya kembali ke meja yang sama) · `/meja` ketersediaan meja real-time · `/menu` pilih & pesan · `/bayar` tagihan berjalan per meja · `/promo` menu diskon hari ini · `/struk/[invoice]` bukti pesanan · `/kontak` kritik & saran + sosial media · `/about` cerita kedai |
+| **Auth** | Login & Register (Supabase Auth) — **khusus staf**, role `user` / `kasir` / `admin`. `/login` dijangkau lewat tautan **Masuk Staf** di baris paling bawah footer outlet; `/register` tetap hanya lewat URL langsung |
+| **Admin** | Dashboard (omzet, pesanan pending, status meja, stok menipis) · **Kasir** (buat pesanan untuk pelanggan walk-in) · Daftar Produk (CRUD + Search) · Denah Meja (CRUD + status + generator QR) · Daftar Transaksi · **Profil Outlet** · **Hak Akses** |
+| **QR Ordering** | Beranda outlet menjelaskan alurnya + satu QR contoh. **Generator kartu meja (unduh PNG siap cetak: nomor meja besar + QR + instruksi) ada di `/admin/meja`** — alat operasional pemilik kedai, bukan fitur publik |
 
 ---
 
@@ -204,6 +380,8 @@ dan tombol untuk menaikkan/menurunkan role.
 | Halaman / Aksi | Tamu | User | Kasir | Admin |
 | --- | :---: | :---: | :---: | :---: |
 | Landing `/`, About, Kontak | ✅ | ✅ | ✅ | ✅ |
+| Landing sistem `/` & pendaftaran `/daftar-outlet` | ✅ | ✅ | ✅ | ✅ |
+| Membuat outlet baru (`create_tenant`) | 🔑 | 🔑 | 🔑 | 🔑 |
 | Katalog menu `/katalog` (baca saja) | ✅ | ✅ | ✅ | ✅ |
 | Promo hari ini `/promo` | ✅ | ✅ | ✅ | ✅ |
 | Tagihan meja `/bayar?meja=07` | ✅ | ✅ | ✅ | ✅ |
@@ -217,6 +395,7 @@ dan tombol untuk menaikkan/menurunkan role.
 | Daftar transaksi `/admin/transaksi` | ❌ | ❌ | ✅ | ✅ |
 | CRUD produk `/admin/produk` | ❌ | ❌ | ❌ | ✅ |
 | Denah meja `/admin/meja` | ❌ | ❌ | ❌ | ✅ |
+| Profil outlet `/admin/profil` | ❌ | ❌ | ❌ | ✅ |
 | Hak akses `/admin/akses` | ❌ | ❌ | ❌ | ✅ |
 | Baca produk & meja (DB) | ✅ | ✅ | ✅ | ✅ |
 | Tulis produk & meja (DB) | ❌ | ❌ | ❌ | ✅ |
@@ -226,14 +405,19 @@ dan tombol untuk menaikkan/menurunkan role.
 | Ubah role akun | ❌ | ❌ | ❌ | ✅ |
 | Baca pesan kontak masuk | ❌ | ❌ | ❌ | ✅ |
 
+🔑 = **tidak ditentukan role, melainkan kode undangan.** Pemilik warung yang mendaftarkan
+UMKM-nya memang belum punya akun sama sekali, jadi tidak ada role yang bisa
+memperbolehkannya. Yang memisahkan boleh dan tidak di sini adalah kode di
+`platform_settings`, dicocokkan di dalam `create_tenant()`.
+
 **Siapa itu siapa**
 
 | Role | Identitas | Keterangan |
 | --- | --- | --- |
 | **Tamu** | tanpa ID akun (`auth.uid()` = `NULL`) | Siapa pun yang membuka website / scan QR |
-| **User** | UUID di `profiles` dengan `role = 'user'` | Semua akun baru otomatis `user` |
+| **User** | UUID di `profiles` dengan `role = 'user'` | Akun baru selalu `user` — **kecuali akun pertama sebuah outlet**, lihat baris Admin |
 | **Kasir** | UUID di `profiles` dengan `role = 'kasir'` | Petugas kasir. Hanya Dashboard, Kasir, dan Daftar Transaksi |
-| **Admin** | UUID di `profiles` dengan `role = 'admin'` | Pemilik. Seluruh area admin. Dinaikkan dari `/admin/akses` atau SQL Editor |
+| **Admin** | UUID di `profiles` dengan `role = 'admin'` | Pemilik. Seluruh area admin. Akun **pertama** sebuah outlet lahir sebagai admin (kalau tidak, outlet baru terkunci sejak lahir); selebihnya dinaikkan dari `/admin/akses` atau SQL Editor |
 
 Cek langsung dari SQL Editor Supabase siapa saja yang memegang akses admin:
 
@@ -297,6 +481,30 @@ pada tampilan.
 ---
 
 ## ⚠️ Sudah pernah menjalankan schema versi lama? Jalankan ulang.
+
+**v6 WAJIB dijalankan sebelum aplikasinya dipakai.** Bukan sekadar menambah fitur:
+`getTenant()` kini ikut membaca kolom `tenants.story`, dan selama kolom itu belum ada
+**seluruh halaman `/k/<slug>` membalas 404** — kueri outletnya gagal, tenant terbaca
+`null`, dan `requireTenant()` memulangkan not-found. Landing platform di `/` tetap
+terbuka karena tidak membacanya.
+
+| Tambahan v6 | Dipakai oleh |
+| --- | --- |
+| Kolom `tenants.story` | Halaman `/k/<slug>/about` dan cerita ringkas di beranda outlet |
+| Trigger `tenants_slug_immutable` | Mengunci slug — ia sudah tercetak di QR meja |
+| Cerita & sosial media dua outlet contoh | `/about` & `/kontak` To Do dan Roti Bakar 88 |
+| Tabel `platform_messages` | Formulir kontak di landing `/` — pertanyaan dari calon mitra |
+
+**v5 menambah pendaftaran outlet mandiri.** Tempel ulang seluruh isi
+[`supabase/schema.sql`](supabase/schema.sql) — tanpa itu `/daftar-outlet` akan gagal
+dengan pesan "Outlet gagal dibuat", dan direktori di `/` tetap menampilkan satu outlet.
+
+| Tambahan v5 | Dipakai oleh |
+| --- | --- |
+| Outlet contoh kedua (`roti-88`) | Direktori `/` — multi-UMKM jadi bisa dilihat, bukan cuma dibaca |
+| Tabel `platform_settings` | Kode undangan pendaftaran outlet (RLS **tanpa policy**) |
+| RPC `create_tenant()` | Halaman `/daftar-outlet` |
+| `handle_new_user()` — aturan admin pertama | Akun pertama sebuah outlet lahir sebagai adminnya |
 
 **v4 mengubah skema secara besar.** Jalankan ulang seluruh isi
 [`supabase/schema.sql`](supabase/schema.sql) — file-nya idempotent dan sudah berisi
@@ -462,7 +670,10 @@ milik platform: direktori outlet, favicon, dan gambar OG.
 ```
 src/
 ├─ app/
-│  ├─ page.jsx                # Direktori outlet (beranda platform)
+│  ├─ (platform)/             # ← Halaman PLATFORM (navbar & footer sendiri)
+│  │  ├─ layout.jsx           # PlatformNavbar + PlatformFooter
+│  │  ├─ page.jsx             # Landing sistem + direktori outlet
+│  │  └─ daftar-outlet/       # Pendaftaran UMKM baru + server action create_tenant
 │  ├─ icon.svg                # Favicon
 │  ├─ opengraph-image.jsx     # Preview tautan (next/og, runtime edge)
 │  └─ k/[slug]/               # ← SEMUA halaman outlet ada di sini
@@ -485,6 +696,7 @@ src/
 │        ├─ produk/           # CRUD + Search produk
 │        ├─ meja/             # CRUD denah meja + status + generator QR
 │        ├─ transaksi/        # Daftar & kelola transaksi
+│        ├─ profil/           # Identitas, cerita, kontak & sosmed outlet
 │        └─ akses/            # Daftar akun + ID + matriks hak akses
 │  ├─ layout.jsx              # Root layout + metadata PLATFORM
 │  ├─ not-found.jsx
@@ -492,20 +704,25 @@ src/
 ├─ components/
 │  ├─ ui/                     # Button, Card, Modal, Badge, Field, SearchInput, ...
 │  ├─ layout/                 # Navbar, Footer, Logo, WhatsappFloat
-│  ├─ sections/               # Hero, About, Services, Advantages, Portfolio,
-│  │                          # Testimonials, Faq, QrOrder, CtaWhatsapp, ContactForm
+│  ├─ sections/               # Section OUTLET: OutletHero, OutletStory, BestSeller,
+│  │                          # QrOrder, CtaWhatsapp, ContactForm
 │  ├─ tables/                 # TableAvailability (grid meja pelanggan)
 │  ├─ pos/                    # ScanIntentDialog, ScanHub, FlowSteps, PosClient,
 │  │                          # ProductCard, CartPanel, ReceiptModal, ReceiptPaper,
 │  │                          # QrisPayment, PrintReceiptBar
 │  ├─ tenant/                 # TenantProvider — identitas outlet untuk sisi klien
+│  ├─ platform/               # Section & kerangka PLATFORM: PlatformNavbar, PlatformFooter,
+│  │                          # PlatformLogo, PlatformHero, Services, HowItWorks, Advantages,
+│  │                          # Portfolio, Testimonials, OutletDirectory, Faq, PlatformCta,
+│  │                          # TenantSignupForm
 │  ├─ auth/                   # LoginForm, RegisterForm, SessionPanel
 │  └─ admin/                  # AdminShell, CashierClient, ProductManager, TableManager,
 │                             # TableQrPanel, TransactionManager, AccessManager, ...
 ├─ lib/
 │  ├─ supabase/               # client.js (browser), server.js (SSR + createPublicClient),
 │  │                          # middleware.js
-│  ├─ tenant.js               # tenantPath(), slugValid(), waLinkOf() — MURNI, boleh di klien
+│  ├─ tenant.js               # tenantPath(), slugValid(), slugify(), storyParagraphs(),
+│  │                          # waLinkOf() — MURNI, boleh dipakai di klien
 │  ├─ tenant.server.js        # getTenant(), requireTenant(), listTenants() — server saja
 │  ├─ site.js                 # Identitas PLATFORM (bukan identitas kedai)
 │  ├─ adminGuard.js           # Penjaga halaman & server action, selalu per outlet
@@ -527,28 +744,33 @@ src/
 
 | Ketentuan | Status | Lokasi |
 | --- | :---: | --- |
-| Tema UMKM & transformasi digital | ✅ | Landing page (Hero, Layanan, Tentang), seluruh alur POS |
-| Sistem **C**reate | ✅ | `admin/produk/actions.js`, `admin/meja/actions.js`, `admin/kasir/actions.js`, `(site)/menu/actions.js`, `(site)/kontak/actions.js` |
+| Tema UMKM & transformasi digital | ✅ | Landing sistem `/` (Hero, Layanan, Cara Kerja, Keunggulan), pendaftaran UMKM `/daftar-outlet`, seluruh alur POS |
+| Sistem **C**reate | ✅ | `admin/produk/actions.js`, `admin/meja/actions.js`, `admin/kasir/actions.js`, `(site)/menu/actions.js`, `(site)/kontak/actions.js`, `(platform)/daftar-outlet/actions.js` |
 | Sistem **R**ead | ✅ | Server Component tiap `page.jsx` |
-| Sistem **U**pdate | ✅ | `updateProduct()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()` |
+| Sistem **U**pdate | ✅ | `updateProduct()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()`, `simpanProfil()` |
 | Sistem **D**elete | ✅ | `deleteProduct()`, `deleteTable()`, `deleteTransaction()` |
 | Sistem **S**earch | ✅ | `ProductManager`, `TableManager`, `TransactionManager`, `AccessManager`, `PosClient` |
 | Halaman **Login** | ✅ | `/login` — `src/app/(auth)/login/page.jsx` (tautan **Masuk Staf** di baris paling bawah footer, lihat [Isolasi](#-isolasi-sisi-pelanggan--admin)) |
 | Halaman **Register** | ✅ | `/register` — `src/app/(auth)/register/page.jsx` (buka langsung) |
-| User Side — **Home** | ✅ | `/` — `src/app/(site)/page.jsx` |
+| User Side — **Home** | ✅ | `/k/<slug>` — `src/app/k/[slug]/(site)/page.jsx`. Sejak v6 isinya murni milik kedai; landing sistemnya pindah ke `/` |
 | User Side — **Fitur Utama (jual beli)** | ✅ | `/menu` — `src/app/(site)/menu/page.jsx` (rute lama `/fitur` diarahkan ke sini). **Di antarmuka pelanggan halaman ini bernama “Pesan”** — istilah “Fitur Utama” milik dokumen lomba, bukan bahasa yang dimengerti pengunjung kedai |
-| User Side — **Kontak + form** | ✅ | `/kontak` — form tervalidasi ganda, tersimpan ke tabel `contact_messages` |
-| User Side — **About** | ✅ | `/about` — `src/app/(site)/about/page.jsx` |
+| User Side — **Kontak + form** | ✅ | `/kontak` — form kritik & saran tervalidasi ganda, tersimpan ke `contact_messages`, plus kanal kontak & sosial media outlet |
+| User Side — **About** | ✅ | `/about` — `src/app/k/[slug]/(site)/about/page.jsx`. Ceritanya dibaca dari `tenants.story`, ditulis pemilik outlet di `/admin/profil` — bukan teks tetap yang sama untuk semua outlet |
 | Admin Side — **Dashboard** | ✅ | `/admin` — omzet, pesanan pending, status meja, stok menipis |
 | Admin Side — **Daftar Produk** | ✅ | `/admin/produk` — CRUD + search + filter + pagination |
 | Admin Side — **Daftar Transaksi** | ✅ | `/admin/transaksi` — search, ubah status, detail, hapus, cetak struk |
+| Admin Side — **Profil Outlet** | ✅ | `/admin/profil` — identitas, cerita, jam buka, kontak, sosial media (khusus admin) |
 | Stack dicantumkan di dokumentasi | ✅ | Bagian [Tech Stack](#-tech-stack) di atas |
 | Validasi input | ✅ | Divalidasi 2× — di client (UX) dan di Server Action (keamanan). Checkout menolak nama pemesan kosong, meja kosong, dan metode bayar asing di `createOrder()`; formulir kontak memeriksa nama, email, dan nomor WhatsApp di `sendMessage()` |
 | Keamanan dasar | ✅ | 4 lapis: middleware → layout → server action → Row Level Security |
 
-**Di luar ketentuan (nilai tambah inovasi):** layar hub 4 pilihan hasil scan QR meja
-(`/meja?meja=07`), tagihan berjalan per meja tanpa login (`/bayar`), promo harian yang dikelola
-dari daftar produk (`/promo`), katalog menu baca-saja (`/katalog`), ketersediaan meja real-time
+**Di luar ketentuan (nilai tambah inovasi):** satu pemasangan melayani banyak UMKM dengan
+pemisahan sampai level RLS, **landing sistem terpisah dari halaman kedai** (lihat [Siapa bicara
+kepada siapa](#-siapa-bicara-kepada-siapa)), **pendaftaran UMKM baru mandiri lewat
+`/daftar-outlet`** (tanpa SQL Editor, tanpa deploy ulang), **profil outlet yang disunting
+pemiliknya sendiri** (`/admin/profil`), layar hub 4 pilihan hasil scan QR meja (`/meja?meja=07`),
+tagihan berjalan per meja tanpa login (`/bayar`), promo harian yang dikelola dari daftar
+produk (`/promo`), katalog menu baca-saja (`/katalog`), ketersediaan meja real-time
 (`/meja`), struk digital thermal 80mm (`/struk/[invoice]`), manajemen denah meja + generator QR
 per meja (`/admin/meja`), dan panel hak akses beserta ID tiap akun (`/admin/akses`).
 
@@ -558,9 +780,9 @@ per meja (`/admin/meja`), dan panel hak akses beserta ID tiap akun (`/admin/akse
 
 | Operasi | Lokasi |
 | --- | --- |
-| **Create** | `src/app/admin/produk/actions.js → createProduct()` · `src/app/admin/meja/actions.js → createTable()` · checkout tamu: `src/app/(site)/menu/actions.js → createOrder()` · pesan kontak: `src/app/(site)/kontak/actions.js` |
+| **Create** | `src/app/admin/produk/actions.js → createProduct()` · `src/app/admin/meja/actions.js → createTable()` · checkout tamu: `src/app/(site)/menu/actions.js → createOrder()` · pesan kontak: `src/app/(site)/kontak/actions.js` · outlet baru: `src/app/(platform)/daftar-outlet/actions.js → daftarOutlet()` · pertanyaan ke platform: `src/app/(platform)/actions.js → kirimPesanPlatform()` |
 | **Read** | Server Component tiap halaman (`page.jsx`) mengambil data langsung dari Supabase |
-| **Update** | `updateProduct()`, `toggleProductActive()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()` |
+| **Update** | `updateProduct()`, `toggleProductActive()`, `updateTable()`, `setTableStatus()`, `updateTransactionStatus()`, `setUserRole()`, `simpanProfil()` |
 | **Delete** | `deleteProduct()`, `deleteTable()`, `deleteTransaction()` |
 | **Search** | `ProductManager.jsx`, `TableManager.jsx`, `TransactionManager.jsx`, `AccessManager.jsx`, `PosClient.jsx` — pencarian instan (client-side `useMemo`) + filter + sorting + pagination |
 
@@ -623,6 +845,8 @@ dijalankan kapan saja, termasuk beberapa menit sebelum demo.
 | `tests/e2e/kriteria-halaman.spec.js` | Seluruh halaman wajib lomba terbuka · navbar memuat semuanya · `/login` & `/register` ada tapi **tidak** ditautkan dari sisi publik · tiga halaman admin tertutup bagi yang belum masuk |
 | `tests/e2e/qr-scan.spec.js` | Popup niat mengenali nomor meja · layar hub tidak lagi menampilkan status ketersediaan · penanda `src=qr` terbawa ke `/menu` · **pemindai QR tidak disuruh memilih meja**, sedangkan yang datang dari denah tetap melihat langkah itu · QR tak terdaftar jatuh ke denah |
 | `tests/e2e/validasi-form.spec.js` | Validasi sisi klien form kontak & pendaftaran, termasuk pesan galat yang hilang begitu kolomnya diperbaiki |
+| `tests/e2e/pemisahan-platform.spec.js` | Batas landing sistem ↔ halaman kedai, dijaga **dari kedua arah**: enam section sistem wajib ada di `/` dan wajib TIDAK ada di `/k/<slug>` · navbar platform tidak menawarkan halaman outlet · footer outlet punya pintu staf, footer platform tidak |
+| `tests/e2e/daftar-outlet.spec.js` | Pendaftaran UMKM baru: slug terisi sendiri dari nama usaha tapi berhenti menimpa begitu disunting · pratinjau `/k/<slug>` ikut berubah · **kode undangan salah ditolak database dan outletnya benar-benar tidak terbuat** (dicek dengan meminta `/k/<slug>` dan menuntut 404) |
 | `tests/e2e/helpers.js` | Nomor meja diambil dari denah saat test berjalan, bukan ditulis tetap — denah meja itu data yang bisa diganti pemilik kedai kapan saja |
 
 Dijalankan di dua lebar layar. QR meja dipindai dari HP, jadi kerusakan layout di

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from './Logo';
-import Button from '@/components/ui/Button';
 import { stripTenantPrefix } from '@/lib/access';
 import { useTenantHref } from '@/components/tenant/TenantProvider';
 
@@ -32,11 +31,22 @@ import { useTenantHref } from '@/components/tenant/TenantProvider';
   tempatnya di README, bukan di navbar. Dua halaman menu juga dibedakan dengan
   kata kerjanya: "Menu" untuk membaca daftar, "Pesan" untuk bertransaksi.
 */
+/*
+  Lima halaman, dan "Meja" bukan salah satunya.
+
+  Denah meja tetap hidup di `/meja` — ia tujuan tombol "Pesan Sekarang", jalan
+  keluar kartu "Meja belum diketahui" di `/menu`, dan tautan "Duduk di meja
+  lain?" pada layar hasil pindai. Yang dicabut hanya tempatnya di navbar:
+  memilih meja bukan halaman yang orang tuju, melainkan satu langkah di tengah
+  memesan, dan pelanggan yang baru memindai QR di mejanya sudah melewatinya
+  tanpa sadar. Menyejajarkannya dengan Menu dan About membuat langkah itu
+  terbaca sebagai tujuan tersendiri — lalu mengundang orang yang sudah duduk di
+  Meja 07 untuk memilih meja lagi.
+*/
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/katalog', label: 'Menu' },
   { href: '/menu', label: 'Pesan' },
-  { href: '/meja', label: 'Meja' },
   { href: '/about', label: 'About' },
   { href: '/kontak', label: 'Kontak' },
 ];
@@ -102,11 +112,16 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
-          <Button href={t('/meja')} size="sm">
-            Pesan Sekarang
-          </Button>
-        </div>
+        {/*
+          Tanpa tombol "Pesan Sekarang" di sini.
+
+          Ajakan memesan sudah berdiri di tempat yang lebih tepat: berdampingan
+          dengan "Lihat Menu" di hero beranda, tempat pengunjung yang baru
+          mendarat memang sedang memutuskan mau apa. Menyalinnya ke navbar
+          membuat dua tombol dengan tujuan sama muncul dalam satu layar, dan
+          yang di navbar terbaca sebagai ajakan ketiga di samping tautan "Pesan"
+          yang persis di sebelahnya.
+        */}
 
         <button
           type="button"
@@ -139,12 +154,6 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-
-            <div className="mt-3 border-t border-slate-100 pt-4">
-              <Button href={t('/meja')} className="w-full">
-                Pesan Sekarang
-              </Button>
-            </div>
           </div>
         </div>
       )}

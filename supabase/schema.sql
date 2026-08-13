@@ -1,5 +1,5 @@
 -- ============================================================
---  TO DO — Point of Sale (Coffee Shop)  ·  SKEMA v4 (MULTI-UMKM)
+--  TO DO POS — Point of Sale multi-UMKM  ·  SKEMA v5
 --  Tabel · RLS policy · trigger · RPC · seed.
 --
 --  CARA PAKAI: buka Supabase Dashboard > SQL Editor,
@@ -18,6 +18,20 @@
 --  Data yang sudah ada TIDAK hilang. Bagian 0 membuat tenant 'to-do'
 --  lalu memindahkan seluruh baris lama ke sana sebelum kolomnya
 --  dijadikan NOT NULL.
+--
+--  ============ APA YANG BERUBAH DI v5 ============
+--  UMKM baru bisa mendaftar SENDIRI, tanpa membuka SQL Editor.
+--
+--  v4 membuat sistemnya sanggup melayani banyak UMKM, tapi pintu
+--  masuknya tetap sebuah `insert` manual — dan sistem yang menuntut
+--  akses database untuk menerima UMKM berikutnya belum benar-benar
+--  melayani banyak UMKM.
+--
+--    · outlet contoh KEDUA ('roti-88') — supaya multi-UMKM bisa
+--      dilihat di direktori `/`, bukan cuma dibaca di README
+--    · tabel `platform_settings` — kode undangan pendaftaran outlet
+--    · RPC `create_tenant()` — dipakai halaman /daftar-outlet
+--    · `handle_new_user()` — akun PERTAMA sebuah outlet jadi admin
 -- ============================================================
 
 create extension if not exists "pgcrypto";
@@ -52,6 +66,49 @@ create table if not exists public.tenants (
 
 create index if not exists tenants_slug_idx on public.tenants (slug) where is_active;
 
+/*
+  Kolom tambahan v6 — CERITA outlet.
+
+  `description` adalah satu kalimat: ia dipakai metadata halaman, kartu
+  direktori, dan footer, jadi panjangnya harus tetap sepanjang satu kalimat.
+  Halaman /about butuh yang lain — beberapa paragraf tentang warungnya sendiri,
+  ditulis pemiliknya. Memaksa keduanya berbagi satu kolom berarti salah satu
+  tempat selalu menampilkan panjang yang keliru.
+
+  Boleh NULL: outlet yang baru mendaftar belum sempat menuliskannya, dan /about
+  menyiapkan tampilan untuk keadaan itu.
+*/
+alter table public.tenants add column if not exists story text;
+
+/*
+  SLUG TIDAK BOLEH BERUBAH setelah outlet dibuat.
+
+  Ia tercetak permanen ke dalam QR setiap meja. Satu `update` di sini akan
+  mematikan seluruh kartu meja yang sudah tercetak — dan kegagalannya baru
+  ketahuan saat ada pelanggan yang memindai lalu mendapat halaman kosong,
+  bukan saat perubahannya dilakukan.
+
+  Halaman /admin/profil memang tidak mengirim kolom ini, tapi policy "outlet:
+  admin boleh ubah" mengizinkan admin menyunting BARIS-nya — jadi penjaganya
+  tidak boleh cuma berupa kolom yang absen dari sebuah formulir.
+*/
+create or replace function public.tenants_slug_immutable()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.slug is distinct from old.slug then
+    raise exception 'Alamat outlet (slug) tidak bisa diubah — ia sudah tercetak di QR meja.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tenants_slug_immutable on public.tenants;
+create trigger tenants_slug_immutable
+  before update on public.tenants
+  for each row execute function public.tenants_slug_immutable();
+
 -- UMKM pertama = pemilik seluruh data yang sudah ada sebelum v4.
 insert into public.tenants (slug, name, tagline, description, address, phone, email, hours, wa_number)
 values (
@@ -66,6 +123,127 @@ values (
   '6281234567890'
 )
 on conflict (slug) do nothing;
+
+/*
+  UMKM KEDUA — dan alasannya bukan sekadar contoh data.
+
+  Selama tabel ini cuma berisi satu baris, direktori di `/` menampilkan satu
+  kartu dan seluruh sistem TERLIHAT seperti aplikasi satu kedai. Mesin
+  multi-UMKM-nya jalan penuh, tapi tidak ada yang bisa dilihat: klaim "satu
+  pemasangan, banyak UMKM" jatuh jadi kalimat di README yang harus dipercaya
+  begitu saja.
+
+  Baris kedua ini yang membuatnya bisa DIBUKTIKAN, bukan diceritakan — dua
+  outlet dengan menu, denah meja, dan QR yang benar-benar berbeda, dan admin
+  yang satu tidak bisa melihat transaksi yang lain. Sengaja bukan coffee shop
+  supaya jelas sistem ini tidak terikat satu jenis usaha.
+*/
+insert into public.tenants (slug, name, tagline, description, address, phone, email, hours, wa_number)
+values (
+  'roti-88',
+  'Roti Bakar 88',
+  'Roti Bakar & Kopi Malam',
+  'Roti Bakar 88 buka sampai dini hari — roti bakar, indomie, dan kopi tubruk untuk yang pulang paling akhir.',
+  'Jl. Cihampelas No. 88, Bandung, Jawa Barat',
+  '+62 813-8888-0088',
+  'halo@rotibakar88.example',
+  'Setiap hari, 16.00 – 01.00 WIB',
+  '6281388880088'
+)
+on conflict (slug) do nothing;
+
+/*
+  Cerita & kanal sosial kedua outlet contoh.
+
+  Ditulis sebagai `update` terpisah, bukan ikut di dalam `insert` di atas,
+  karena `on conflict do nothing` tidak menyentuh baris yang sudah ada — dan
+  kedua outlet ini sudah lebih dulu terbentuk di database yang menjalankan v5.
+
+  `and story is null` menjaga file ini tetap aman dijalankan berulang: begitu
+  pemilik outlet menyunting ceritanya sendiri lewat /admin/profil, menjalankan
+  ulang schema tidak menimpanya kembali ke teks contoh.
+*/
+update public.tenants set
+  story = 'To Do lahir dari satu gerobak kopi di depan kampus pada 2018. Dua menu, satu termos, dan kebiasaan mencatat pesanan di balik struk belanja.'
+    || E'\n\n'
+    || 'Sekarang kami menempati kedai permanen di Jalan Merdeka dengan dua belas meja — sebagian di dalam untuk yang butuh tenang dan colokan, sebagian di teras untuk yang datang berombongan. Biji kopinya single origin dari Gayo, Toraja, dan Kintamani, disangrai setiap minggu dan diseduh oleh barista yang sama sejak hari pertama.'
+    || E'\n\n'
+    || 'Yang tidak berubah sejak gerobak itu: kami ingin orang betah duduk lama. Karena itu memesan di sini tidak perlu antre — pindai QR di mejamu, pesan dari tempat dudukmu, bayar sekali saat pulang.',
+  instagram = 'https://instagram.com/todocoffee',
+  tiktok    = 'https://tiktok.com/@todocoffee',
+  maps      = 'https://maps.google.com/?q=Jl.+Merdeka+No.+45+Bandung'
+where slug = 'to-do' and story is null;
+
+update public.tenants set
+  story = 'Roti Bakar 88 buka waktu warung lain sudah tutup. Dari jam empat sore sampai satu dini hari, tenda kami di Cihampelas jadi tempat singgah anak kos, pekerja shift malam, dan siapa pun yang belum mau pulang.'
+    || E'\n\n'
+    || 'Menunya tidak muluk: roti bakar gandeng dengan cokelat keju yang tebal, srikaya buatan sendiri, indomie rebus pakai telur, dan kopi tubruk yang gulanya dipisah supaya kamu yang menakar. Harganya sengaja dijaga tetap ramah — ini warung tenda, bukan kafe.'
+    || E'\n\n'
+    || 'Enam meja saja, empat di bawah tenda dan dua di dalam. Kalau penuh, pesan lewat QR dari meja mana pun yang kosong dan tunggu sambil ngobrol.',
+  instagram = 'https://instagram.com/rotibakar88',
+  tiktok    = 'https://tiktok.com/@rotibakar88',
+  maps      = 'https://maps.google.com/?q=Jl.+Cihampelas+No.+88+Bandung'
+where slug = 'roti-88' and story is null;
+
+-- ------------------------------------------------------------
+-- 0b. PENGATURAN PLATFORM
+--
+--     Satu-satunya penghuninya saat ini adalah KODE UNDANGAN yang dipakai
+--     halaman /daftar-outlet.
+--
+--     Kenapa di database dan bukan di .env? Karena penjaganya harus berada di
+--     tempat yang sama dengan perbuatannya. `create_tenant()` adalah fungsi
+--     SECURITY DEFINER yang terbuka lewat PostgREST, jadi siapa pun yang punya
+--     anon key — dan anon key MEMANG publik, ia ikut terkirim ke browser —
+--     bisa memanggilnya langsung tanpa pernah menyentuh formulirnya. Kode yang
+--     hanya dicek di Server Action akan terlewati oleh panggilan seperti itu,
+--     dan penjagaan yang bisa dilangkahi hanya menghasilkan rasa aman.
+--
+--     GANTI NILAINYA sebelum dipakai sungguhan:
+--       update public.platform_settings set value = 'kode-rahasiamu'
+--       where key = 'invite_code';
+-- ------------------------------------------------------------
+create table if not exists public.platform_settings (
+  key        text primary key,
+  value      text not null,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.platform_settings (key, value)
+values ('invite_code', 'UMKM-2026')
+on conflict (key) do nothing;
+
+-- ------------------------------------------------------------
+-- 0c. PESAN MASUK UNTUK PLATFORM  (formulir kontak di landing `/`)
+--
+--     Bukan `contact_messages`, dan itu bukan duplikasi yang bisa disatukan.
+--     Setiap baris di sana WAJIB menempel pada satu outlet (`tenant_id` NOT
+--     NULL), sebab yang berhak membacanya adalah admin outlet tujuannya. Yang
+--     bertanya di sini justru orang yang BELUM punya outlet — pertanyaannya
+--     soal sistemnya, bukan soal menu sebuah kedai. Menitipkannya ke tabel itu
+--     berarti memilih satu outlet secara sembarang lalu membocorkan pesan itu
+--     ke adminnya.
+--
+--     Membacanya untuk sekarang lewat SQL Editor:
+--       select created_at, name, email, phone, business, message
+--       from public.platform_messages order by created_at desc;
+--
+--     Belum ada dashboard pemilik platform, jadi kanal yang benar-benar cepat
+--     tetap WhatsApp — dan halaman kontaknya menampilkan keduanya berdampingan,
+--     bukan menyembunyikan yang satu di balik yang lain.
+-- ------------------------------------------------------------
+create table if not exists public.platform_messages (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  email      text not null,
+  phone      text,
+  business   text,
+  message    text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists platform_messages_created_idx
+  on public.platform_messages (created_at desc);
 
 -- ------------------------------------------------------------
 -- 1. PROFILES  (role: user / kasir / admin — DAN tenant tempatnya bekerja)
@@ -121,19 +299,48 @@ security definer set search_path = public
 as $$
 declare
   v_tenant_id uuid;
+  v_role      text := 'user';
 begin
   select id into v_tenant_id from public.tenants
   where slug = lower(nullif(trim(new.raw_user_meta_data ->> 'tenant_slug'), ''))
     and is_active = true;
+
+  /*
+    Akun PERTAMA sebuah outlet lahir sebagai admin — dan hanya yang pertama.
+
+    Tanpa aturan ini outlet baru terkunci sejak lahir: seluruh area admin butuh
+    role 'admin', tapi satu-satunya cara menaikkan role adalah lewat halaman
+    /admin/akses yang butuh admin. Telur dan ayam, dan pemiliknya baru bisa
+    masuk setelah ada orang lain membuka SQL Editor untuknya. Itu jalan buntu
+    yang wajar untuk sistem satu kedai (adminnya dipasang sekali seumur hidup),
+    tapi tidak untuk platform yang outletnya bisa didaftarkan kapan saja lewat
+    /daftar-outlet.
+
+    Cakupannya sempit dengan sengaja: begitu outlet itu punya satu admin,
+    pendaftar berikutnya kembali jadi 'user' seperti biasa. Konsekuensinya
+    tetap ada dan sebaiknya diketahui — ada JEDA antara outlet dibuat dan akun
+    pertamanya mendaftar, dan siapa pun yang mendaftar lebih dulu di jeda itu
+    yang jadi adminnya. Karena itulah pembuatan outlet dijaga kode undangan,
+    dan pendaftaran akun pertama sebaiknya dilakukan langsung setelahnya.
+
+    Dua pendaftaran yang benar-benar bersamaan bisa sama-sama lolos dan
+    keduanya jadi admin. Dibiarkan: keduanya orang yang sama-sama baru diundang
+    ke outlet yang baru saja dibuat, dan salah satunya bisa menurunkan yang
+    lain dari /admin/akses.
+  */
+  if v_tenant_id is not null and not exists (
+    select 1 from public.profiles p
+    where p.tenant_id = v_tenant_id and p.role = 'admin'
+  ) then
+    v_role := 'admin';
+  end if;
 
   insert into public.profiles (id, full_name, phone, role, tenant_id)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
     new.raw_user_meta_data ->> 'phone',
-    -- Role SELALU 'user' saat mendaftar. Naik ke 'kasir'/'admin' hanya lewat
-    -- admin_set_role() atau query manual di SQL Editor (lihat bagian 11).
-    'user',
+    v_role,
     v_tenant_id
   )
   on conflict (id) do nothing;
@@ -761,6 +968,111 @@ end;
 $$;
 
 -- ------------------------------------------------------------
+-- 8c. MENDAFTARKAN OUTLET BARU  (dipakai halaman /daftar-outlet)
+--
+--     Dulu menambah UMKM berarti membuka SQL Editor dan menempelkan satu
+--     `insert` — lihat bagian 11, yang tetap dipertahankan sebagai jalan
+--     manual. Masalahnya bukan kerumitan SQL-nya, melainkan siapa yang mampu
+--     menjalankannya: sistem yang mengaku melayani banyak UMKM tapi menuntut
+--     akses database untuk menerima UMKM berikutnya belum benar-benar
+--     melayani banyak UMKM.
+--
+--     Fungsi ini boleh dipanggil tanpa login — pemilik warung yang mendaftar
+--     memang belum punya akun. Yang menjaganya adalah kode undangan di
+--     `platform_settings`, dicocokkan DI SINI dan bukan di aplikasi (alasannya
+--     ada di bagian 0b).
+-- ------------------------------------------------------------
+drop function if exists public.create_tenant(text, text, text, text, text, text, text, text, text, text);
+
+create or replace function public.create_tenant(
+  p_invite_code text,
+  p_slug        text,
+  p_name        text,
+  p_tagline     text default null,
+  p_description text default null,
+  p_address     text default null,
+  p_phone       text default null,
+  p_email       text default null,
+  p_hours       text default null,
+  p_wa_number   text default null
+)
+returns public.tenants
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_expected text;
+  v_slug     text;
+  v_name     text;
+  v_tenant   public.tenants;
+begin
+  select value into v_expected from public.platform_settings where key = 'invite_code';
+
+  /*
+    Kode kosong ditolak lebih dulu, terpisah dari kode salah.
+
+    Kalau `platform_settings` belum terisi, `v_expected` bernilai NULL dan
+    perbandingan apa pun ikut NULL — bukan false. Tanpa penjagaan ini, `if
+    p_invite_code <> v_expected` tidak pernah bernilai benar dan gerbangnya
+    terbuka lebar justru ketika pengaturannya belum dipasang.
+  */
+  if v_expected is null or length(trim(v_expected)) = 0 then
+    raise exception 'Pendaftaran outlet belum diaktifkan di sistem ini.';
+  end if;
+
+  if coalesce(trim(p_invite_code), '') <> v_expected then
+    raise exception 'Kode undangan tidak dikenali.';
+  end if;
+
+  v_name := nullif(trim(coalesce(p_name, '')), '');
+  if v_name is null or length(v_name) < 3 then
+    raise exception 'Nama usaha minimal 3 karakter.';
+  end if;
+
+  -- Slug dirapikan di sini juga, bukan hanya di formulir: yang memanggil
+  -- fungsi ini belum tentu formulir itu.
+  v_slug := lower(nullif(trim(coalesce(p_slug, '')), ''));
+
+  if v_slug is null or v_slug !~ '^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$' then
+    raise exception 'Alamat outlet hanya boleh huruf kecil, angka, dan tanda hubung (3–50 karakter).';
+  end if;
+
+  if exists (select 1 from public.tenants where slug = v_slug) then
+    raise exception 'Alamat /k/% sudah dipakai outlet lain. Pilih yang lain.', v_slug;
+  end if;
+
+  insert into public.tenants (
+    slug, name, tagline, description, address, phone, email, hours, wa_number
+  )
+  values (
+    v_slug,
+    v_name,
+    coalesce(nullif(trim(coalesce(p_tagline, '')), ''), 'Point of Sale'),
+    nullif(trim(coalesce(p_description, '')), ''),
+    nullif(trim(coalesce(p_address, '')), ''),
+    nullif(trim(coalesce(p_phone, '')), ''),
+    nullif(trim(coalesce(p_email, '')), ''),
+    nullif(trim(coalesce(p_hours, '')), ''),
+    -- Nomor WhatsApp dipakai mentah di tautan wa.me — sisakan angkanya saja.
+    nullif(regexp_replace(coalesce(p_wa_number, ''), '[^0-9]', '', 'g'), '')
+  )
+  returning * into v_tenant;
+
+  /*
+    Outlet baru sengaja lahir KOSONG — tanpa produk, tanpa meja.
+
+    Menyalin menu contoh ke dalamnya akan membuat setiap outlet baru mengaku
+    menjual Espresso dan Nasi Goreng Kampung, dan pemiliknya menghabiskan
+    menit-menit pertamanya menghapus barang dagangan yang bukan miliknya.
+    Meja pun begitu: denah meja adalah bentuk ruangan yang nyata, tidak ada
+    tebakan yang benar. Keduanya diisi sendiri dari /admin/produk dan
+    /admin/meja.
+  */
+  return v_tenant;
+end;
+$$;
+
+-- ------------------------------------------------------------
 -- 9. ROW LEVEL SECURITY
 --    Ringkasan lengkapnya ada di README, tabel "Matriks Hak Akses",
 --    dan bisa dilihat langsung di halaman /admin/akses.
@@ -777,6 +1089,37 @@ alter table public.cafe_tables        enable row level security;
 alter table public.transactions       enable row level security;
 alter table public.transaction_items  enable row level security;
 alter table public.contact_messages   enable row level security;
+alter table public.platform_settings  enable row level security;
+alter table public.platform_messages  enable row level security;
+
+/*
+  PLATFORM_MESSAGES: siapa pun boleh MENGIRIM, tidak ada yang boleh MEMBACA.
+
+  Policy-nya cuma satu, dan hanya untuk `insert` — persis seperti pesan kontak
+  outlet, dikurangi policy bacanya. Kekurangan itu disengaja: belum ada peran
+  "pemilik platform" di sistem ini, jadi tidak ada siapa pun yang bisa disebut
+  di dalam `using (...)`. Menulis policy baca yang longgar demi kelengkapan akan
+  membuka isi kotak masuk — beserta email dan nomor telepon pengirimnya —
+  kepada siapa pun yang memegang anon key.
+
+  Isinya dibaca lewat SQL Editor sampai dashboard platform ada.
+*/
+drop policy if exists "pesan platform: publik boleh kirim" on public.platform_messages;
+create policy "pesan platform: publik boleh kirim" on public.platform_messages
+  for insert with check (true);
+
+/*
+  PLATFORM_SETTINGS: RLS menyala, dan SENGAJA tanpa satu pun policy.
+
+  Tabel tanpa policy bukan tabel yang lupa diatur — di PostgreSQL itu berarti
+  tertutup rapat: tidak ada satu baris pun yang lolos, untuk siapa pun yang
+  lewat PostgREST, termasuk admin outlet. Yang tetap bisa membacanya hanyalah
+  fungsi SECURITY DEFINER (`create_tenant`), yang berjalan sebagai pemilik
+  tabel dan karenanya melewati RLS.
+
+  Persis itu yang dibutuhkan kode undangan: harus bisa DICOCOKKAN oleh sistem,
+  tidak boleh bisa DIBACA oleh siapa pun yang memegang anon key.
+*/
 
 -- TENANTS: identitas outlet memang publik (nama & alamat tampil di landing),
 -- tapi hanya adminnya sendiri yang boleh menyuntingnya.
@@ -884,8 +1227,10 @@ create policy "pesan: admin boleh baca" on public.contact_messages
 do $seed$
 declare
   v_todo uuid;
+  v_roti uuid;
 begin
   select id into v_todo from public.tenants where slug = 'to-do';
+  select id into v_roti from public.tenants where slug = 'roti-88';
 
   -- Produk contoh HANYA diisi kalau outlet ini masih kosong. Tanpa penjaga
   -- ini, menjalankan ulang file akan menggandakan seluruh menu (products
@@ -926,6 +1271,45 @@ begin
     (v_todo, '11', 'Workspace / Meeting Room', 'Indoor', 1),
     (v_todo, '12', 'Workspace / Meeting Room', 'Indoor', 1)
   on conflict (tenant_id, table_no) do nothing;
+
+  -- ---------- OUTLET KEDUA: Roti Bakar 88 ----------
+  -- Menunya sengaja tidak beririsan dengan To Do, dan harganya jauh lebih
+  -- murah. Dua outlet yang isinya mirip tidak membuktikan apa pun.
+  if not exists (select 1 from public.products where tenant_id = v_roti) then
+    insert into public.products (tenant_id, name, category, price, stock, description, image_url)
+    values
+      (v_roti, 'Roti Bakar Cokelat Keju', 'Makanan',  22000, 40, 'Roti gandeng, cokelat meses tebal, keju parut melimpah.', null),
+      (v_roti, 'Roti Bakar Srikaya',      'Makanan',  20000, 40, 'Srikaya buatan sendiri, wangi pandan.',                   null),
+      (v_roti, 'Roti Bakar Daging Asap',  'Makanan',  28000, 25, 'Daging asap, telur, saus spesial.',                       null),
+      (v_roti, 'Pisang Bakar Keju',       'Snack',    24000, 30, 'Pisang raja bakar, susu kental manis, keju.',             null),
+      (v_roti, 'Indomie Rebus Telur',     'Makanan',  18000, 50, 'Pakai telur, sawi, dan cabe rawit sesuai selera.',        null),
+      (v_roti, 'Kentang Goreng',          'Snack',    24000, 30, 'Kentang goreng renyah dengan saus pilihan.',              'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80'),
+      (v_roti, 'Kopi Tubruk',             'Kopi',     12000, 60, 'Kopi hitam tubruk, gula terpisah.',                       'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=800&q=80'),
+      (v_roti, 'Es Kopi Susu Aren',       'Kopi',     20000, 45, 'Kopi susu gula aren, dingin, gelas besar.',               'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80'),
+      (v_roti, 'Es Teh Manis',            'Non-Kopi',  8000, 80, 'Teh tubruk manis dingin. Gelas jumbo.',                   'https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=800&q=80'),
+      (v_roti, 'Cokelat Panas',           'Non-Kopi', 18000, 35, 'Cokelat panas kental untuk begadang.',                    'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=800&q=80');
+
+    update public.products set promo_price = round(price * 0.8, 0)
+    where tenant_id = v_roti and name in ('Roti Bakar Cokelat Keju', 'Indomie Rebus Telur');
+  end if;
+
+  /*
+    Denah Roti Bakar 88 — perhatikan nomornya mulai dari '01' lagi.
+
+    Itu bukan kebetulan, melainkan hal yang dibuktikan: sampai v3 nomor meja
+    unik secara global, jadi mustahil ada dua outlet yang sama-sama punya Meja
+    01. Constraint-nya kini (tenant_id, table_no), dan baris-baris inilah yang
+    akan gagal masuk kalau constraint lama itu kembali.
+  */
+  insert into public.cafe_tables (tenant_id, table_no, label, area, capacity)
+  values
+    (v_roti, '01', 'Tenda depan',   'Outdoor', 4),
+    (v_roti, '02', 'Tenda depan',   'Outdoor', 4),
+    (v_roti, '03', 'Pinggir jalan', 'Outdoor', 2),
+    (v_roti, '04', 'Lesehan',       'Outdoor', 6),
+    (v_roti, '05', 'Dalam warung',  'Indoor',  4),
+    (v_roti, '06', 'Dalam warung',  'Indoor',  2)
+  on conflict (tenant_id, table_no) do nothing;
 end
 $seed$;
 
@@ -942,6 +1326,15 @@ where label in ('Ruang kerja', 'Ruang Kerja');
 
 -- ------------------------------------------------------------
 -- 11. MENAMBAH UMKM BARU  &  MENJADIKAN AKUN KAMU ADMIN
+--
+--     CARA BIASANYA TIDAK LAGI DI SINI. Buka /daftar-outlet, isi formulirnya
+--     dengan kode undangan dari `platform_settings`, lalu daftarkan akun
+--     pertama lewat tautan yang muncul sesudahnya — akun itu otomatis jadi
+--     admin outletnya (lihat handle_new_user() di bagian 1).
+--
+--     Yang di bawah ini adalah jalan manualnya: dipakai saat memulihkan outlet
+--     yang adminnya hilang, atau saat memindahkan akun antar-outlet — dua hal
+--     yang memang tidak diberi tombol.
 -- ------------------------------------------------------------
 -- (a) Buat outlet baru — slug-nya yang akan muncul di URL & tercetak di QR meja:
 --
@@ -955,7 +1348,18 @@ where label in ('Ruang kerja', 'Ruang Kerja');
 -- set role = 'admin', tenant_id = (select id from public.tenants where slug = 'kopi-pagi')
 -- where id = (select id from auth.users where email = 'emailkamu@gmail.com');
 --
--- (c) Cek siapa saja yang punya akses, per outlet:
+-- (c) Ganti kode undangan pendaftaran outlet (WAJIB sebelum dipakai sungguhan):
+--
+-- update public.platform_settings set value = 'kode-rahasiamu', updated_at = now()
+-- where key = 'invite_code';
+--
+-- (d) Menonaktifkan outlet — JANGAN pakai delete. Seluruh FK-nya `on delete
+--     cascade`, jadi menghapus satu baris tenant ikut menghapus produk, meja,
+--     dan seluruh riwayat transaksinya:
+--
+-- update public.tenants set is_active = false where slug = 'kopi-pagi';
+--
+-- (e) Cek siapa saja yang punya akses, per outlet:
 --
 -- select t.slug, u.email, p.role
 -- from public.profiles p

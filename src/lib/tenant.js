@@ -46,6 +46,54 @@ export function slugValid(slug) {
   return typeof slug === 'string' && /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(slug);
 }
 
+/**
+ * Mengubah nama usaha jadi calon slug: "Kopi Pagi Bandung!" → "kopi-pagi-bandung".
+ *
+ * Dipakai formulir /daftar-outlet untuk mengisi kolom alamat sambil pemiliknya
+ * mengetik namanya. Bukan demi kecepatan mengetik: slug ini ikut TERCETAK
+ * PERMANEN di QR tiap meja, jadi salah ketik di sini baru ketahuan setelah
+ * kartu mejanya jadi. Menyodorkan bentuk yang sudah pasti sah membuat kolom itu
+ * jarang perlu disentuh sama sekali.
+ *
+ * Hasilnya belum tentu lolos `slugValid()` — nama sepatah huruf atau nama yang
+ * seluruhnya non-latin bisa menghasilkan slug terlalu pendek. Yang memanggilnya
+ * tetap wajib memeriksa; fungsi ini menyiapkan tebakan, bukan jaminan.
+ */
+export function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    // Buang tanda diakritik yang baru saja dipisahkan NFD ("Café" → "Cafe"),
+    // supaya huruf beraksen tidak hilang seluruhnya jadi tanda hubung.
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50)
+    // Pemotongan di atas bisa menyisakan tanda hubung di ujung — dan slug
+    // berakhiran '-' ditolak constraint di database.
+    .replace(/-+$/g, '');
+}
+
+/**
+ * Cerita outlet, dipecah jadi paragraf.
+ *
+ * Kolom `tenants.story` diisi pemilik outlet lewat /admin/profil, jadi bentuk
+ * pemisah paragrafnya tidak bisa dipastikan: ada yang menekan Enter sekali, ada
+ * yang dua kali, dan textarea di Windows mengirim `\r\n`. Ketiganya
+ * diperlakukan sama supaya yang mengetik tidak perlu tahu aturan mana yang
+ * berlaku.
+ *
+ * Mengembalikan array kosong bila belum ada ceritanya — outlet yang baru
+ * mendaftar memang belum sempat menulisnya, dan halaman /about menyiapkan
+ * tampilan untuk keadaan itu.
+ */
+export function storyParagraphs(tenant) {
+  return String(tenant?.story || '')
+    .split(/\r?\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
 /** Nomor WhatsApp outlet, dirapikan sebelum masuk ke tautan wa.me. */
 export function waNumberOf(tenant) {
   return String(tenant?.wa_number || '').replace(/[^\d]/g, '');

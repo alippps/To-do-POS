@@ -6,7 +6,7 @@ import SectionHeading from '@/components/ui/SectionHeading';
 
 const FAQS = [
   {
-    q: 'Apakah sistem To Do bisa dipakai untuk usaha selain coffee shop?',
+    q: 'Apakah sistem ini bisa dipakai untuk usaha selain coffee shop?',
     a: 'Bisa. Struktur produk, kategori, dan transaksinya generik — sudah dipakai untuk resto, katering, toko roti, sampai kios minuman. Cukup ganti daftar produk di menu Daftar Produk.',
   },
   {
@@ -71,7 +71,7 @@ export default function Faq() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section id="faq" className="bg-slate-50/70 py-20 sm:py-24">
+    <section id="faq" className="scroll-mt-20 bg-slate-50/70 py-20 sm:py-24">
       <Container>
         <SectionHeading
           eyebrow="FAQ"

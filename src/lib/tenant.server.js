@@ -32,7 +32,7 @@ export const getTenant = cache(async (slug) => {
   const { data } = await supabase
     .from('tenants')
     .select(
-      'id, slug, name, tagline, description, address, phone, email, hours, wa_number, instagram, tiktok, maps'
+      'id, slug, name, tagline, description, story, address, phone, email, hours, wa_number, instagram, tiktok, maps'
     )
     .eq('slug', slug)
     .eq('is_active', true)

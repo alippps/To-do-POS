@@ -26,6 +26,20 @@ export const platform = {
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
     .trim()
     .replace(/\/+$/, ''),
+
+  /*
+    Nomor WhatsApp PLATFORM — dipakai bagian kontak di landing `/`.
+
+    Berbeda dari `tenants.wa_number`, yang nomor tiap kedai dan karena itu
+    tinggal di database. Yang ini nomor pengelola sistemnya sendiri: jawabannya
+    sama untuk semua pengunjung, jadi ia memang konfigurasi build, bukan data.
+
+    Variabelnya sudah lama ada di `.env.local` tapi tidak pernah dibaca satu
+    berkas pun sejak identitas kedai pindah ke tabel `tenants` di v4. Di sinilah
+    ia akhirnya punya pemakai. Hanya angkanya yang disisakan — `wa.me` menolak
+    spasi dan tanda hubung.
+  */
+  waNumber: String(process.env.NEXT_PUBLIC_WA_NUMBER || '').replace(/[^\d]/g, ''),
 };
 
 /** Kategori produk bawaan — dipakai form admin di semua outlet. */

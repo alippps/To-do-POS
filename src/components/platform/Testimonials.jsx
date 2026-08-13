@@ -43,7 +43,7 @@ function Stars({ count }) {
 
 export default function Testimonials() {
   return (
-    <section id="testimoni" className="py-20 sm:py-24">
+    <section id="testimoni" className="bg-slate-50/70 py-20 sm:py-24">
       <Container>
         <SectionHeading
           eyebrow="Testimoni"

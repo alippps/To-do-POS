@@ -1,5 +1,6 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
+import { platform } from '@/lib/site';
 
 /*
   Genap enam, bukan lima.
@@ -44,14 +45,23 @@ const ITEMS = [
 
 export default function Advantages() {
   return (
-    <section id="keunggulan" className="py-20 sm:py-24">
+    <section id="keunggulan" className="scroll-mt-20 bg-slate-50/70 py-20 sm:py-24">
       <Container>
         <div className="grid gap-12 lg:grid-cols-[1fr_1.35fr] lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:h-fit">
             <SectionHeading
               align="left"
               eyebrow="Keunggulan"
-              title="Kenapa memilih To Do?"
+              /*
+                Judulnya tidak menyebut nama produk.
+
+                Kolom kiri di sini sempit, dan `${platform.name}` — "To Do POS"
+                — pecah jadi "To Do / POS?" di ujung baris. Nama yang terpotong
+                di tengah lebih mengganggu daripada judul yang tidak menyebut
+                nama sama sekali, apalagi pembacanya sudah membaca nama itu di
+                navbar dan hero.
+              */
+              title="Kenapa memilih sistem ini?"
               description="Bukan sekadar aplikasi kasir. Kami paham operasional kedai kopi karena kami menjalankannya sendiri setiap hari."
             />
             <div className="mt-8 rounded-2xl border border-brand-100 bg-brand-50/70 p-6">
@@ -60,7 +70,7 @@ export default function Advantages() {
                 melayani, laporan datang sendiri.”
               </p>
               <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-brand-700">
-                — Tim Produk To Do
+                — Tim Produk {platform.name}
               </p>
             </div>
           </div>

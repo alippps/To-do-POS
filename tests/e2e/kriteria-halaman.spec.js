@@ -115,9 +115,34 @@ test.describe('Sisi pelanggan', () => {
       "ada tautan yang bisa dilihat dan ditekan pelanggan" — tanpa test perlu
       tahu versi mana yang sedang dipakai pada lebar layar ini.
     */
-    for (const href of ['/', '/menu', '/meja', '/about', '/kontak']) {
+    for (const href of ['/', '/katalog', '/menu', '/about', '/kontak']) {
       await expect(header.locator(`a[href="${url(href)}"]:visible`).first()).toBeVisible();
     }
+  });
+
+  /*
+    Denah meja SENGAJA tidak ada di navbar sejak v6 — memilih meja adalah satu
+    langkah di tengah memesan, bukan halaman tujuan. Yang harus tetap dijaga
+    adalah jalan menuju ke sana tidak ikut hilang bersamanya.
+
+    Ajakan memesan tinggal SATU dan letaknya di hero, berdampingan dengan
+    "Lihat Menu". Kembarannya di navbar dicabut karena ia muncul dalam layar
+    yang sama, persis di sebelah tautan "Pesan" — tiga ajakan untuk satu
+    perbuatan. Test ini menjaga keduanya sekaligus: yang dicabut tetap tercabut,
+    yang tersisa tetap bekerja.
+  */
+  test('denah meja lenyap dari navbar tapi tetap terjangkau dari hero', async ({ page }) => {
+    await page.goto(url('/'));
+    const header = page.locator('header');
+
+    const hamburger = header.getByRole('button', { name: 'Buka menu' });
+    if (await hamburger.isVisible()) await hamburger.click();
+
+    await expect(header.getByRole('link', { name: 'Meja', exact: true })).toHaveCount(0);
+    await expect(header.getByRole('link', { name: 'Pesan Sekarang' })).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Pesan Sekarang' }).first().click();
+    await expect(page).toHaveURL(url('/meja'));
   });
 
   /*
@@ -131,9 +156,24 @@ test.describe('Sisi pelanggan', () => {
     await expect(page.getByText('Langkah 2 dari 3 · Pesan')).toBeVisible();
   });
 
-  test('About tampil', async ({ page }) => {
+  /*
+    Judulnya sekarang nama outletnya sendiri, bukan kalimat tetap di dalam kode.
+
+    Sampai v5 setiap outlet menampilkan judul yang sama — "Secangkir kopi yang
+    berujung jadi sebuah sistem" — beserta linimasa lahirnya aplikasi dan nama
+    tim produknya. Test ini ikut menjaga pemisahan itu: yang dijamin bukan
+    sekadar halamannya terbuka, melainkan bahwa isinya milik outlet ini.
+  */
+  test('About bercerita tentang outletnya, bukan tentang sistemnya', async ({ page }) => {
     await page.goto(url('/about'));
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/secangkir kopi/i);
+
+    const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1).toBeVisible();
+    await expect(h1).not.toContainText(/secangkir kopi|software house/i);
+
+    // Informasi praktis kedai selalu ada, bahkan untuk outlet yang belum
+    // menuliskan ceritanya.
+    await expect(page.getByRole('heading', { name: 'Informasi kedai' })).toBeVisible();
   });
 
   test('Kontak tampil beserta formulirnya', async ({ page }) => {

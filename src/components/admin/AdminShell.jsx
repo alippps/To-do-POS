@@ -67,6 +67,19 @@ const MENU = [
     ),
   },
   {
+    // Jarang dibuka — sekali saat outlet baru berdiri, lalu sesekali. Ditaruh
+    // rendah, tapi tetap di atas Hak Akses supaya urutannya mengikuti seberapa
+    // sering dipakai, bukan abjad.
+    href: '/admin/profil',
+    label: 'Profil Outlet',
+    icon: (
+      <>
+        <path d="M4 21V9l8-6 8 6v12" strokeLinejoin="round" />
+        <path d="M9 21v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+  },
+  {
     href: '/admin/akses',
     label: 'Hak Akses',
     icon: (

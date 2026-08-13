@@ -39,16 +39,23 @@ const SERVICES = [
     points: ['Role Admin & Kasir', 'Pelanggan tanpa login', 'Sesi aman'],
   },
   {
-    icon: '☕',
-    title: 'Katering & Event',
-    text: 'Layanan coffee bar untuk kantor, seminar, dan acara pernikahan lengkap dengan barista kami.',
-    points: ['Coffee bar on-site', 'Custom menu', 'Barista profesional'],
+    icon: '🏪',
+    title: 'Multi-Outlet',
+    /*
+      Kartu keenam dulu berbunyi "Katering & Event — coffee bar untuk kantor,
+      seminar, dan pernikahan". Itu jasa sebuah kedai kopi, bukan kemampuan
+      perangkat lunak, dan ia masuk akal selama halaman ini masih jadi landing
+      satu coffee shop. Setelah pindah ke halaman platform, kalimat itu
+      menjanjikan barista kepada pemilik warung yang datang mencari kasir.
+    */
+    text: 'Satu pemasangan melayani banyak UMKM sekaligus. Tiap outlet punya alamat, menu, denah meja, dan datanya sendiri — terpisah sampai level database.',
+    points: ['Alamat sendiri /k/<slug>', 'Menu & meja terpisah', 'Admin tidak lintas outlet'],
   },
 ];
 
 export default function Services() {
   return (
-    <section id="layanan" className="bg-slate-50/70 py-20 sm:py-24">
+    <section id="fitur" className="scroll-mt-20 bg-slate-50/70 py-20 sm:py-24">
       <Container>
         <SectionHeading
           eyebrow="Layanan Utama"

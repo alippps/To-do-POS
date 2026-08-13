@@ -2,7 +2,16 @@ import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
 import { tenantPath, waLinkOf } from '@/lib/tenant';
 
-const PERKS = ['Tanpa biaya konsultasi', 'Demo sistem langsung', 'Dibalas < 15 menit di jam kerja'];
+/*
+  Ajakan menghubungi KEDAI, bukan menghubungi vendor.
+
+  Sampai v5 section ini menawarkan "konsultasi gratis, tanpa kewajiban
+  berlangganan" dan menjanjikan tim yang akan "membantu memetakan kebutuhan
+  sistem POS-nya" — kalimat penjualan perangkat lunak, dipasang di halaman
+  yang dibuka orang yang mau memesan kopi. Ajakan itu kini tinggal di landing
+  platform (`platform/PlatformCta.jsx`), tempat pembacanya memang pemilik usaha.
+*/
+const PERKS = ['Pesan untuk rombongan', 'Tanya ketersediaan meja', 'Dibalas cepat di jam buka'];
 
 export default function CtaWhatsapp({ tenant }) {
   return (
@@ -15,48 +24,42 @@ export default function CtaWhatsapp({ tenant }) {
           </div>
 
           <div className="relative mx-auto max-w-2xl">
-            {/*
-              Klaim yang tidak bergantung kalender.
-
-              "Slot konsultasi minggu ini masih tersedia" ditulis permanen di
-              kode — urgensi yang tidak pernah berubah bukan urgensi, dan
-              pengunjung yang kembali sebulan lagi melihat kalimat yang sama
-              persis. Diganti janji yang memang selalu benar.
-            */}
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur">
-              Konsultasi tanpa biaya & tanpa kontrak
+              {tenant.hours || 'Kami buka setiap hari'}
             </span>
 
             <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
-              Siap merapikan operasional kedai Anda?
+              Mau tanya dulu sebelum datang?
             </h2>
             <p className="mt-4 text-base leading-relaxed text-brand-100">
-              Ceritakan kondisi usaha Anda sekarang. Tim {tenant.name} akan bantu petakan kebutuhan
-              sistem POS-nya — gratis, tanpa kewajiban berlangganan.
+              Soal menu, meja untuk rombongan, atau pesanan yang perlu disiapkan lebih dulu —
+              sapa {tenant.name} langsung, kami balas di jam buka.
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button
-                as="a"
-                href={waLinkOf(tenant)}
-                target="_blank"
-                rel="noreferrer"
-                variant="whatsapp"
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
-                </svg>
-                Konsultasi Gratis via WhatsApp
-              </Button>
+              {tenant.wa_number && (
+                <Button
+                  as="a"
+                  href={waLinkOf(tenant)}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="whatsapp"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
+                  </svg>
+                  Chat via WhatsApp
+                </Button>
+              )}
               <Button
                 href={tenantPath(tenant.slug, '/kontak')}
                 variant="glass"
                 size="lg"
                 className="w-full sm:w-auto"
               >
-                Kirim Pesan
+                Kritik & Saran
               </Button>
             </div>
 

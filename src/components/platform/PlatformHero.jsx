@@ -1,29 +1,22 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
-import { tenantPath, waLinkOf } from '@/lib/tenant';
 
 /*
-  Angka di sini harus sama artinya dengan yang tampil di /about.
+  Angka di sini adalah angka PLATFORM, bukan angka satu kedai.
 
-  Sebelumnya hero menulis "12.400+ Transaksi diproses" (terbaca sebagai total
-  sepanjang waktu) sementara /about menulis "12.4rb Transaksi/bulan" — angka
-  yang sama dengan dua satuan waktu berbeda. Satuannya sekarang ditulis
-  eksplisit di label supaya tidak bisa lagi dibaca dua cara.
+  Sampai v5 hero ini berdiri di landing tiap outlet dan menuliskan "12.400+
+  transaksi/bulan" seolah itu capaian warung yang sedang dibuka pengunjung —
+  klaim yang tidak pernah benar untuk outlet yang baru mendaftar kemarin.
+  Setelah pindah ke halaman platform, satuannya jadi jujur dengan sendirinya:
+  yang dihitung adalah seluruh outlet yang memakai sistem ini.
 */
 const STATS = [
   { value: '12.400+', label: 'Transaksi / bulan' },
-  { value: '4.9/5', label: 'Rating pelanggan' },
+  { value: '38', label: 'Outlet mitra' },
   { value: '< 30 dtk', label: 'Rata-rata antrean' },
 ];
 
-/*
-  Outlet diterima sebagai prop, bukan dibaca dari context.
-
-  Section ini komponen SERVER — ia tidak boleh memakai `useTenant()`. Yang
-  mengirimnya adalah landing outlet (src/app/k/[slug]/(site)/page.jsx), yang
-  memang sudah memegang datanya.
-*/
-export default function Hero({ tenant }) {
+export default function PlatformHero({ outletCount = 0 }) {
   return (
     <section className="relative overflow-hidden bg-white">
       {/* dekorasi latar */}
@@ -40,18 +33,39 @@ export default function Hero({ tenant }) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-600" />
             </span>
-            UMKM Goes Digital — POS + Coffee Shop dalam satu platform
+            UMKM Goes Digital — satu pemasangan, banyak UMKM
           </span>
 
-          <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
-            Kelola Kedai Kopi Anda{' '}
-            <span className="relative whitespace-nowrap text-brand-600">
-              Tanpa Ribet
+          {/*
+            Frasa yang digarisbawahi sengaja PENDEK, dan garisnya bertinggi tetap.
+
+            Dua hal yang membuat versi sebelumnya rusak, dan keduanya baru
+            muncul setelah frasanya diperpanjang jadi "modalnya selembar QR":
+
+            (1) `whitespace-nowrap` pada frasa sepanjang itu melebihi lebar
+                kolom kiri grid, jadi teksnya meluber menimpa mockup dashboard
+                di sebelahnya — dan `overflow-hidden` di section memotongnya.
+            (2) SVG-nya `w-full` tanpa tinggi, jadi tingginya ikut rasio
+                200:12 terhadap lebar frasa. Frasa dua kali lebih panjang =
+                garis dua kali lebih tinggi, dan `-bottom-2` mendorongnya naik
+                menyilang di tengah huruf alih-alih di bawahnya.
+
+            Tingginya kini dikunci `h-[10px]`, jadi garisnya tetap setipis itu
+            sepanjang apa pun frasanya — `preserveAspectRatio="none"` memang
+            dipasang supaya ia boleh direntang tanpa mempertahankan rasio.
+            `pb-3` menyediakan ruang di bawah baris terakhir supaya garisnya
+            tidak terpotong batas h1.
+          */}
+          <h1 className="mt-6 pb-3 text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+            Kasir digital untuk UMKM kuliner, modalnya{' '}
+            <span className="relative inline-block whitespace-nowrap text-brand-600">
+              selembar QR
               <svg
-                className="absolute -bottom-2 left-0 w-full text-brand-200"
+                className="absolute -bottom-1.5 left-0 h-[10px] w-full text-brand-200"
                 viewBox="0 0 200 12"
                 fill="none"
                 preserveAspectRatio="none"
+                aria-hidden="true"
               >
                 <path d="M2 9c40-6 120-9 196-3" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
               </svg>
@@ -59,45 +73,28 @@ export default function Hero({ tenant }) {
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
-            <strong className="font-semibold text-slate-700">{tenant.name}</strong> membantu UMKM
-            kuliner naik kelas ke digital: pemesanan via QR, kasir digital, manajemen produk, dan
-            laporan penjualan real-time — semuanya rapi dalam satu dashboard yang ringan, murah, dan
-            mudah dipakai.
+            Pelanggan memindai QR di mejanya, memesan sendiri, dan membayar sekali di akhir.
+            Kamu dapat dashboard omzet, stok, dan riwayat transaksinya — tanpa mesin kasir,
+            tanpa aplikasi yang harus diunduh siapa pun.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button
-              as="a"
-              href={waLinkOf(tenant)}
-              target="_blank"
-              rel="noreferrer"
-              variant="whatsapp"
-              size="lg"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
-              </svg>
-              Konsultasi Gratis via WhatsApp
+            <Button href="/daftar-outlet" size="lg">
+              Daftarkan UMKM Anda
             </Button>
             {/*
-              Ajakan memesan sudah dipegang tombol "Pesan Sekarang" di navbar
-              yang selalu tampil. Di sini cukup arahkan ke katalog — pengunjung
-              yang baru mendarat biasanya mau lihat-lihat dulu, bukan checkout.
+              Ajakan kedua mengarah ke direktori, bukan ke demo buatan.
+
+              Outlet yang terdaftar di sistem ini adalah kedai sungguhan dengan
+              menu dan denah mejanya sendiri — membukanya memperlihatkan persis
+              apa yang akan dilihat pelanggan, dan itu bukti yang lebih kuat
+              daripada tangkapan layar mana pun.
             */}
-            <Button href={tenantPath(tenant.slug, '/katalog')} variant="secondary" size="lg">
-              Lihat Menu Kami
+            <Button href="#outlet" variant="secondary" size="lg">
+              {outletCount > 0 ? `Lihat ${outletCount} outlet yang pakai` : 'Lihat outlet yang pakai'}
             </Button>
           </div>
 
-          {/*
-            Tiga kolom baru dipakai mulai `sm`.
-
-            Di 320px, tiga kolom `gap-6` menyisakan ~80px per kolom sementara
-            "12.400+" dan "< 30 dtk" pada ukuran `text-xl` membutuhkan lebih
-            dari itu — dengan `whitespace-nowrap` angkanya meluber keluar
-            kolom. Dua kolom memberi ruang yang cukup, dan `nowrap` hanya
-            dipasang sejak lebar itu benar-benar tersedia.
-          */}
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-6 border-t border-slate-200 pt-8 sm:grid-cols-3">
             {STATS.map((s) => (
               <div key={s.label}>
@@ -120,7 +117,7 @@ export default function Hero({ tenant }) {
               <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
               <span className="ml-3 truncate text-xs font-medium text-slate-400">
-                /k/{tenant.slug}/admin
+                /k/warung-anda/admin
               </span>
             </div>
 
@@ -152,8 +149,8 @@ export default function Hero({ tenant }) {
               <div className="space-y-2.5 rounded-2xl bg-slate-50 p-4">
                 {[
                   ['Kopi Susu Gula Aren', '32 cup', 'Rp 800.000'],
-                  ['Caffe Latte', '21 cup', 'Rp 630.000'],
-                  ['Croissant Butter', '15 pcs', 'Rp 345.000'],
+                  ['Roti Bakar Cokelat', '24 porsi', 'Rp 528.000'],
+                  ['Indomie Rebus Telur', '19 porsi', 'Rp 342.000'],
                 ].map(([name, qty, total]) => (
                   <div key={name} className="flex items-center justify-between text-sm">
                     <span className="font-medium text-slate-700">{name}</span>

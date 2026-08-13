@@ -51,7 +51,15 @@ export const ASSIGNABLE_ROLES = ['user', 'kasir', 'admin'];
  * bukan petugas yang sedang melayani antrean.
  */
 export const ADMIN_PAGES = {
-  admin: ['/admin', '/admin/kasir', '/admin/produk', '/admin/meja', '/admin/transaksi', '/admin/akses'],
+  admin: [
+    '/admin',
+    '/admin/kasir',
+    '/admin/produk',
+    '/admin/meja',
+    '/admin/transaksi',
+    '/admin/profil',
+    '/admin/akses',
+  ],
   kasir: ['/admin', '/admin/kasir', '/admin/transaksi'],
   user: [],
 };
@@ -176,6 +184,15 @@ export const ACCESS_MATRIX = [
       },
       { name: 'CRUD produk (/admin/produk)', path: '/admin/produk', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
       { name: 'Denah meja (/admin/meja)', path: '/admin/meja', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
+      {
+        name: 'Profil outlet (/admin/profil)',
+        path: '/admin/profil',
+        guest: 'n',
+        user: 'n',
+        kasir: 'n',
+        admin: 'y',
+        note: 'Mengubah wajah kedai di mata pelanggan — nama, cerita, jam buka, sosial media.',
+      },
       { name: 'Hak akses (/admin/akses)', path: '/admin/akses', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
     ],
   },
@@ -184,6 +201,14 @@ export const ACCESS_MATRIX = [
     rows: [
       { name: 'Baca produk & meja', guest: 'y', user: 'y', kasir: 'y', admin: 'y' },
       { name: 'Tulis produk & meja', guest: 'n', user: 'n', kasir: 'n', admin: 'y' },
+      {
+        name: 'Ubah profil outlet',
+        guest: 'n',
+        user: 'n',
+        kasir: 'n',
+        admin: 'y',
+        note: 'Slug tetap terkunci untuk semua — trigger tenants_slug_immutable menolaknya di database.',
+      },
       {
         name: 'Baca transaksi di tabel',
         guest: 'n',

@@ -33,8 +33,14 @@ const COLUMNS = [
       { href: '/meja', label: 'Ketersediaan Meja' },
       { href: '/menu', label: 'Pesan Online' },
       { href: '/promo', label: 'Promo Hari Ini' },
+      /*
+        Tanpa tautan `/#faq` lagi: FAQ-nya bicara soal keamanan data, harga
+        lisensi, dan lama setup sistem — pertanyaan pemilik usaha, bukan
+        pertanyaan pelanggan — dan sejak v6 ia tinggal di landing platform.
+        Tautan yang mengarah ke anchor yang tidak ada lagi membawa orang ke
+        puncak beranda tanpa penjelasan apa pun.
+      */
       { href: '/#qr', label: 'QR Ordering' },
-      { href: '/#faq', label: 'FAQ' },
     ],
   },
   // Tidak ada kolom "Staf & Admin" di sini, dan itu disengaja: daftar tautan

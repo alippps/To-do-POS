@@ -1,53 +1,49 @@
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
-import { platform } from '@/lib/site';
+import SectionHeading from '@/components/ui/SectionHeading';
 import { tenantPath } from '@/lib/tenant';
-import { listTenants } from '@/lib/tenant.server';
 
-/*
-  Beranda platform, bukan beranda kedai.
+/**
+ * Direktori outlet yang memakai sistem ini.
+ *
+ * Dua pembaca sekaligus, dan keduanya terlayani oleh daftar yang sama:
+ * pelanggan yang mengetik domainnya begitu saja dan sedang mencari kedainya,
+ * serta calon mitra yang ingin melihat bukti bahwa sistem ini benar-benar
+ * dipakai. Karena itu kartunya menampilkan alamat dan jam buka — informasi
+ * untuk yang pertama — sekaligus slug-nya, yang menunjukkan kepada yang kedua
+ * bahwa tiap outlet memang berdiri di alamatnya sendiri.
+ */
+export default function OutletDirectory({ outlets = [] }) {
+  /*
+    Grid-nya tiga kolom sejak `lg`, bukan dua.
 
-  Sampai v3 alamat `/` adalah landing page satu-satunya kedai. Sejak satu
-  pemasangan melayani banyak UMKM, alamat itu tidak lagi punya pemilik tunggal —
-  landing page tiap outlet pindah ke `/k/<slug>`, dan yang tersisa di sini
-  adalah pintu masuk yang menunjukkan outlet mana saja yang ada.
-
-  Pelanggan hampir tidak pernah melewati halaman ini: QR di meja membawa mereka
-  langsung ke outletnya. Yang membukanya adalah orang yang mengetik domainnya
-  begitu saja — dan bagi mereka daftar ini lebih berguna daripada 404.
-*/
-export const revalidate = 60;
-
-export const metadata = {
-  title: `${platform.name} — ${platform.tagline}`,
-  description: platform.description,
-};
-
-export default async function DirektoriPage() {
-  const outlets = await listTenants();
-
+    Direktori ini tumbuh seiring outlet yang mendaftar, dan dengan dua kolom
+    setiap jumlah ganjil menyisakan satu kartu yatim menggantung di baris
+    terakhir — persis yang terjadi begitu outlet ketiga masuk. Tiga kolom
+    membuat baris ganjil jauh lebih jarang, dan kartunya tetap cukup lebar
+    untuk memuat alamat.
+  */
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Container className="py-16 sm:py-24">
-        <header className="mx-auto max-w-2xl text-center">
-          <span className="eyebrow mx-auto">{platform.name}</span>
-          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-            {platform.tagline}
-          </h1>
-          <p className="mt-4 text-lg leading-relaxed text-slate-500">{platform.description}</p>
-        </header>
+    <section id="outlet" className="scroll-mt-20 py-20 sm:py-24">
+      <Container>
+        <SectionHeading
+          eyebrow="Direktori Outlet"
+          title="UMKM yang sudah jalan di sistem ini"
+          description="Bukan tangkapan layar. Buka salah satunya — menu, denah meja, dan alur pemesanannya nyata, persis seperti yang dilihat pelanggan mereka."
+        />
 
         {outlets.length === 0 ? (
           <div className="mx-auto mt-14 max-w-lg rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
             <span className="text-4xl">🏪</span>
             <p className="mt-4 font-semibold text-slate-800">Belum ada outlet terdaftar</p>
             <p className="mt-1 text-sm leading-snug text-slate-500">
-              Jalankan <code className="font-semibold">supabase/schema.sql</code> di SQL Editor
-              Supabase untuk membuat outlet pertama.
+              Daftarkan yang pertama lewat tombol di bawah, atau jalankan{' '}
+              <code className="font-semibold">supabase/schema.sql</code> di SQL Editor Supabase
+              untuk memuat dua outlet contoh.
             </p>
           </div>
         ) : (
-          <div className="mx-auto mt-14 grid max-w-4xl gap-5 sm:grid-cols-2">
+          <div className="mx-auto mt-14 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {outlets.map((o) => (
               <Link
                 key={o.id}
@@ -56,7 +52,7 @@ export default async function DirektoriPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-bold text-slate-900">{o.name}</h2>
+                    <h3 className="truncate text-lg font-bold text-slate-900">{o.name}</h3>
                     <p className="mt-0.5 truncate text-sm text-slate-500">{o.tagline}</p>
                   </div>
                   <span
@@ -88,6 +84,6 @@ export default async function DirektoriPage() {
           </div>
         )}
       </Container>
-    </div>
+    </section>
   );
 }

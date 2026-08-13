@@ -1,19 +1,24 @@
-import Hero from '@/components/sections/Hero';
-import About from '@/components/sections/About';
-import Services from '@/components/sections/Services';
-import Advantages from '@/components/sections/Advantages';
+import OutletHero from '@/components/sections/OutletHero';
+import OutletStory from '@/components/sections/OutletStory';
 import BestSeller from '@/components/sections/BestSeller';
-import Portfolio from '@/components/sections/Portfolio';
-import Testimonials from '@/components/sections/Testimonials';
-import Faq from '@/components/sections/Faq';
 import QrOrder from '@/components/sections/QrOrder';
 import CtaWhatsapp from '@/components/sections/CtaWhatsapp';
 import { createPublicClient } from '@/lib/supabase/server';
 import { requireTenant } from '@/lib/tenant.server';
 
 /*
-  Landing page tidak menampilkan data yang berubah tiap detik: satu-satunya
-  data dinamis di sini adalah 4 menu favorit. Dipasangkan dengan
+  Beranda KEDAI.
+
+  Sampai v5 halaman ini memuat sembilan section, dan lima di antaranya bercerita
+  tentang perangkat lunaknya: layanan POS, keunggulan teknis, portfolio mitra,
+  testimoni pemilik outlet lain, dan FAQ soal keamanan data. Pengunjung Roti
+  Bakar 88 yang cuma ingin tahu harga roti bakar harus melewati semuanya.
+
+  Kelimanya pindah ke landing platform di `/`. Yang tersisa di sini hanya yang
+  memang milik kedai ini: siapa dia, ceritanya, menunya, cara memesan, dan cara
+  menghubunginya.
+
+  Satu-satunya data dinamis tetap 4 menu favorit. Dipasangkan dengan
   `createPublicClient()` (tanpa cookie), kueri produknya ter-cache dan
   disegarkan tiap 30 detik.
 
@@ -36,15 +41,11 @@ export default async function HomePage({ params }) {
 
   return (
     <>
-      <Hero tenant={tenant} />
-      <About tenant={tenant} />
-      <Services />
-      <Advantages />
+      <OutletHero tenant={tenant} />
       <BestSeller tenant={tenant} products={productsRes.data || []} />
-      <Portfolio />
-      <Testimonials />
+      {/* Mengembalikan null sendiri bila outletnya belum menulis cerita. */}
+      <OutletStory tenant={tenant} ringkas />
       <QrOrder tenant={tenant} />
-      <Faq />
       <CtaWhatsapp tenant={tenant} />
     </>
   );
