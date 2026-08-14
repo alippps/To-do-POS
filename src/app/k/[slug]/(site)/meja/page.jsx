@@ -86,7 +86,7 @@ export default async function MejaPage({ params, searchParams }) {
         <header className="mb-8 max-w-2xl">
           <span className="eyebrow">Langkah 1 dari 3 · Tanpa login</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Pilih meja yang masih kosong
+            Pilih Meja Tempat Kamu Duduk
           </h1>
           <p className="mt-3 text-base text-slate-500">
             Status di bawah diambil langsung dari sistem kasir dan diperbarui otomatis. Pilih satu

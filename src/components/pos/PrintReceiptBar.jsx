@@ -3,16 +3,28 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
  * Tombol aksi pada halaman struk. Diberi kelas `no-print` supaya
  * tidak ikut tercetak — yang keluar dari printer hanya `.receipt-paper`.
+ *
+ * `backHref` diterima RELATIF terhadap outlet (`/admin/transaksi`), lalu
+ * awalan `/k/<slug>`-nya dipasang di sini. Sebelumnya nilai itu dipakai apa
+ * adanya, jadi tombol "Kembali" menuju `/admin/transaksi` — alamat yang tidak
+ * pernah ada sejak seluruh halaman admin pindah ke bawah `/k/[slug]`, dan
+ * setiap kasir yang menekannya mendarat di 404.
+ *
+ * Menaruh pemasangan awalan di dalam komponen, bukan menyerahkannya ke
+ * pemanggil, membuat kekeliruan yang sama tidak bisa terulang lewat pemanggil
+ * berikutnya.
  */
 export default function PrintReceiptBar({
   auto = false,
   backHref = '/admin/transaksi',
   backLabel = 'Kembali',
 }) {
+  const t = useTenantHref();
   const [copied, setCopied] = useState(false);
 
   // Dibuka dari tombol "Cetak Struk" (…?auto=1) → langsung munculkan dialog cetak.
@@ -48,7 +60,7 @@ export default function PrintReceiptBar({
           {copied ? 'Tersalin ✓' : 'Salin tautan'}
         </Button>
         <Link
-          href={backHref}
+          href={t(backHref)}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
         >
           {backLabel}

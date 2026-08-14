@@ -315,6 +315,74 @@ Selama masih `pending`, pesanan itulah yang muncul di halaman **Bayar** meja ter
 
 ---
 
+## 🔄 Layar admin memperbarui dirinya sendiri
+
+Jalur B punya konsekuensi yang tidak kelihatan sampai kedainya ramai: **pesanan
+masuk tanpa ada yang menyentuh layar admin.** Pelanggan memindai QR di mejanya
+sendiri, barisnya sudah ada di `transactions` — tapi `/admin/transaksi` masih
+menampilkan hasil render terakhir, dan `/admin/kasir` masih menawarkan meja yang
+baru saja terisi. Sampai v6 satu-satunya obatnya adalah kasir yang ingat menekan
+F5, dan yang lupa baru tahu saat pelanggan datang menagih.
+
+Dua layar itu kini menyegarkan dirinya lewat [`useLiveRefresh()`](src/lib/useLiveRefresh.js):
+
+| Layar | Yang diawasi | Ditahan saat |
+| --- | --- | --- |
+| `/admin/transaksi` | `transactions` | Modal detail / konfirmasi hapus terbuka |
+| `/admin/kasir` | `cafe_tables`, `products` | Pesanan sedang dikirim |
+
+**Dua pemicu, dan polling sengaja tidak dimatikan.** Supabase Realtime jadi jalur
+utama — perubahan didorong server, sampai dalam hitungan detik. Di belakangnya
+`router.refresh()` tetap berjalan tiap **10 detik**, turun jadi **60 detik** begitu
+Realtime tersambung. Mematikannya sama sekali berarti menaruh seluruh kepercayaan
+pada satu WebSocket yang bisa mati diam-diam tanpa memberi status error — persis
+jenis kegagalan yang sedang diperbaiki bagian ini.
+
+Polling berhenti saat tab-nya tersembunyi dan **menyegarkan sekali begitu tab itu
+kembali dilihat**, jadi tab kasir yang ditinggal di belakang tidak menanyai
+database tiap 10 detik, tapi juga tidak pernah menampilkan data basi saat dibuka lagi.
+
+**Yang ditahan tidak dibuang.** Selagi modal terbuka, perubahan yang datang
+dicatat lalu dijalankan begitu modal ditutup — menarik data baru di bawah mata
+orang yang sedang membaca detail transaksi sama merugikannya dengan tidak
+menariknya sama sekali.
+
+Di layar kasir justru sebaliknya: pembaruan **tidak** ditahan walau keranjangnya
+sudah terisi. Saat itulah kasir paling perlu tahu mejanya keburu diambil pesanan
+QR, dan seluruh isi keranjang tersimpan di state komponen — `router.refresh()`
+tidak menyentuhnya.
+
+### Penanda kecil di pojok, dan kenapa ia perlu ada
+
+Layar yang berhenti butuh F5 menghilangkan satu-satunya cara kasir tahu apakah
+yang dilihatnya masih benar: **“tidak ada pesanan baru” dan “layarnya membeku”
+terlihat persis sama.** Karena itu keduanya memasang
+[`LiveIndicator`](src/components/admin/LiveIndicator.jsx) — titik status
+(hijau berdenyut = Realtime, kuning = polling saja) plus umur data yang berjalan.
+Angka yang terus bertambah tanpa pernah kembali ke nol berarti pembaruannya yang
+mati, bukan kedainya yang sepi. Tombol **Segarkan** tetap ada untuk yang tidak
+mau menunggu.
+
+### Menyalakan Realtime di database
+
+Bagian **9b** di `supabase/schema.sql` yang mengurusnya — menambahkan
+`transactions`, `cafe_tables`, dan `products` ke publikasi `supabase_realtime`.
+Kalau schema versi terbaru belum dijalankan, sistem **tetap berfungsi**: langganan
+gagal, penandanya tinggal kuning, dan polling 10 detik yang mengambil alih.
+
+Ketiganya juga diset `replica identity full`. Harganya nyata — WAL jadi lebih
+gemuk karena isi baris lama ikut dikirim di tiap update/delete — tapi tanpa itu
+event DELETE hanya membawa primary key, sehingga filter `tenant_id` di klien
+tidak punya kolom yang dicocokkan dan Realtime tidak bisa mengevaluasi RLS untuk
+menentukan siapa yang boleh menerimanya. Pada volume sebuah kedai, WAL yang lebih
+besar bukan biaya yang terasa.
+
+Realtime **menghormati RLS**. Policy baca `transactions` menuntut `is_staff_of()`,
+jadi menyalakan publikasi ini tidak mengirim riwayat penjualan ke pelanggan
+anonim yang kebetulan sedang membuka halaman menu.
+
+---
+
 ## 🔒 Isolasi sisi pelanggan ↔ admin
 
 Antarmuka publik **murni melayani pemesanan**. Tidak ada satu pun tautan, tombol, atau
@@ -481,6 +549,16 @@ pada tampilan.
 ---
 
 ## ⚠️ Sudah pernah menjalankan schema versi lama? Jalankan ulang.
+
+**v7 menyalakan Realtime, dan ini satu-satunya tambahan yang TIDAK wajib.** Tanpa
+menjalankannya, `/admin/kasir` dan `/admin/transaksi` tetap menyegarkan dirinya —
+hanya lewat polling 10 detik, bukan dorongan langsung dari server. Tidak ada
+halaman yang rusak, tidak ada kueri yang gagal.
+
+| Tambahan v7 | Dipakai oleh |
+| --- | --- |
+| Publikasi `supabase_realtime` (bagian **9b**) | [`useLiveRefresh()`](src/lib/useLiveRefresh.js) di layar kasir & daftar transaksi |
+| `replica identity full` pada 3 tabel | Agar event DELETE ikut membawa `tenant_id` dan bisa dievaluasi RLS |
 
 **v6 WAJIB dijalankan sebelum aplikasinya dipakai.** Bukan sekadar menambah fitur:
 `getTenant()` kini ikut membaca kolom `tenants.story`, dan selama kolom itu belum ada
@@ -717,10 +795,12 @@ src/
 │  │                          # TenantSignupForm
 │  ├─ auth/                   # LoginForm, RegisterForm, SessionPanel
 │  └─ admin/                  # AdminShell, CashierClient, ProductManager, TableManager,
-│                             # TableQrPanel, TransactionManager, AccessManager, ...
+│                             # TableQrPanel, TransactionManager, AccessManager,
+│                             # LiveIndicator, ...
 ├─ lib/
 │  ├─ supabase/               # client.js (browser), server.js (SSR + createPublicClient),
 │  │                          # middleware.js
+│  ├─ useLiveRefresh.js       # Realtime + polling penyegar layar admin (hook klien)
 │  ├─ tenant.js               # tenantPath(), slugValid(), slugify(), storyParagraphs(),
 │  │                          # waLinkOf() — MURNI, boleh dipakai di klien
 │  ├─ tenant.server.js        # getTenant(), requireTenant(), listTenants() — server saja
@@ -800,6 +880,56 @@ ikut tercetak. Sekarang:
 
 Tombol **Cetak** tersedia di modal setelah checkout, di halaman struk, di dashboard, dan di daftar transaksi admin.
 
+### Satu alamat, dua tampilan — dan yang memilih adalah URL
+
+`/k/<slug>/struk/<invoice>` melayani dua pembaca yang berbeda:
+
+| Tampilan | Isinya | Dimintakan lewat |
+| --- | --- | --- |
+| **Pelanggan** *(bawaan)* | `OrderStatusCard`, stepper, kode QRIS, tombol "Pesan lagi" | Tautan biasa, atau `?src=qr` |
+| **Kasir** | Struk thermal 80mm `ReceiptPaper` + tombol cetak | `?mode=kasir`, atau `?auto=1` (cetak langsung) |
+
+Sampai v6 yang memilih tampilan adalah **peran akun yang sedang masuk**, dan itu
+keliru dengan cara yang paling sering terasa justru oleh pemilik kedainya
+sendiri: ia masuk sebagai admin, memesan lewat QR di mejanya untuk mencoba, lalu
+menekan **Buka Bukti Pesanan** — dan mendarat di struk thermal bertuliskan "Mode
+kasir". Kode QRIS-nya tidak ada di sana (padahal itu yang mau dipindai), stepper
+alurnya hilang, dan tombol "Pesan lagi" berganti jadi "Kembali" ke dashboard.
+Satu-satunya orang yang tidak pernah bisa melihat tampilan pelanggannya adalah
+yang paling berkepentingan memeriksanya.
+
+**Peran tetap penjaganya, tapi berhenti jadi pemilihnya.** `STAFF_ROLES`
+menentukan siapa yang *boleh* membuka mode kasir; URL menentukan siapa yang
+*sedang* memintanya. Pengunjung tanpa sesi staf yang mengarang `?mode=kasir`
+tidak mendapat apa-apa — dijaga [`tautan-buntu.spec.js`](tests/e2e/tautan-buntu.spec.js).
+
+Keduanya saling menautkan, jadi tidak ada yang terjebak di satu sisi: tampilan
+pelanggan memuat **"Buka mode kasir"** bagi staf, dan tampilan kasir memuat
+**"Lihat sebagai pelanggan"**.
+
+### Tautan yang kehilangan awalan outlet
+
+Tiga tautan menuju alamat yang tidak pernah ada sejak seluruh halaman admin
+pindah ke bawah `/k/<slug>` — semuanya berakhir 404, dan tidak satu pun
+memunculkan error saat dibangun:
+
+| Tautan | Menuju | Seharusnya |
+| --- | --- | --- |
+| Tombol **Kembali** di struk mode kasir | `/admin/transaksi` | `/k/<slug>/admin/transaksi` |
+| Tombol **Cetak** di kartu transaksi versi **HP** | `/struk/…` | `/k/<slug>/struk/…` |
+| Tombol **Lihat Menu** di halaman 404 | `/katalog` | Direktori outlet `/#outlet` |
+
+Yang pertama diperbaiki di pangkalnya: `PrintReceiptBar` kini menerima
+`backHref` **relatif terhadap outlet** dan memasang awalannya sendiri lewat
+`useTenantHref()`, sehingga pemanggil berikutnya tidak bisa mengulang kekeliruan
+yang sama. Yang kedua kembarannya di tabel desktop sudah benar — hanya versi HP
+yang terlewat, dan justru dari HP-lah kasir memakainya.
+
+Yang ketiga paling kurang ajar: **halaman 404 yang menawarkan 404 berikutnya.**
+"Lihat Menu" mustahil benar di sana — menu adalah milik sebuah outlet, dan
+halaman itu satu-satunya yang tidak tahu outlet mana, sebab ia melayani seluruh
+alamat yang tidak cocok termasuk yang di luar `/k/<slug>`.
+
 ---
 
 ## 🔐 Keamanan
@@ -847,6 +977,7 @@ dijalankan kapan saja, termasuk beberapa menit sebelum demo.
 | `tests/e2e/validasi-form.spec.js` | Validasi sisi klien form kontak & pendaftaran, termasuk pesan galat yang hilang begitu kolomnya diperbaiki |
 | `tests/e2e/pemisahan-platform.spec.js` | Batas landing sistem ↔ halaman kedai, dijaga **dari kedua arah**: enam section sistem wajib ada di `/` dan wajib TIDAK ada di `/k/<slug>` · navbar platform tidak menawarkan halaman outlet · footer outlet punya pintu staf, footer platform tidak |
 | `tests/e2e/daftar-outlet.spec.js` | Pendaftaran UMKM baru: slug terisi sendiri dari nama usaha tapi berhenti menimpa begitu disunting · pratinjau `/k/<slug>` ikut berubah · **kode undangan salah ditolak database dan outletnya benar-benar tidak terbuat** (dicek dengan meminta `/k/<slug>` dan menuntut 404) |
+| `tests/e2e/tautan-buntu.spec.js` | Tautan yang menuju alamat tidak ada: setiap tombol di halaman 404 **diikuti sampai tujuannya** dan dituntut membalas 200 · invoice tak terdaftar dijawab halaman penjelasan · `?mode=kasir` tidak membuka apa pun bagi yang belum masuk |
 | `tests/e2e/helpers.js` | Nomor meja diambil dari denah saat test berjalan, bukan ditulis tetap — denah meja itu data yang bisa diganti pemilik kedai kapan saja |
 
 Dijalankan di dua lebar layar. QR meja dipindai dari HP, jadi kerusakan layout di

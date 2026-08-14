@@ -8,9 +8,11 @@ import EmptyState from '@/components/ui/EmptyState';
 import StatCard from './StatCard';
 import ConfirmDialog from './ConfirmDialog';
 import TransactionDetailModal from './TransactionDetailModal';
+import LiveIndicator from './LiveIndicator';
 import Toast from './Toast';
 import { rupiah, formatDate } from '@/lib/format';
 import { ORDER_STATUS_LIST, PAYMENT_LABEL_SHORT, orderStatus } from '@/lib/tables';
+import { useLiveRefresh } from '@/lib/useLiveRefresh';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 import { updateTransactionStatus, deleteTransaction } from '@/app/k/[slug]/admin/transaksi/actions';
 
@@ -40,6 +42,21 @@ export default function TransactionManager({ transactions = [], canDelete = fals
   const [deleting, setDeleting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  /*
+    Daftar ini layar pantau, bukan laporan yang dibuka sekali lalu ditinggal:
+    pesanan dari QR meja masuk tanpa ada yang menekan apa pun di sini.
+
+    Ditahan selagi modal terbuka — menarik data baru saat kasir sedang membaca
+    detail atau menimbang konfirmasi hapus berarti isi di depannya berganti
+    tanpa diminta. Perubahan yang datang selama itu tidak hilang: hook-nya
+    menyimpan permintaan tertahan dan menjalankannya begitu modal ditutup.
+  */
+  const langsung = useLiveRefresh({
+    tenantId: tenant.id,
+    tables: ['transactions'],
+    paused: Boolean(detail || deleting),
+  });
 
   /** SEARCH + FILTER */
   const filtered = useMemo(() => {
@@ -157,16 +174,25 @@ export default function TransactionManager({ transactions = [], canDelete = fals
           </div>
         </div>
 
-        <p className="text-sm text-slate-500">
-          Menampilkan <span className="font-semibold text-slate-800">{filtered.length}</span> dari{' '}
-          {transactions.length} transaksi
-          {keyword && (
-            <>
-              {' '}
-              untuk “<span className="font-semibold text-slate-800">{keyword}</span>”
-            </>
-          )}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">
+            Menampilkan <span className="font-semibold text-slate-800">{filtered.length}</span> dari{' '}
+            {transactions.length} transaksi
+            {keyword && (
+              <>
+                {' '}
+                untuk “<span className="font-semibold text-slate-800">{keyword}</span>”
+              </>
+            )}
+          </p>
+
+          <LiveIndicator
+            syncedAt={langsung.syncedAt}
+            live={langsung.live}
+            pending={langsung.pending}
+            onRefresh={langsung.refresh}
+          />
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -306,8 +332,11 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                   >
                     Detail
                   </button>
+                  {/* `hrefOutlet()` — kembarannya di tabel desktop memakainya,
+                      yang di sini terlewat dan menuju /struk/… tanpa awalan
+                      outlet, jadi tombol Cetak dari HP mendarat di 404. */}
                   <a
-                    href={`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`}
+                    href={hrefOutlet(`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`)}
                     target="_blank"
                     rel="noreferrer"
                     className="rounded-lg border border-slate-200 py-2.5 text-center text-xs font-semibold text-slate-600"

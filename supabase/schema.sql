@@ -1222,6 +1222,54 @@ create policy "pesan: admin boleh baca" on public.contact_messages
   for select using (public.is_admin_of(tenant_id));
 
 -- ------------------------------------------------------------
+-- 9b. REALTIME  (dorongan perubahan ke layar kasir & daftar transaksi)
+-- ------------------------------------------------------------
+--
+-- Tanpa bagian ini seluruh sistem tetap berjalan: `useLiveRefresh()` di sisi
+-- klien akan gagal berlangganan dan jatuh ke polling 10 detik. Yang hilang
+-- hanya kecepatannya — dan beban kuerinya bertambah, sebab polling tetap
+-- bertanya walau tidak ada yang berubah.
+--
+-- Realtime menghormati RLS. Pelanggan anonim tidak akan menerima apa pun dari
+-- `transactions` (policy bacanya menuntut `is_staff_of()`), jadi menyalakan
+-- publikasi ini tidak membocorkan riwayat penjualan siapa pun.
+
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+end $$;
+
+/*
+  `replica identity full` mengirim isi baris LAMA ikut serta di setiap
+  update/delete. Harganya nyata — WAL jadi lebih gemuk — tapi tanpa itu event
+  DELETE cuma membawa primary key, dan dua hal ikut rusak: filter
+  `tenant_id=eq.<id>` di klien tidak punya kolom yang dicocokkan, dan Realtime
+  tidak bisa mengevaluasi RLS untuk memutuskan siapa yang boleh menerimanya.
+  Pada volume sebuah kedai, WAL yang lebih besar bukan masalah yang terasa.
+*/
+alter table public.transactions replica identity full;
+alter table public.cafe_tables  replica identity full;
+alter table public.products     replica identity full;
+
+do $$
+declare
+  v_tabel text;
+begin
+  foreach v_tabel in array array['transactions', 'cafe_tables', 'products'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = v_tabel
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', v_tabel);
+    end if;
+  end loop;
+end $$;
+
+-- ------------------------------------------------------------
 -- 10. SEED
 -- ------------------------------------------------------------
 do $seed$

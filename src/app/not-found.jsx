@@ -15,11 +15,18 @@ export default function NotFound() {
         >
           Kembali ke Beranda
         </Link>
+        {/*
+          Dulu "Lihat Menu" → `/katalog`. Menu adalah milik sebuah outlet, dan
+          halaman ini justru satu-satunya tempat yang tidak tahu outlet mana —
+          ia melayani seluruh alamat yang tidak cocok, termasuk yang di luar
+          `/k/<slug>`. Tautannya menuju alamat yang tidak ada: halaman 404 yang
+          menawarkan 404 berikutnya. Direktori outlet yang bisa menjawabnya.
+        */}
         <Link
-          href="/katalog"
+          href="/#outlet"
           className="rounded-xl border border-brand-200 px-6 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
         >
-          Lihat Menu
+          Lihat Daftar Outlet
         </Link>
       </div>
     </div>

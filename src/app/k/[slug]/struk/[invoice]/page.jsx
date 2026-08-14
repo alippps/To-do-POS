@@ -85,6 +85,26 @@ export default async function StrukPage({ params, searchParams }) {
   const bolehCetak = STAFF_ROLES.includes(profile?.role);
 
   /*
+    Peran menentukan siapa yang BOLEH membuka struk kasir. Ia tidak boleh ikut
+    menentukan siapa yang SEDANG memintanya — dan sampai v6 ia melakukan
+    keduanya.
+
+    Akibatnya terasa persis di orang yang paling sering memakai sistem ini:
+    pemilik kedai yang sedang masuk sebagai admin, lalu memesan lewat QR di
+    mejanya sendiri untuk mencoba. Tombol "Buka Bukti Pesanan" membawanya ke
+    struk thermal 80mm bertuliskan "Mode kasir" — bukan bukti pesanan yang
+    dilihat pelanggannya. Kode QRIS-nya hilang (padahal itu yang mau dipindai),
+    stepper-nya hilang, dan tombol "Pesan lagi" berganti jadi "Kembali" ke
+    dashboard. Satu-satunya orang yang tidak pernah bisa melihat tampilan
+    pelanggan adalah yang paling berkepentingan melihatnya.
+
+    Sekarang tampilan kasir harus DIMINTA lewat URL: `?auto=1` dari tombol
+    Cetak, atau `?mode=kasir` dari tautan staf. Pelanggan yang mengarang
+    `?mode=kasir` tidak mendapat apa-apa — `bolehCetak` tetap penjaganya.
+  */
+  const modeKasir = bolehCetak && (searchParams?.auto === '1' || searchParams?.mode === 'kasir');
+
+  /*
     Asal-usul QR ikut dibawa ke tautan "Pesan lagi". Halaman ini sudah tahu
     pelanggannya datang lewat pindaian (dipakai `FlowSteps` di bawah), jadi
     membuangnya di tautan pulang membuat stepper kembali menuntut "Pilih meja"
@@ -150,7 +170,7 @@ export default async function StrukPage({ params, searchParams }) {
   }
 
   /* ---------------- Tampilan KASIR: struk yang bisa dicetak ---------------- */
-  if (bolehCetak) {
+  if (modeKasir) {
     return (
       <main className="min-h-screen bg-slate-100 px-4 py-10 print:min-h-0 print:bg-white print:p-0">
         {/*
@@ -169,10 +189,23 @@ export default async function StrukPage({ params, searchParams }) {
               ? 'Pesanan sudah lunas. Struk siap diserahkan ke pelanggan.'
               : 'Pesanan belum lunas — cetakan ini berlaku sebagai tiket dapur, bukan bukti bayar.'}
           </p>
+
+          {/* Pasangan dari tautan "Buka mode kasir" di tampilan pelanggan.
+              Pemilik kedai perlu bisa memeriksa apa yang dilihat tamunya —
+              termasuk kode QRIS yang hanya muncul di sana. */}
+          <Link
+            href={t(`/struk/${encodeURIComponent(transaction.invoice_no)}`)}
+            className="mt-3 inline-block text-xs font-semibold text-slate-500 underline-offset-4 transition hover:text-brand-700 hover:underline"
+          >
+            Lihat sebagai pelanggan
+          </Link>
         </div>
 
         <ReceiptPaper transaction={transaction} items={items} outlet={tenant} />
 
+        {/* `backHref` relatif terhadap outlet — PrintReceiptBar yang memasang
+            awalan `/k/<slug>`. Ditulis mentah, tautannya menuju /admin/transaksi
+            yang memang tidak ada dan berakhir 404. */}
         <PrintReceiptBar auto={searchParams?.auto === '1'} backHref="/admin/transaksi" />
       </main>
     );
@@ -248,6 +281,23 @@ export default async function StrukPage({ params, searchParams }) {
           Halaman ini tetap bisa dibuka lewat tautan yang sama. Struk resmi dicetak oleh kasir
           setelah pembayaran diterima.
         </p>
+
+        {/*
+          Jalan keluar untuk staf yang mendarat di sini.
+
+          Sekarang tampilan kasir harus diminta lewat URL, jadi kasir yang
+          membuka tautan struk milik pelanggan — disodorkan dari HP tamu,
+          misalnya — mendapat tampilan pelanggan. Tanpa tautan ini satu-satunya
+          cara pindah adalah mengetik `?mode=kasir` sendiri di address bar.
+        */}
+        {bolehCetak && (
+          <Link
+            href={t(`/struk/${encodeURIComponent(transaction.invoice_no)}?mode=kasir`)}
+            className="block text-center text-xs font-semibold text-slate-500 underline-offset-4 transition hover:text-brand-700 hover:underline"
+          >
+            Buka mode kasir · struk 80mm siap cetak
+          </Link>
+        )}
       </div>
     </main>
   );

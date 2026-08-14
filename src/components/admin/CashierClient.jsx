@@ -8,10 +8,12 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import { Input, Select, Textarea } from '@/components/ui/Field';
+import LiveIndicator from './LiveIndicator';
 import Toast from './Toast';
 import { rupiah } from '@/lib/format';
 import { promoInfo } from '@/lib/promo';
 import { tableStatus } from '@/lib/tables';
+import { useLiveRefresh } from '@/lib/useLiveRefresh';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 import { createCashierOrder } from '@/app/k/[slug]/admin/kasir/actions';
 
@@ -44,6 +46,25 @@ export default function CashierClient({ products = [], tables = [], categories =
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
+
+  /*
+    Denah meja di layar ini basi paling cepat di antara semua layar admin:
+    setiap pesanan QR yang masuk mengubah status sebuah meja lewat trigger
+    `transactions_sync_table`. Kasir yang menawarkan Meja 05 dari daftar
+    "Kosong" yang dirender sepuluh menit lalu mengirim pelanggan ke meja yang
+    sudah ada orangnya.
+
+    Sengaja TIDAK ditahan selagi keranjang terisi. Justru saat itulah kasir
+    paling perlu tahu mejanya keburu diambil — dan seluruh isi keranjang
+    tersimpan di state komponen ini, jadi `router.refresh()` tidak menyentuhnya.
+    Yang ditahan hanya selagi pesanan sedang dikirim, supaya render ulang tidak
+    berbenturan dengan server action yang belum selesai.
+  */
+  const langsung = useLiveRefresh({
+    tenantId: tenant.id,
+    tables: ['cafe_tables', 'products'],
+    paused: loading,
+  });
 
   const available = tables.filter((t) => t.status === 'available');
   const taken = tables.filter((t) => t.status !== 'available');
@@ -153,8 +174,12 @@ export default function CashierClient({ products = [], tables = [], categories =
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
+              {/* `mode=kasir` — tampilan struk tidak lagi ditentukan peran yang
+                  sedang masuk, jadi maksud kasir harus disebut di URL-nya.
+                  Tanpa `auto=1`: kasir sering cuma mau melihat tiketnya, bukan
+                  langsung memunculkan dialog cetak. */}
               <Link
-                href={hrefOutlet(`/struk/${encodeURIComponent(lastOrder.invoice)}`)}
+                href={hrefOutlet(`/struk/${encodeURIComponent(lastOrder.invoice)}?mode=kasir`)}
                 className="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
               >
                 Buka struk
@@ -185,9 +210,17 @@ export default function CashierClient({ products = [], tables = [], categories =
                 </span>
                 Pilih meja
               </h2>
-              <span className="text-xs font-medium text-slate-400">
-                {available.length} dari {tables.length} meja kosong
-              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-medium text-slate-400">
+                  {available.length} dari {tables.length} meja kosong
+                </span>
+                <LiveIndicator
+                  syncedAt={langsung.syncedAt}
+                  live={langsung.live}
+                  pending={langsung.pending}
+                  onRefresh={langsung.refresh}
+                />
+              </div>
             </div>
 
             {available.length === 0 ? (

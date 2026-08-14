@@ -106,6 +106,15 @@ test.describe('Scan QR meja', () => {
     await page.goto(url('/meja?meja=MEJA-TIDAK-ADA&src=qr'));
 
     await expect(page.getByText(/tidak terdaftar di denah kami/)).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Pilih meja yang masih kosong/ })).toBeVisible();
+    /*
+      Dicocokkan pada pangkal judulnya saja, bukan seluruh kalimat.
+
+      Yang dibuktikan baris ini adalah "mendarat di denah meja, bukan halaman
+      rusak" — dan itu tetap benar entah judulnya berbunyi "Pilih meja yang
+      masih kosong" atau "Pilih Meja Tempat Kamu Duduk". Menuntut kalimat utuh
+      membuat test ini gagal setiap kali kalimatnya diperhalus, kegagalan yang
+      tidak menunjuk kerusakan apa pun.
+    */
+    await expect(page.getByRole('heading', { name: /^Pilih Meja/i })).toBeVisible();
   });
 });
