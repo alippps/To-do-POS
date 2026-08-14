@@ -121,17 +121,20 @@ test.describe('Sisi pelanggan', () => {
   });
 
   /*
-    Denah meja SENGAJA tidak ada di navbar sejak v6 — memilih meja adalah satu
-    langkah di tengah memesan, bukan halaman tujuan. Yang harus tetap dijaga
-    adalah jalan menuju ke sana tidak ikut hilang bersamanya.
+    Denah meja SENGAJA tidak ada di navbar — memilih meja adalah satu langkah
+    di tengah memesan, bukan halaman tujuan.
 
-    Ajakan memesan tinggal SATU dan letaknya di hero, berdampingan dengan
-    "Lihat Menu". Kembarannya di navbar dicabut karena ia muncul dalam layar
-    yang sama, persis di sebelah tautan "Pesan" — tiga ajakan untuk satu
-    perbuatan. Test ini menjaga keduanya sekaligus: yang dicabut tetap tercabut,
-    yang tersisa tetap bekerja.
+    Sejak v7 tombol "Pesan Sekarang" di hero outlet ikut dicabut, dan itu
+    perubahan yang lebih dalam daripada penataan: tombol itu mengarah ke denah
+    meja, dan pelanggan sungguhan TIDAK PERNAH memilih meja dari browser — ia
+    sudah duduk di salah satunya, dan QR di mejanya yang menentukan nomornya.
+    Sebuah tombol besar bertuliskan "Pesan Sekarang" di beranda mengajarkan
+    kebalikan dari cara sistem ini bekerja.
+
+    Yang dijaga di sini: ajakan itu benar-benar hilang dari kedua tempat, dan
+    penggantinya menyebut cara yang sesungguhnya.
   */
-  test('denah meja lenyap dari navbar tapi tetap terjangkau dari hero', async ({ page }) => {
+  test('beranda outlet tidak lagi menawarkan "Pesan Sekarang"', async ({ page }) => {
     await page.goto(url('/'));
     const header = page.locator('header');
 
@@ -139,10 +142,57 @@ test.describe('Sisi pelanggan', () => {
     if (await hamburger.isVisible()) await hamburger.click();
 
     await expect(header.getByRole('link', { name: 'Meja', exact: true })).toHaveCount(0);
-    await expect(header.getByRole('link', { name: 'Pesan Sekarang' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Pesan Sekarang' })).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Pesan Sekarang' }).first().click();
-    await expect(page).toHaveURL(url('/meja'));
+    // Penggantinya keterangan, bukan tombol.
+    await expect(page.getByText('Scan QR di meja Anda untuk memesan')).toBeVisible();
+  });
+
+  /*
+    Jalur simulasi untuk yang menilai sistem ini dari laptop.
+
+    Tiga hal yang membuatnya tetap jujur, dan ketiganya mudah rusak tanpa ada
+    yang menyadarinya: labelnya menyebut dirinya simulasi, mejanya TETAP (bukan
+    dipilih pengunjung, bukan acak), dan halaman tujuannya mengaku sedang
+    memperagakan.
+  */
+  test('simulasi scan QR menyebut dirinya simulasi dan mejanya tetap', async ({ page }) => {
+    await page.goto(url('/'));
+
+    const tombol = page.getByRole('link', { name: /^Simulasi Scan QR — Meja \S+$/ });
+    await expect(tombol).toBeVisible();
+
+    /*
+      Nomor mejanya diambil dari NAMA AKSESIBEL, bukan `textContent()`.
+
+      Keduanya berbeda di sini dan bedanya menyesatkan: lambang 🔳 di dalam
+      tombol ber-`aria-hidden`, jadi ia ikut di `textContent()` tapi tidak ikut
+      di nama yang dibacakan pembaca layar. Mencocokkan yang pertama terhadap
+      `getByRole` selalu meleset.
+    */
+    const meja = (await tombol.getAttribute('href')).match(/meja=([^&]+)/)[1];
+
+    // Nomor mejanya sama pada muat berikutnya — ditentukan, bukan diacak.
+    await page.reload();
+    await expect(
+      page.getByRole('link', { name: `Simulasi Scan QR — Meja ${meja}` })
+    ).toBeVisible();
+
+    await tombol.click();
+
+    // Mendarat di layar hasil pindai meja itu, membawa penanda demo.
+    await expect(page).toHaveURL(new RegExp(`/meja\\?meja=${meja}`));
+    expect(new URL(page.url()).searchParams.get('demo')).toBe('1');
+
+    // Lanjut ke halaman pesan — bannernya harus mengaku.
+    await page.getByRole('dialog').getByRole('link').first().click();
+    await expect(page).toHaveURL(/\/menu\?/);
+    expect(new URL(page.url()).searchParams.get('meja')).toBe(meja);
+
+    await expect(page.getByText('Mode Demo')).toBeVisible();
+    await expect(
+      page.getByText(/nomor meja terbaca dari QR di meja dan tidak bisa diubah/i)
+    ).toBeVisible();
   });
 
   /*

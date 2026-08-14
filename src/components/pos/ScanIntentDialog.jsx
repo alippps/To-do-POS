@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { rupiah } from '@/lib/format';
+import { PARAM_DEMO } from '@/lib/demo';
 import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
@@ -18,7 +19,12 @@ import { useTenantHref } from '@/components/tenant/TenantProvider';
  *
  * Ditutup → layar hub di belakangnya tetap bisa dipakai (Menu, Bayar, Promo).
  */
-export default function ScanIntentDialog({ tableNo, billCount = 0, billTotal = 0 }) {
+export default function ScanIntentDialog({
+  tableNo,
+  billCount = 0,
+  billTotal = 0,
+  demo = false,
+}) {
   const t = useTenantHref();
   const [open, setOpen] = useState(true);
 
@@ -45,24 +51,37 @@ export default function ScanIntentDialog({ tableNo, billCount = 0, billTotal = 0
 
   // `src=qr` menandai asal-usul meja untuk stepper di halaman menu — lihat
   // catatan di ScanHub.
-  const q = `?meja=${encodeURIComponent(tableNo)}&src=qr`;
+  const q = `?meja=${encodeURIComponent(tableNo)}&src=qr${demo ? `&${PARAM_DEMO}=1` : ''}`;
   const adaTagihan = billCount > 0;
 
   const tambah = {
     href: t(`/menu${q}&mode=tambah`),
     title: 'Tambah Pesanan',
     desc: adaTagihan
-      ? `Langsung masuk ke kasir — tagihan meja ini sekarang ${billCount} pesanan, ${rupiah(billTotal)}`
+      ? `Masuk ke tagihan meja ini — sekarang ${billCount} pesanan, ${rupiah(billTotal)}`
       : 'Sudah pernah pesan di meja ini? Tambahannya jadi satu tagihan',
   };
 
   const langsung = {
     href: t(`/menu${q}`),
     title: 'Langsung Pesan',
-    desc: `Belum pesan apa pun? Mulai dari sini — Meja ${tableNo}`,
+    desc: `Mulai dari sini — pesananmu tercatat untuk Meja ${tableNo}`,
   };
 
-  // Yang paling mungkin dimaksud pelanggan ditaruh di atas dan diberi warna.
+  /*
+    SATU tombol besar, satu tautan kecil — bukan dua pilihan sejajar.
+
+    Keduanya berakhir di halaman menu yang sama; yang membedakan cuma kalimat
+    pengantarnya. Menyodorkannya sebagai dua kartu setara membuat pelanggan
+    mengira ia sedang memilih dua ALUR yang berbeda, lalu berhenti untuk
+    menimbang mana yang benar untuknya — keputusan yang tidak ada taruhannya,
+    diminta pada detik pertama sesudah ia memindai QR.
+
+    Keadaan mejanya sudah cukup untuk menebak: meja yang punya tagihan berjalan
+    hampir pasti mau nambah, meja yang bersih hampir pasti baru mulai. Yang
+    tertebak jadi tombol; yang tersisa tetap ada, satu baris di bawah, untuk
+    yang tebakannya meleset.
+  */
   const [utama, kedua] = adaTagihan ? [tambah, langsung] : [langsung, tambah];
 
   return (
@@ -104,9 +123,17 @@ export default function ScanIntentDialog({ tableNo, billCount = 0, billTotal = 0
           </button>
         </div>
 
-        <div className="mt-6 space-y-3">
-          <Pilihan option={utama} primary />
-          <Pilihan option={kedua} />
+        <div className="mt-6">
+          <Pilihan option={utama} />
+
+          <p className="mt-4 text-center text-sm">
+            <Link
+              href={kedua.href}
+              className="font-semibold text-slate-500 underline-offset-4 transition hover:text-brand-700 hover:underline"
+            >
+              {kedua.title} →
+            </Link>
+          </p>
         </div>
 
         {/*
@@ -132,31 +159,19 @@ export default function ScanIntentDialog({ tableNo, billCount = 0, billTotal = 0
   );
 }
 
-function Pilihan({ option, primary = false }) {
+/** Aksi utama — satu-satunya tombol di popup ini. */
+function Pilihan({ option }) {
   return (
     <Link
       href={option.href}
-      className={`flex items-center gap-4 rounded-2xl border p-4 transition ${
-        primary
-          ? 'border-brand-300 bg-brand-600 text-white shadow-pop hover:bg-brand-700'
-          : 'border-slate-200 bg-white hover:border-brand-200 hover:bg-brand-50/40'
-      }`}
+      className="flex items-center gap-4 rounded-2xl bg-brand-600 p-5 text-white shadow-pop transition hover:bg-brand-700"
     >
       <span className="min-w-0 flex-1">
-        <span className={`block text-base font-bold ${primary ? 'text-white' : 'text-slate-900'}`}>
-          {option.title}
-        </span>
-        <span
-          className={`mt-0.5 block text-xs leading-snug ${primary ? 'text-brand-50' : 'text-slate-500'}`}
-        >
-          {option.desc}
-        </span>
+        <span className="block text-lg font-extrabold">{option.title}</span>
+        <span className="mt-0.5 block text-xs leading-snug text-brand-50">{option.desc}</span>
       </span>
 
-      <span
-        aria-hidden="true"
-        className={`shrink-0 text-lg ${primary ? 'text-white/70' : 'text-slate-300'}`}
-      >
+      <span aria-hidden="true" className="shrink-0 text-xl text-white/70">
         →
       </span>
     </Link>

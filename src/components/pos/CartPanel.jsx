@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { Input, Select, Textarea, Wajib } from '@/components/ui/Field';
 import { rupiah } from '@/lib/format';
 import { PAYMENT_METHOD_LIST, tableStatus } from '@/lib/tables';
+import { BATAS } from '@/lib/limits';
 import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 export default function CartPanel({
@@ -163,6 +164,7 @@ export default function CartPanel({
           ref={nameRef}
           label={<Wajib>Nama pemesan</Wajib>}
           value={form.customerName}
+          maxLength={BATAS.namaPemesan}
           onChange={(e) => onFormChange('customerName', e.target.value)}
           placeholder="Nama Anda"
           hint="Dipakai barista untuk memanggil pesanan."
@@ -251,6 +253,7 @@ export default function CartPanel({
         <Textarea
           label="Catatan (opsional)"
           value={form.note}
+          maxLength={BATAS.catatan}
           onChange={(e) => onFormChange('note', e.target.value)}
           placeholder="Contoh: less sugar, tanpa es"
           className="min-h-[72px]"

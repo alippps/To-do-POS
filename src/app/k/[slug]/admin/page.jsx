@@ -5,7 +5,7 @@ import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import { createClient } from '@/lib/supabase/server';
 import { rupiah, formatDate } from '@/lib/format';
-import { orderStatus, tableStatus } from '@/lib/tables';
+import { ORDER_ACTIVE_STATUSES, orderStatus, tableStatus } from '@/lib/tables';
 import { requirePageAccess } from '@/lib/adminGuard';
 import { tenantPath } from '@/lib/tenant';
 
@@ -79,7 +79,14 @@ export default async function DashboardPage({ params }) {
   const items = itemsRes.data || [];
 
   const paid = transactions.filter((t) => t.status === 'paid');
-  const pending = transactions.filter((t) => t.status === 'pending');
+  /*
+    "Perlu diproses" = seluruh tahap yang belum selesai, bukan `pending` saja.
+
+    Menghitung `pending` sendirian membuat angka ini MENGECIL justru ketika
+    dapur mulai bekerja — pesanan yang sedang dimasak keluar dari hitungan,
+    dan dashboard terlihat lengang tepat di jam paling sibuk.
+  */
+  const pending = transactions.filter((t) => ORDER_ACTIVE_STATUSES.includes(t.status));
   const omzetTotal = paid.reduce((a, t) => a + Number(t.total || 0), 0);
   const trxHariIni = paid.filter((t) => new Date(t.created_at) >= startOfDay);
   const omzetHariIni = trxHariIni.reduce((a, t) => a + Number(t.total || 0), 0);

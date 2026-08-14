@@ -11,7 +11,14 @@ import TransactionDetailModal from './TransactionDetailModal';
 import LiveIndicator from './LiveIndicator';
 import Toast from './Toast';
 import { rupiah, formatDate } from '@/lib/format';
-import { ORDER_STATUS_LIST, PAYMENT_LABEL_SHORT, orderStatus } from '@/lib/tables';
+import {
+  ORDER_ACTIVE_STATUSES,
+  ORDER_STATUS,
+  ORDER_STATUS_LIST,
+  PAYMENT_LABEL_SHORT,
+  nextOrderStatuses,
+  orderStatus,
+} from '@/lib/tables';
 import { useLiveRefresh } from '@/lib/useLiveRefresh';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 import { updateTransactionStatus, deleteTransaction } from '@/app/k/[slug]/admin/transaksi/actions';
@@ -24,6 +31,25 @@ const PERIODS = [
   { value: '7d', label: '7 hari terakhir' },
   { value: '30d', label: '30 hari terakhir' },
 ];
+
+/**
+ * Penyaring khusus "belum selesai" — bukan sekadar salah satu nilai status.
+ *
+ * Ini pertanyaan yang paling sering dipunyai kasir di jam sibuk, dan sebelum
+ * ada tahap dapur ia tidak bisa ditanyakan sama sekali: "mana yang masih jadi
+ * pekerjaan?" Menjawabnya lewat dropdown status berarti membukanya tiga kali —
+ * Pending, lalu Diproses, lalu Siap — dan tetap tidak pernah melihat
+ * ketiganya sekaligus.
+ */
+const FILTER_AKTIF = 'aktif';
+
+/** Ajakan pada tombol transisi — kata kerja, bukan nama status. */
+const AKSI_LABEL = {
+  diproses: 'Mulai buat',
+  siap: 'Tandai siap',
+  paid: 'Tandai lunas',
+  cancelled: 'Batalkan',
+};
 
 export default function TransactionManager({ transactions = [], canDelete = false }) {
   const router = useRouter();
@@ -72,7 +98,11 @@ export default function TransactionManager({ transactions = [], canDelete = fals
         (t.table_no || '').toLowerCase().includes(q) ||
         (t.note || '').toLowerCase().includes(q);
 
-      const cocokStatus = status === 'Semua' || t.status === status;
+      const cocokStatus =
+        status === 'Semua' ||
+        (status === FILTER_AKTIF
+          ? ORDER_ACTIVE_STATUSES.includes(t.status)
+          : t.status === status);
 
       let cocokPeriode = true;
       if (period === 'today') {
@@ -90,13 +120,25 @@ export default function TransactionManager({ transactions = [], canDelete = fals
   const ringkasan = useMemo(() => {
     const lunas = filtered.filter((t) => t.status === 'paid');
     const omzet = lunas.reduce((a, t) => a + Number(t.total || 0), 0);
+
+    /*
+      Dihitung dari SELURUH transaksi, bukan dari `filtered`.
+
+      Kartu ini dipakai untuk memutuskan apakah masih ada pekerjaan tersisa —
+      dan jawabannya tidak boleh berubah hanya karena kasir sedang mencari
+      sebuah invoice. Angka nol yang muncul akibat kata kunci pencarian adalah
+      jawaban yang salah untuk pertanyaan "sudah beres semua?".
+    */
+    const dapur = transactions.filter((t) => ORDER_ACTIVE_STATUSES.includes(t.status));
+
     return {
       jumlah: filtered.length,
       omzet,
       rata: lunas.length ? omzet / lunas.length : 0,
-      pending: filtered.filter((t) => t.status === 'pending').length,
+      belumSelesai: dapur.length,
+      siap: dapur.filter((t) => t.status === 'siap').length,
     };
-  }, [filtered]);
+  }, [filtered, transactions]);
 
   const totalPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPage);
@@ -126,7 +168,20 @@ export default function TransactionManager({ transactions = [], canDelete = fals
         <StatCard label="Transaksi Tampil" value={ringkasan.jumlah} sub="sesuai filter aktif" icon="🧾" tone="slate" />
         <StatCard label="Omzet (Lunas)" value={rupiah(ringkasan.omzet)} sub="dari transaksi lunas" icon="💰" tone="green" />
         <StatCard label="Rata-rata / Transaksi" value={rupiah(ringkasan.rata)} icon="📊" tone="blue" />
-        <StatCard label="Menunggu Bayar" value={ringkasan.pending} sub="berstatus pending" icon="⏳" tone="amber" />
+        {/*
+          Menggantikan "Menunggu Bayar", yang dulu menghitung `pending` saja.
+
+          Begitu ada tahap dapur, angka itu justru MENGECIL tepat ketika
+          kedainya makin sibuk: pesanan yang mulai dimasak keluar dari hitungan
+          dan kartunya berbunyi menenangkan pada saat yang paling salah.
+        */}
+        <StatCard
+          label="Belum Selesai"
+          value={ringkasan.belumSelesai}
+          sub={ringkasan.siap > 0 ? `${ringkasan.siap} siap diantar` : 'pending · diproses · siap'}
+          icon="👨‍🍳"
+          tone="amber"
+        />
       </div>
 
       {/* Toolbar */}
@@ -148,9 +203,12 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                 setStatus(e.target.value);
                 setPage(1);
               }}
-              className="input-base cursor-pointer lg:w-40"
+              className="input-base cursor-pointer lg:w-44"
             >
               <option value="Semua">Semua status</option>
+              {/* Ditaruh paling atas setelah "Semua" — ini pilihan yang paling
+                  sering dibutuhkan, bukan salah satu nilai status biasa. */}
+              <option value={FILTER_AKTIF}>⏳ Belum selesai</option>
               {ORDER_STATUS_LIST.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.short}
@@ -238,27 +296,32 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                         {PAYMENT_LABEL_SHORT[t.payment_method] || t.payment_method}
                       </td>
                       <td className="px-5 py-4 font-bold text-slate-900">{rupiah(t.total)}</td>
+                      {/*
+                        Dulu sebuah <select> berisi SELURUH status.
+
+                        Itu bukan cuma longgar, tapi menyesatkan: ia menawarkan
+                        lompatan yang tidak sah sebagai pilihan yang setara —
+                        pending langsung ke Lunas, atau Lunas dikembalikan jadi
+                        Pending — lalu ditolak server action setelah diklik.
+                        Menu yang memuat pilihan yang pasti gagal adalah cara
+                        paling halus untuk membuat orang tidak percaya lagi
+                        pada layarnya.
+
+                        Sekarang badge menyatakan KEADAAN, dan tombol di kolom
+                        Aksi menyatakan LANGKAH BERIKUTNYA — hanya yang sah.
+                      */}
                       <td className="px-5 py-4">
-                        <select
-                          value={t.status}
-                          onChange={(e) => handleStatus(t, e.target.value)}
-                          className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs font-semibold outline-none ${
-                            t.status === 'paid'
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                              : t.status === 'pending'
-                              ? 'border-amber-200 bg-amber-50 text-amber-700'
-                              : 'border-rose-200 bg-rose-50 text-rose-700'
-                          }`}
-                        >
-                          {ORDER_STATUS_LIST.map((s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.short}
-                            </option>
-                          ))}
-                        </select>
+                        <Badge tone={orderStatus(t.status).tone}>{orderStatus(t.status).short}</Badge>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {nextOrderStatuses(t.status).map((next) => (
+                            <StatusButton
+                              key={next}
+                              next={next}
+                              onClick={() => handleStatus(t, next)}
+                            />
+                          ))}
                           <button
                             type="button"
                             onClick={() => setDetail(t)}
@@ -317,14 +380,37 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                 </div>
 
                 {/*
+                  Langkah berikutnya dipisah ke barisnya sendiri, di ATAS
+                  Detail/Cetak/Hapus.
+
+                  Di layar HP inilah barista bekerja sambil berdiri, dan yang
+                  ia cari cuma satu: tombol yang memajukan pesanan ini. Menaruh
+                  "Mulai buat" berdampingan dengan "Hapus" berukuran sama
+                  membuat keduanya harus dibaca dulu sebelum salah satunya
+                  ditekan.
+                */}
+                {nextOrderStatuses(t.status).length > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {nextOrderStatuses(t.status).map((next) => (
+                      <StatusButton
+                        key={next}
+                        next={next}
+                        besar
+                        onClick={() => handleStatus(t, next)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/*
                   Dua kolom, bukan satu baris berisi empat tombol.
 
                   Di lebar 360px, empat tombol `flex-1` menyisakan ~76px untuk
-                  masing-masing — label "Set Pending" membungkus jadi dua baris
-                  dan tinggi tombolnya jadi tidak rata. Grid membuat setiap
-                  tombol cukup lebar untuk labelnya sendiri.
+                  masing-masing — labelnya membungkus jadi dua baris dan tinggi
+                  tombolnya jadi tidak rata. Grid membuat setiap tombol cukup
+                  lebar untuk labelnya sendiri.
                 */}
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setDetail(t)}
@@ -343,20 +429,11 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                   >
                     Cetak
                   </a>
-                  <button
-                    type="button"
-                    onClick={() => handleStatus(t, t.status === 'paid' ? 'pending' : 'paid')}
-                    className={`rounded-lg border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 ${
-                      canDelete ? '' : 'col-span-2'
-                    }`}
-                  >
-                    {t.status === 'paid' ? 'Set Pending' : 'Set Lunas'}
-                  </button>
                   {canDelete && (
                     <button
                       type="button"
                       onClick={() => setDeleting(t)}
-                      className="rounded-lg border border-rose-200 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600"
+                      className="col-span-2 rounded-lg border border-rose-200 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600"
                     >
                       Hapus
                     </button>
@@ -407,5 +484,43 @@ export default function TransactionManager({ transactions = [], canDelete = fals
 
       <Toast toast={toast} onClose={() => setToast(null)} />
     </>
+  );
+}
+
+/**
+ * Tombol satu langkah maju — atau keluar lewat pembatalan.
+ *
+ * Warnanya mengikuti tone status TUJUAN, bukan status sekarang: yang sedang
+ * dijanjikan tombol ini adalah keadaan sesudah ditekan. Pembatalan sengaja
+ * tidak ikut menonjol — ia jalan keluar yang harus tersedia, bukan langkah
+ * yang ditawarkan.
+ */
+function StatusButton({ next, onClick, besar = false }) {
+  const status = ORDER_STATUS[next];
+  const membatalkan = next === 'cancelled';
+
+  const dasar = besar
+    ? 'rounded-lg py-2.5 text-xs font-semibold'
+    : 'rounded-lg px-3 py-1.5 text-xs font-semibold';
+
+  const warna = membatalkan
+    ? 'border border-slate-200 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
+    : {
+        diproses: 'border border-brand-200 bg-brand-50 text-brand-700 transition hover:bg-brand-100',
+        siap: 'border border-violet-200 bg-violet-50 text-violet-700 transition hover:bg-violet-100',
+        paid: 'border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100',
+      }[next];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      // Label tombol menyebut aksinya; nama statusnya dititipkan ke `title`
+      // supaya tetap bisa dicocokkan dengan badge di kolom sebelah.
+      title={`Ubah status menjadi “${status.label}”`}
+      className={`${dasar} ${warna}`}
+    >
+      {AKSI_LABEL[next] || status.short}
+    </button>
   );
 }

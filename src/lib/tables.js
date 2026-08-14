@@ -119,14 +119,76 @@ export const PAYMENT_METHOD_LIST = Object.values(PAYMENT_METHOD);
  * `label` bercerita ke pelanggan, `short` muat di badge tabel admin. Nilai
  * `tone` menyatukan warnanya supaya badge di dashboard, tabel, dan modal detail
  * tidak lagi punya peta warna masing-masing.
+ *
+ * ── Kenapa ada tahap dapur ──
+ *
+ * Sampai v6 daftarnya cuma pending → paid → cancelled, dan itu berarti seluruh
+ * pekerjaan dapur tidak terekam sama sekali. Begitu pesanan masuk, tidak ada
+ * cara tahu apakah ia masih antre, sedang dimasak, atau sudah siap diantar —
+ * satu-satunya yang tercatat adalah "belum dibayar". Barista dan kasir
+ * menutupi lubang itu dengan ingatan dan teriakan.
+ *
+ * `diproses` dan `siap` menyisipkan dua tahap itu SEBELUM pembayaran, bukan
+ * sesudahnya: pelanggan membayar di akhir, jadi pesanan yang sedang dimasak
+ * tetap berstatus belum lunas.
  */
 export const ORDER_STATUS = {
   pending: { value: 'pending', label: 'Menunggu diproses', short: 'Pending', tone: 'amber' },
+  diproses: { value: 'diproses', label: 'Sedang dibuat', short: 'Diproses', tone: 'blue' },
+  siap: { value: 'siap', label: 'Siap diantar', short: 'Siap', tone: 'violet' },
   paid: { value: 'paid', label: 'Lunas', short: 'Lunas', tone: 'green' },
   cancelled: { value: 'cancelled', label: 'Dibatalkan', short: 'Batal', tone: 'rose' },
 };
 
 export const ORDER_STATUS_LIST = Object.values(ORDER_STATUS);
+
+/** Nilai sah untuk kolom `transactions.status` — cermin check constraint di database. */
+export const ORDER_STATUS_VALUES = Object.keys(ORDER_STATUS);
+
+/**
+ * Pesanan yang BELUM SELESAI — dan karena itu mejanya masih terisi.
+ *
+ * Satu daftar ini menjawab tiga pertanyaan yang dulu dijawab sendiri-sendiri
+ * dengan `status = 'pending'`: meja mana yang terisi, tagihan mana yang masih
+ * berjalan, dan pesanan mana yang masih jadi pekerjaan.
+ *
+ * Kembarannya di database ada di `refresh_table_status()` dan
+ * `get_table_bill()`. Kalau daftar ini berubah, keduanya WAJIB ikut — meja
+ * yang terlihat kosong padahal makanannya sedang dimasak adalah kegagalan yang
+ * baru ketahuan saat dua tamu diarahkan ke meja yang sama.
+ */
+export const ORDER_ACTIVE_STATUSES = ['pending', 'diproses', 'siap'];
+
+/**
+ * Perpindahan status yang sah, dari tiap tahap.
+ *
+ * Alurnya maju satu arah — pending → diproses → siap → paid — dengan
+ * `cancelled` sebagai jalan keluar dari tahap mana pun yang belum lunas.
+ *
+ * `paid` dan `cancelled` sengaja TIDAK punya lanjutan. Konsekuensinya harus
+ * disadari: pesanan yang terlanjur ditandai lunas tidak bisa dikembalikan dari
+ * layar kasir, dan pembetulannya harus lewat SQL Editor. Itu batas yang
+ * dipilih, bukan yang terlupa — status lunas menutup sebuah transaksi
+ * keuangan, dan tombol yang bisa membatalkannya diam-diam lebih berbahaya
+ * daripada kesalahan yang sesekali harus dibetulkan manual.
+ */
+export const ORDER_TRANSITIONS = {
+  pending: ['diproses', 'cancelled'],
+  diproses: ['siap', 'cancelled'],
+  siap: ['paid', 'cancelled'],
+  paid: [],
+  cancelled: [],
+};
+
+/** Tahap-tahap lanjutan yang sah dari sebuah status. */
+export function nextOrderStatuses(current) {
+  return ORDER_TRANSITIONS[current] || [];
+}
+
+/** Penjaga tunggal, dipakai tombol di layar DAN server action. */
+export function canTransitionOrder(from, to) {
+  return nextOrderStatuses(from).includes(to);
+}
 
 export function orderStatus(value) {
   return ORDER_STATUS[value] || ORDER_STATUS.pending;

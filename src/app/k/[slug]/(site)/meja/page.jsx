@@ -3,6 +3,7 @@ import FlowSteps from '@/components/pos/FlowSteps';
 import ScanHub from '@/components/pos/ScanHub';
 import TableAvailability from '@/components/tables/TableAvailability';
 import { createClient } from '@/lib/supabase/server';
+import { modeDemo } from '@/lib/demo';
 import { requireTenant } from '@/lib/tenant.server';
 
 export const dynamic = 'force-dynamic';
@@ -71,6 +72,10 @@ export default async function MejaPage({ params, searchParams }) {
             billTotal={Number(billRes.data?.total || 0)}
             billCount={orders.length}
             promoCount={promoCount}
+            // Diteruskan, bukan dibaca ulang di klien: penandanya harus ikut
+            // sampai ke /menu supaya bannernya muncul di tempat pesanan
+            // benar-benar dibuat.
+            demo={modeDemo(searchParams)}
           />
         </Container>
       </div>

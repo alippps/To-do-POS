@@ -515,7 +515,7 @@ create table if not exists public.transactions (
   customer_name  text not null default 'Guest',
   table_no       text,
   payment_method text not null default 'cash' check (payment_method in ('cash', 'qris', 'transfer')),
-  status         text not null default 'paid'  check (status in ('pending', 'paid', 'cancelled')),
+  status         text not null default 'paid'  check (status in ('pending', 'diproses', 'siap', 'paid', 'cancelled')),
   note           text,
   total          numeric(12, 2) not null default 0,
   user_id        uuid references auth.users (id) on delete set null,
@@ -540,6 +540,25 @@ alter table public.transactions alter column tenant_id set not null;
   ulang nilainya berarti memalsukan catatan keuangan. Yang berhenti adalah
   penawarannya di layar, bukan kebenaran arsipnya.
 */
+
+/*
+  Tahap dapur v7 — untuk database yang SUDAH ADA.
+
+  Baris `check` di dalam `create table` di atas hanya berlaku pada pemasangan
+  baru; tabel yang sudah lahir tidak ikut berubah karenanya. Constraint-nya
+  di-drop lalu dibuat ulang di sini — PostgreSQL tidak punya `alter constraint`
+  untuk mengganti ekspresi CHECK.
+
+  Tidak ada baris yang nilainya diubah: yang lama tetap sah, yang baru jadi
+  ikut diterima. Isi blok ini sama persis dengan bagian 1 pada
+  `supabase/migration-status-fulfillment.sql`.
+*/
+alter table public.transactions
+  drop constraint if exists transactions_status_check;
+
+alter table public.transactions
+  add constraint transactions_status_check
+  check (status in ('pending', 'diproses', 'siap', 'paid', 'cancelled'));
 
 create index if not exists transactions_created_idx on public.transactions (created_at desc);
 create index if not exists transactions_invoice_idx on public.transactions (invoice_no);
@@ -578,8 +597,17 @@ create index if not exists contact_tenant_idx on public.contact_messages (tenant
 
 -- ------------------------------------------------------------
 -- 6. STATUS MEJA OTOMATIS
---    Meja jadi "occupied" saat ada pesanan berstatus pending,
---    dan kembali "available" begitu pesanan dilunasi / dibatalkan.
+--    Meja jadi "occupied" selama ada pesanan yang BELUM SELESAI, dan kembali
+--    "available" begitu semuanya dilunasi / dibatalkan.
+--
+--    "Belum selesai" sejak v7 berarti TIGA status, bukan satu: pesanan yang
+--    sedang dimasak (`diproses`) dan yang sudah siap diantar (`siap`) sama
+--    saja masih menduduki mejanya. Menghitung `pending` saja — seperti sampai
+--    v6 — membuat meja terlihat kosong tepat pada saat dapur mulai bekerja,
+--    dan layar kasir menawarkannya ke tamu berikutnya.
+--
+--    Daftarnya harus sama persis dengan ORDER_ACTIVE_STATUSES di
+--    src/lib/tables.js.
 -- ------------------------------------------------------------
 create or replace function public.refresh_table_status(p_table_id uuid)
 returns void
@@ -595,7 +623,8 @@ begin
 
   select count(*) into v_active
   from public.transactions
-  where table_id = p_table_id and status = 'pending';
+  where table_id = p_table_id
+    and status in ('pending', 'diproses', 'siap');
 
   if v_active > 0 then
     update public.cafe_tables set status = 'occupied' where id = p_table_id;
@@ -886,7 +915,12 @@ begin
         )
       ) as pesanan
     from public.transactions t
-    where t.tenant_id = v_tenant_id and t.table_no = v_table_no and t.status = 'pending'
+    -- Tagihan berjalan = semua yang belum lunas, termasuk yang sedang dimasak.
+    -- Menyaring `pending` saja membuat pelanggan yang membuka /bayar sementara
+    -- pesanannya digarap membaca "belum ada tagihan" — padahal ia jelas berutang.
+    where t.tenant_id = v_tenant_id
+      and t.table_no = v_table_no
+      and t.status in ('pending', 'diproses', 'siap')
   ) x;
 
   return jsonb_build_object(

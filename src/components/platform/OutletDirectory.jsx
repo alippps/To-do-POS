@@ -13,7 +13,7 @@ import { tenantPath } from '@/lib/tenant';
  * untuk yang pertama — sekaligus slug-nya, yang menunjukkan kepada yang kedua
  * bahwa tiap outlet memang berdiri di alamatnya sendiri.
  */
-export default function OutletDirectory({ outlets = [] }) {
+export default function OutletDirectory({ outlets = [], demo = null }) {
   /*
     Grid-nya tiga kolom sejak `lg`, bukan dua.
 
@@ -32,6 +32,50 @@ export default function OutletDirectory({ outlets = [] }) {
           description="Bukan tangkapan layar. Buka salah satunya — menu, denah meja, dan alur pemesanannya nyata, persis seperti yang dilihat pelanggan mereka."
         />
 
+        {/*
+          Kartu contoh, ditaruh SEBELUM daftarnya.
+
+          Daftar kartu yang seragam menuntut pengunjung memilih, dan yang baru
+          mendarat belum punya dasar untuk memilih — semua namanya asing.
+          Menawarkan satu pintu yang jelas lebih menolong daripada menawarkan
+          semuanya secara adil: yang cuma ingin melihat "seperti apa jadinya"
+          tidak perlu memutuskan apa pun, dan yang memang mencari kedai
+          tertentu tetap menemukannya di daftar tepat di bawah.
+        */}
+        {demo && (
+          <Link
+            href={tenantPath(demo.slug)}
+            className="group mx-auto mt-12 flex max-w-3xl flex-col gap-5 rounded-3xl border-2 border-brand-200 bg-brand-50/50 p-6 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-pop sm:flex-row sm:items-center sm:p-8"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-3xl shadow-pop"
+            >
+              🏪
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-700">
+                Coba tanpa mendaftar
+              </span>
+              <span className="mt-1.5 flex items-center gap-2 text-xl font-extrabold text-slate-900 sm:text-2xl">
+                Lihat contoh kedai
+                <span
+                  aria-hidden="true"
+                  className="text-lg text-brand-500 transition group-hover:translate-x-1"
+                >
+                  →
+                </span>
+              </span>
+              <span className="mt-1.5 block text-sm leading-snug text-slate-600">
+                Buka <span className="font-semibold text-slate-900">{demo.name}</span> — menu,
+                denah meja, dan alur pemesanannya berjalan sungguhan. Di sana ada tombol
+                simulasi scan QR untuk mencobanya dari laptop.
+              </span>
+            </span>
+          </Link>
+        )}
+
         {outlets.length === 0 ? (
           <div className="mx-auto mt-14 max-w-lg rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
             <span className="text-4xl">🏪</span>
@@ -43,7 +87,7 @@ export default function OutletDirectory({ outlets = [] }) {
             </p>
           </div>
         ) : (
-          <div className="mx-auto mt-14 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto mt-8 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {outlets.map((o) => (
               <Link
                 key={o.id}

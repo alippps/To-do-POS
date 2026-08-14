@@ -11,7 +11,71 @@ import { url } from './helpers';
  * test dijalankan. Kiriman yang berhasil diuji manual, bukan di sini.
  */
 
+/*
+  Perangkap umpan hanya berguna selama ia tidak pernah tersentuh manusia.
+
+  Yang diuji di sini justru sisi itu — bukan bahwa bot tertangkap (itu menuntut
+  kiriman yang benar-benar tersimpan), melainkan bahwa kolomnya tidak terlihat,
+  tidak bisa dicapai lewat Tab, dan tidak dibacakan pembaca layar. Kalau salah
+  satunya rusak, pengunjung sungguhan bisa mengisinya tanpa sadar dan pesannya
+  ditelan diam-diam TANPA pesan galat — kegagalan yang mustahil dilaporkan
+  karena layarnya berkata "terkirim".
+*/
+test.describe('Perangkap umpan (honeypot)', () => {
+  for (const [nama, path] of [
+    ['Form kontak outlet', '/kontak'],
+    ['Form kontak platform', null],
+  ]) {
+    test(`${nama}: kolom umpan ada tapi tidak bisa disentuh manusia`, async ({ page }) => {
+      await page.goto(path ? url(path) : '/');
+
+      const umpan = page.locator('input[name="website"]');
+      await expect(umpan, 'Kolom umpan hilang — perangkapnya tidak terpasang').toHaveCount(1);
+
+      /*
+        Diperiksa lewat KOORDINAT, bukan `toBeHidden()`.
+
+        Playwright menilai visibilitas dari kotak elemen itu sendiri dan tidak
+        ikut memperhitungkan `overflow-hidden` milik induknya — jadi kolom ini
+        dianggapnya "visible" walau tak ada satu piksel pun yang tergambar.
+        Yang benar-benar menentukan di sini adalah letaknya: seluruh kotaknya
+        berada di kiri layar, jauh di luar jangkauan mata dan jari.
+      */
+      const kotak = await umpan.boundingBox();
+      expect(
+        kotak === null || kotak.x + kotak.width <= 0,
+        `Kolom umpan terlihat di layar (x=${kotak?.x}, w=${kotak?.width})`
+      ).toBe(true);
+
+      await expect(umpan).toHaveAttribute('tabindex', '-1');
+      await expect(umpan).toHaveAttribute('autocomplete', 'off');
+
+      // Disembunyikan dari pohon aksesibilitas lewat pembungkusnya.
+      const pembungkus = page.locator('div[aria-hidden="true"]').filter({ has: umpan });
+      await expect(pembungkus).toHaveCount(1);
+    });
+  }
+});
+
 test.describe('Form kontak', () => {
+  /*
+    Batas panjang dijaga di dua tempat: `maxLength` di layar dan
+    `periksaPanjang()` di server action. Yang diuji di sini yang pertama —
+    yang kedua butuh kiriman sungguhan.
+  */
+  test('setiap kolom punya batas panjang', async ({ page }) => {
+    await page.goto(url('/kontak'));
+
+    for (const [label, batas] of [
+      ['Nama lengkap *', '80'],
+      ['Nomor WhatsApp', '25'],
+      ['Email *', '160'],
+      ['Pesan *', '2000'],
+    ]) {
+      await expect(page.getByLabel(label)).toHaveAttribute('maxlength', batas);
+    }
+  });
+
   test('menolak isian kosong dengan pesan per kolom', async ({ page }) => {
     await page.goto(url('/kontak'));
     await page.getByRole('button', { name: 'Kirim Pesan' }).click();

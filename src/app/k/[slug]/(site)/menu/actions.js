@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { PAYMENT_METHOD_VALUES } from '@/lib/tables';
 import { slugValid, tenantPath } from '@/lib/tenant';
+import { lewatBatas } from '@/lib/antiSpam';
+import { BATAS } from '@/lib/limits';
 
 /**
  * Checkout pesanan — membuat transaksi + item + memotong stok lewat RPC `create_order`.
@@ -13,6 +15,29 @@ import { slugValid, tenantPath } from '@/lib/tenant';
  * kasir yang nanti menandainya lunas dari /admin/transaksi.
  */
 export async function createOrder(payload) {
+  /*
+    Checkout dijaga rate limit karena ia menulis ke database TANPA login — dan
+    tulisannya bukan sekadar satu baris: `create_order` membuat transaksi,
+    seluruh itemnya, MEMOTONG STOK, lalu memicu trigger yang menandai meja
+    terisi. Skrip yang memanggilnya berulang kali tidak cuma mengotori riwayat
+    penjualan; ia menghabiskan stok yang sebenarnya masih ada di rak, dan
+    menutup meja yang sebenarnya kosong.
+
+    Jatahnya dipisah dari formulir kontak (`aksi` berbeda) supaya pelanggan
+    yang baru saja mengirim kritik tidak kehilangan jatah memesan.
+
+    Angkanya 5 per menit, sama dengan formulir kontak. Itu longgar untuk
+    pemesanan sungguhan — satu meja yang menambah pesanan tiga kali berturut
+    masih jauh di bawahnya — dan cukup untuk menahan pengulangan otomatis.
+  */
+  const batas = lewatBatas('checkout');
+  if (batas.lewat) {
+    return {
+      ok: false,
+      error: `Terlalu banyak pesanan dikirim dari perangkat ini. Tunggu ${batas.sisaDetik} detik lalu coba lagi.`,
+    };
+  }
+
   const supabase = createClient();
 
   const items = (payload?.items || [])
@@ -60,12 +85,34 @@ export async function createOrder(payload) {
     return { ok: false, error: 'Metode pembayaran tidak dikenali.' };
   }
 
+  /*
+    Batas ATAS untuk ketiga teks yang ikut tersimpan.
+
+    Sampai sekarang hanya panjang minimalnya yang dijaga, jadi nama pemesan
+    sepuluh ribu karakter tersimpan utuh — lalu dicetak ke struk thermal 80mm
+    dan dipanggil barista. `note` yang sama panjangnya ikut muncul di layar
+    kasir dan mendorong seluruh baris transaksi lain keluar layar.
+  */
+  const note = payload?.note ? String(payload.note).trim() : '';
+
+  if (customerName.length > BATAS.namaPemesan) {
+    return { ok: false, error: `Nama pemesan maksimal ${BATAS.namaPemesan} karakter.` };
+  }
+
+  if (tableNo.length > BATAS.nomorMeja) {
+    return { ok: false, error: 'Nomor meja tidak dikenali. Pindai ulang QR di mejamu.' };
+  }
+
+  if (note.length > BATAS.catatan) {
+    return { ok: false, error: `Catatan maksimal ${BATAS.catatan} karakter.` };
+  }
+
   const { data, error } = await supabase.rpc('create_order', {
     p_tenant_slug: tenantSlug,
     p_customer_name: customerName,
     p_table_no: tableNo,
     p_payment_method: paymentMethod,
-    p_note: payload?.note ? String(payload.note).trim() || null : null,
+    p_note: note || null,
     p_items: items,
   });
 

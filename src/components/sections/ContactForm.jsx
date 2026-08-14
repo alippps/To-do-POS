@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { Input, Textarea, Wajib } from '@/components/ui/Field';
 import { useTenant } from '@/components/tenant/TenantProvider';
+import { UMPAN } from '@/lib/honeypot';
+import { BATAS } from '@/lib/limits';
 import { sendMessage } from '@/app/k/[slug]/(site)/kontak/actions';
 
-const EMPTY = { name: '', email: '', phone: '', message: '' };
+const EMPTY = { name: '', email: '', phone: '', message: '', [UMPAN]: '' };
 
 export default function ContactForm() {
   const tenant = useTenant();
@@ -73,6 +75,7 @@ export default function ContactForm() {
           value={form.name}
           onChange={(e) => change('name', e.target.value)}
           placeholder="Nama Anda"
+          maxLength={BATAS.nama}
           error={errors.name}
         />
         <Input
@@ -80,6 +83,7 @@ export default function ContactForm() {
           value={form.phone}
           onChange={(e) => change('phone', e.target.value)}
           placeholder="08xxxxxxxxxx"
+          maxLength={BATAS.telepon}
           error={errors.phone}
         />
       </div>
@@ -91,6 +95,7 @@ export default function ContactForm() {
         onChange={(e) => change('email', e.target.value)}
         placeholder="nama@example.com"
         hint="Hanya dibaca tim kami untuk membalas. Tidak ditampilkan di website."
+        maxLength={BATAS.email}
         error={errors.email}
       />
 
@@ -99,6 +104,7 @@ export default function ContactForm() {
         value={form.message}
         onChange={(e) => change('message', e.target.value)}
         placeholder="Ceritakan kebutuhan Anda — jenis usaha, jumlah outlet, dan kendala saat ini."
+        maxLength={BATAS.pesan}
         error={errors.message}
       />
 
@@ -126,6 +132,41 @@ export default function ContactForm() {
         <Button type="submit" disabled={loading} className="w-full sm:w-auto">
           {loading ? 'Mengirim...' : 'Kirim Pesan'}
         </Button>
+      </div>
+
+      {/*
+        KOLOM UMPAN — tidak terlihat, tidak terdengar, tidak bisa di-Tab.
+
+        Disembunyikan lewat POSISI (`-left-[9999px]`), bukan `display: none`
+        maupun `hidden`: sebagian pengisi formulir otomatis sudah cukup pintar
+        untuk melewati kolom yang jelas-jelas disembunyikan begitu, dan
+        perangkap yang dilewati tidak menangkap apa-apa.
+
+        Tiga penjaga menemani supaya orang sungguhan tidak pernah tersandung:
+        `aria-hidden` menyembunyikannya dari pembaca layar, `tabIndex={-1}`
+        mengeluarkannya dari urutan Tab, dan `autoComplete="off"` menahan
+        pengisi otomatis BROWSER — yang dipakai manusia — supaya tidak ikut
+        mengisinya lalu membuat pesan mereka ditelan diam-diam.
+
+        Ditaruh sebagai anak TERAKHIR, bukan pertama. `space-y-4` pada form
+        bekerja lewat `> * + *`, jadi anak pertama yang tak terlihat pun tetap
+        membuat elemen sesudahnya mendapat margin atas — satu rem ruang kosong
+        di dalam kartu yang tidak ada yang memintanya.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden"
+      >
+        <label htmlFor={UMPAN}>Website</label>
+        <input
+          id={UMPAN}
+          name={UMPAN}
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form[UMPAN]}
+          onChange={(e) => change(UMPAN, e.target.value)}
+        />
       </div>
     </form>
   );

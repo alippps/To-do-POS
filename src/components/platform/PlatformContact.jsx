@@ -7,9 +7,11 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Input, Textarea, Wajib } from '@/components/ui/Field';
 import { platform } from '@/lib/site';
+import { UMPAN } from '@/lib/honeypot';
+import { BATAS } from '@/lib/limits';
 import { kirimPesanPlatform } from '@/app/(platform)/actions';
 
-const KOSONG = { name: '', email: '', phone: '', business: '', message: '' };
+const KOSONG = { name: '', email: '', phone: '', business: '', message: '', [UMPAN]: '' };
 
 /*
   Dua kanal, ditampilkan berdampingan dan bukan bertingkat.
@@ -87,6 +89,7 @@ export default function PlatformContact() {
                 value={form.name}
                 onChange={(e) => change('name', e.target.value)}
                 placeholder="Nama Anda"
+                maxLength={BATAS.nama}
                 error={errors.name}
               />
               <Input
@@ -95,6 +98,7 @@ export default function PlatformContact() {
                 onChange={(e) => change('business', e.target.value)}
                 placeholder="Warung Kopi Sudut"
                 hint="Kosongkan kalau usahanya belum berjalan."
+                maxLength={BATAS.bisnis}
               />
             </div>
 
@@ -106,6 +110,7 @@ export default function PlatformContact() {
                 onChange={(e) => change('email', e.target.value)}
                 placeholder="nama@emailkamu.com"
                 hint="Ke sinilah jawabannya dikirim."
+                maxLength={BATAS.email}
                 error={errors.email}
               />
               <Input
@@ -113,6 +118,7 @@ export default function PlatformContact() {
                 value={form.phone}
                 onChange={(e) => change('phone', e.target.value)}
                 placeholder="0812-3456-7890"
+                maxLength={BATAS.telepon}
                 error={errors.phone}
               />
             </div>
@@ -122,8 +128,26 @@ export default function PlatformContact() {
               value={form.message}
               onChange={(e) => change('message', e.target.value)}
               placeholder="Contoh: warung saya cuma punya 4 meja, apakah tetap masuk akal pakai QR per meja?"
+              maxLength={BATAS.pesan}
               error={errors.message}
             />
+
+            {/* Kolom umpan — penjelasan lengkapnya di ContactForm.jsx. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden"
+            >
+              <label htmlFor={`platform-${UMPAN}`}>Website</label>
+              <input
+                id={`platform-${UMPAN}`}
+                name={UMPAN}
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form[UMPAN]}
+                onChange={(e) => change(UMPAN, e.target.value)}
+              />
+            </div>
 
             {status && (
               <p

@@ -9,6 +9,7 @@ import Faq from '@/components/platform/Faq';
 import PlatformContact from '@/components/platform/PlatformContact';
 import PlatformCta from '@/components/platform/PlatformCta';
 import { platform } from '@/lib/site';
+import { outletDemo } from '@/lib/demo';
 import { listTenants } from '@/lib/tenant.server';
 
 /*
@@ -38,16 +39,33 @@ export const metadata = {
 
 export default async function PlatformLandingPage() {
   const outlets = await listTenants();
+  const demo = outletDemo(outlets);
 
   return (
     <>
-      <PlatformHero outletCount={outlets.length} />
+      <PlatformHero outletCount={outlets.length} demo={demo} />
+
+      {/*
+        Direktori naik ke posisi KEDUA, tepat di bawah hero.
+
+        Sebelumnya ia section ketujuh — sesudah Layanan, Cara Kerja,
+        Keunggulan, Portfolio, dan Testimoni. Urutan itu masuk akal untuk
+        pembaca yang membaca dari atas sampai bawah, dan tidak masuk akal untuk
+        siapa pun yang sebenarnya ada di sini: pemilik usaha yang ingin melihat
+        BUKTINYA sebelum membaca janji apa pun, dan pelanggan yang mengetik
+        domainnya begitu saja lalu mencari kedainya.
+
+        Yang kedua paling merugikan kalau salah urut. Ia tidak datang untuk
+        membaca materi jualan software house — ia cuma mau tahu harga kopi, dan
+        sebelum ini harus melewati lima section untuk menemukan daftar kedai.
+      */}
+      <OutletDirectory outlets={outlets} demo={demo} />
+
       <Services />
       <HowItWorks />
       <Advantages />
       <Portfolio />
       <Testimonials />
-      <OutletDirectory outlets={outlets} />
       <Faq />
       <PlatformContact />
       <PlatformCta />

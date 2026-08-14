@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import ScanIntentDialog from './ScanIntentDialog';
 import { rupiah } from '@/lib/format';
+import { PARAM_DEMO } from '@/lib/demo';
 import { useTenantHref } from '@/components/tenant/TenantProvider';
 
 /**
@@ -16,10 +17,17 @@ import { useTenantHref } from '@/components/tenant/TenantProvider';
  * Grid ketersediaan meja tetap ada di `/meja` tanpa parameter, dan ditautkan
  * di bawah untuk kasus "saya pindah meja".
  */
-export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCount = 0 }) {
+export default function ScanHub({
+  table,
+  billTotal = 0,
+  billCount = 0,
+  promoCount = 0,
+  demo = false,
+}) {
   const t = useTenantHref();
   const meja = table.table_no;
-  const q = `?meja=${encodeURIComponent(meja)}`;
+  const sufiksDemo = demo ? `&${PARAM_DEMO}=1` : '';
+  const q = `?meja=${encodeURIComponent(meja)}${sufiksDemo}`;
 
   /*
     Halaman menu perlu tahu mejanya datang dari QR, bukan dari denah — di sana
@@ -27,53 +35,40 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
     URL masuk, supaya QR lama yang terlanjur tercetak (tanpa `src`) tetap ikut
     benar: sampai di layar ini artinya memang habis memindai.
   */
-  const qQr = `${q}&src=qr`;
+  const qQr = `?meja=${encodeURIComponent(meja)}&src=qr${sufiksDemo}`;
 
-  const TILES = [
+  /*
+    SATU aksi utama, sisanya tautan kecil.
+
+    Sebelumnya keempatnya kartu sebesar telapak tangan dalam grid dua kolom,
+    dan tiga di antaranya berdiri sejajar dengan yang benar-benar dituju
+    orangnya. Yang memindai QR di mejanya datang untuk MEMESAN — "lihat menu",
+    "cek tagihan", dan "lihat promo" adalah hal-hal yang mungkin ia inginkan,
+    bukan hal yang ia datangi. Empat pilihan setara memaksanya memutuskan
+    sesuatu sebelum boleh mulai, dan itu terjadi tepat di layar pertama sesudah
+    memindai — saat ia paling tidak sabar.
+
+    Ketiganya tidak dihapus: yang berubah cuma bobotnya. Yang mencarinya tetap
+    menemukannya satu baris di bawah.
+  */
+  const TAUTAN_KECIL = [
     {
-      // Nomor meja ikut dibawa: katalog memakainya untuk menawarkan "Pesan
-      // untuk Meja 07" di ujung halaman, alih-alih memulangkan pelanggan ke
-      // denah untuk memilih meja yang sedang ia duduki.
       href: t(`/katalog${q}`),
       emoji: '📖',
-      title: 'Lihat Menu',
-      desc: 'Semua menu & harga — baca saja',
-      tone: 'border-slate-200 bg-white hover:border-brand-200',
-    },
-    {
-      href: t(`/menu${qQr}`),
-      emoji: '🛒',
-      title: 'Pesan',
-      /*
-        Pelanggan yang sudah memesan di kasir lalu duduk akan melihat kalimat
-        yang berbeda: tugas QR baginya bukan "mulai memesan" tapi "nambah",
-        dan tambahannya menempel ke tagihan meja yang sama.
-      */
-      desc:
-        billCount > 0
-          ? 'Tambah pesanan — masuk ke tagihan meja ini'
-          : 'Pesan langsung dari meja ini',
-      tone: 'border-brand-300 bg-brand-600 text-white hover:bg-brand-700',
-      primary: true,
+      label: 'Daftar harga',
+      badge: null,
     },
     {
       href: t(`/bayar${q}`),
       emoji: '💳',
-      title: 'Bayar',
-      desc:
-        billCount > 0
-          ? `${billCount} pesanan · ${rupiah(billTotal)}`
-          : 'Cek tagihan meja ini',
+      label: 'Tagihan meja ini',
       badge: billCount > 0 ? rupiah(billTotal) : null,
-      tone: 'border-slate-200 bg-white hover:border-brand-200',
     },
     {
       href: t(`/promo${q}`),
       emoji: '🔥',
-      title: 'Promo Hari Ini',
-      desc: promoCount > 0 ? `${promoCount} menu sedang diskon` : 'Cek penawaran hari ini',
+      label: 'Promo hari ini',
       badge: promoCount > 0 ? `${promoCount} menu` : null,
-      tone: 'border-amber-200 bg-amber-50 hover:border-amber-300',
     },
   ];
 
@@ -84,7 +79,12 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
         (pesan / nambah); hub di belakangnya untuk sisanya — lihat menu, cek
         tagihan, lihat promo.
       */}
-      <ScanIntentDialog tableNo={meja} billCount={billCount} billTotal={billTotal} />
+      <ScanIntentDialog
+        tableNo={meja}
+        billCount={billCount}
+        billTotal={billTotal}
+        demo={demo}
+      />
 
       {/* Identitas meja — penegasan bahwa QR-nya terbaca benar */}
       <div className="card-accent animate-fade-up p-6 sm:p-8">
@@ -126,61 +126,64 @@ export default function ScanHub({ table, billTotal = 0, billCount = 0, promoCoun
         </div>
       </div>
 
-      <p className="mt-8 text-center text-sm text-slate-500">
-        Mau mulai dari mana? Semua bisa dilakukan tanpa membuat akun.
-      </p>
-
       {/*
         Diberi landmark bernama, bukan sekadar <div>.
 
-        Empat kartu ini adalah navigasi utama layar hasil scan — pembaca layar
-        bisa melompat langsung ke sini alih-alih menyusuri kartu identitas meja
-        lebih dulu. Namanya juga memberi test e2e pegangan yang stabil: sebelum
-        ada ini, satu-satunya cara menunjuk kartu "Pesan" adalah menebak awalan
+        Ini navigasi utama layar hasil scan — pembaca layar bisa melompat
+        langsung ke sini alih-alih menyusuri kartu identitas meja lebih dulu.
+        Namanya juga memberi test e2e pegangan yang stabil: sebelum ada ini,
+        satu-satunya cara menunjuk tautan "Pesan" adalah menebak awalan
         namanya, dan tautan "Pesan Online" di footer ikut tersangkut.
       */}
-      <nav aria-label="Pilihan untuk meja ini" className="mt-4 grid gap-4 sm:grid-cols-2">
-        {TILES.map((t) => (
-          <Link
-            key={t.title}
-            href={t.href}
-            className={`group flex items-start gap-4 rounded-2xl border p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-pop ${t.tone}`}
+      <nav aria-label="Pilihan untuk meja ini" className="mt-6">
+        <Link
+          href={t(`/menu${qQr}`)}
+          className="group flex items-center gap-4 rounded-2xl bg-brand-600 p-5 text-white shadow-pop transition hover:-translate-y-0.5 hover:bg-brand-700 sm:p-6"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/20 text-3xl"
           >
-            <span
-              aria-hidden="true"
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${
-                t.primary ? 'bg-white/20' : 'bg-slate-50'
-              }`}
-            >
-              {t.emoji}
-            </span>
+            🛒
+          </span>
 
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center justify-between gap-2">
-                <span
-                  className={`text-lg font-bold ${t.primary ? 'text-white' : 'text-slate-900'}`}
-                >
-                  {t.title}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className={`shrink-0 text-lg transition group-hover:translate-x-0.5 ${
-                    t.primary ? 'text-white/70' : 'text-slate-300'
-                  }`}
-                >
-                  →
-                </span>
-              </span>
-              <span
-                className={`mt-1 block text-sm leading-snug ${
-                  t.primary ? 'text-brand-50' : 'text-slate-500'
-                }`}
-              >
-                {t.desc}
-              </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xl font-extrabold sm:text-2xl">
+              {billCount > 0 ? 'Tambah Pesanan' : 'Pesan Sekarang'}
             </span>
-          </Link>
-        ))}
+            <span className="mt-1 block text-sm leading-snug text-brand-50">
+              {billCount > 0
+                ? `Masuk ke tagihan Meja ${meja} yang sedang berjalan`
+                : `Pesan langsung dari Meja ${meja} — tanpa antre di kasir`}
+            </span>
+          </span>
+
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-2xl text-white/70 transition group-hover:translate-x-1"
+          >
+            →
+          </span>
+        </Link>
+
+        {/* Sisanya: tautan kecil sebaris, bukan kartu yang menyaingi. */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+          {TAUTAN_KECIL.map((tautan) => (
+            <Link
+              key={tautan.label}
+              href={tautan.href}
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-brand-700 hover:underline"
+            >
+              <span aria-hidden="true">{tautan.emoji}</span>
+              {tautan.label}
+              {tautan.badge && (
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">
+                  {tautan.badge}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       <p className="mt-8 text-center text-sm">

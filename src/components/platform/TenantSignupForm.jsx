@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { Input, Wajib } from '@/components/ui/Field';
 import { slugify, slugValid, tenantPath } from '@/lib/tenant';
+import { BATAS } from '@/lib/limits';
 import { daftarOutlet } from '@/app/(platform)/daftar-outlet/actions';
 
 const KOSONG = {
@@ -106,6 +107,7 @@ export default function TenantSignupForm() {
       <Input
         label={<Wajib>Nama usaha</Wajib>}
         value={form.nama}
+        maxLength={BATAS.namaUsaha}
         onChange={(e) => changeNama(e.target.value)}
         placeholder="Kopi Pagi Bandung"
         error={errors.nama}
@@ -114,6 +116,7 @@ export default function TenantSignupForm() {
       <Input
         label={<Wajib>Alamat outlet</Wajib>}
         value={form.slug}
+        maxLength={BATAS.slug}
         onChange={(e) => changeSlug(e.target.value)}
         placeholder="kopi-pagi-bandung"
         error={errors.slug}
@@ -145,6 +148,7 @@ export default function TenantSignupForm() {
         <Input
           label="Tagline"
           value={form.tagline}
+          maxLength={BATAS.tagline}
           onChange={(e) => change('tagline', e.target.value)}
           placeholder="Kopi & Sarapan Pagi"
           hint="Muncul di bawah nama usaha. Kosongkan kalau belum kepikiran."
@@ -152,6 +156,7 @@ export default function TenantSignupForm() {
         <Input
           label="Jam buka"
           value={form.jam}
+          maxLength={BATAS.jam}
           onChange={(e) => change('jam', e.target.value)}
           placeholder="Setiap hari, 07.00 – 22.00 WIB"
         />
@@ -160,6 +165,7 @@ export default function TenantSignupForm() {
       <Input
         label="Alamat lengkap"
         value={form.alamat}
+        maxLength={BATAS.alamat}
         onChange={(e) => change('alamat', e.target.value)}
         placeholder="Jl. Braga No. 12, Bandung"
       />
@@ -168,6 +174,7 @@ export default function TenantSignupForm() {
         <Input
           label="Nomor WhatsApp"
           value={form.wa}
+          maxLength={BATAS.telepon}
           onChange={(e) => change('wa', e.target.value)}
           placeholder="0812-3456-7890"
           error={errors.wa}
@@ -177,6 +184,7 @@ export default function TenantSignupForm() {
           label="Email usaha"
           type="email"
           value={form.email}
+          maxLength={BATAS.email}
           onChange={(e) => change('email', e.target.value)}
           placeholder="halo@usahamu.com"
           error={errors.email}
@@ -187,6 +195,7 @@ export default function TenantSignupForm() {
         <Input
           label={<Wajib>Kode undangan</Wajib>}
           value={form.kode}
+          maxLength={BATAS.kodeUndangan}
           onChange={(e) => change('kode', e.target.value)}
           placeholder="Minta ke pengelola platform"
           error={errors.kode}

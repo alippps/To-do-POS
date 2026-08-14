@@ -24,9 +24,22 @@ test.describe('Scan QR meja', () => {
     */
     await expect(popup.getByRole('heading')).toHaveText(/Mau (pesan apa|nambah pesanan)\?/);
 
-    // Dua-duanya harus selalu tersedia; yang berubah hanya urutan & penonjolan.
+    /*
+      Dua-duanya harus tetap tersedia — yang berubah bobotnya.
+
+      Sejak v7 popup ini hanya punya SATU tombol; pilihan keduanya turun jadi
+      tautan teks di bawahnya. Keduanya berakhir di halaman menu yang sama, dan
+      menyodorkannya sebagai dua kartu setara membuat pelanggan mengira ia
+      sedang memilih dua alur berbeda — keputusan tanpa taruhan, diminta pada
+      detik pertama sesudah memindai.
+
+      Yang dijaga di sini kedua jalannya tetap ada, bukan bentuknya.
+    */
     await expect(popup.getByRole('link', { name: /Langsung Pesan/ })).toBeVisible();
     await expect(popup.getByRole('link', { name: /Tambah Pesanan/ })).toBeVisible();
+
+    // Tepat satu aksi dominan: sisanya tautan, bukan tombol tandingan.
+    await expect(popup.locator('a.bg-brand-600')).toHaveCount(1);
   });
 
   test('layar hub tidak lagi menawarkan status ketersediaan meja', async ({ page }) => {
@@ -60,11 +73,35 @@ test.describe('Scan QR meja', () => {
       jadi teksnya bebas berubah tanpa membuat test ini bohong.
     */
     const hub = page.getByRole('navigation', { name: 'Pilihan untuk meja ini' });
-    await hub.getByRole('link', { name: /^Pesan/ }).click();
+
+    /*
+      Hub kini punya SATU aksi utama, bukan empat kartu sejajar.
+
+      Yang memindai QR datang untuk memesan; "daftar harga", "tagihan", dan
+      "promo" adalah hal yang mungkin ia inginkan, bukan hal yang ia datangi.
+      Empat pilihan setara memaksanya memutuskan sesuatu sebelum boleh mulai —
+      tepat di layar pertama sesudah memindai, saat ia paling tidak sabar.
+    */
+    await hub.getByRole('link', { name: /^(Pesan Sekarang|Tambah Pesanan)/ }).click();
 
     await expect(page).toHaveURL(/\/menu\?/);
     expect(new URL(page.url()).searchParams.get('src')).toBe('qr');
     expect(new URL(page.url()).searchParams.get('meja')).toBe(meja);
+  });
+
+  test('hub menyisakan tautan kecil, bukan kartu yang menyaingi aksi utamanya', async ({ page }) => {
+    const meja = await ambilNomorMeja(page);
+    await bukaHasilScan(page, meja);
+
+    const hub = page.getByRole('navigation', { name: 'Pilihan untuk meja ini' });
+
+    // Ketiganya tidak dihapus — yang berubah cuma bobotnya.
+    for (const nama of ['Daftar harga', 'Tagihan meja ini', 'Promo hari ini']) {
+      await expect(hub.getByRole('link', { name: new RegExp(nama, 'i') })).toBeVisible();
+    }
+
+    // Dan tidak satu pun dari ketiganya tampil sebagai tombol utama.
+    await expect(hub.locator('a.bg-brand-600')).toHaveCount(1);
   });
 
   test('pemindai QR tidak disuruh memilih meja', async ({ page }) => {

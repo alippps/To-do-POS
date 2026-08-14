@@ -4,6 +4,7 @@ import FlowSteps from '@/components/pos/FlowSteps';
 import PosClient from '@/components/pos/PosClient';
 import { createClient } from '@/lib/supabase/server';
 import { rupiah } from '@/lib/format';
+import { modeDemo } from '@/lib/demo';
 import { tenantPath } from '@/lib/tenant';
 import { requireTenant } from '@/lib/tenant.server';
 
@@ -54,6 +55,13 @@ export default async function MenuPage({ params, searchParams }) {
   const fromScan = searchParams?.src === 'qr' && Boolean(defaultTable);
 
   /*
+    Penanda simulasi hanya menyalakan banner di bawah. Ia TIDAK menyentuh
+    `defaultTable` maupun penguncian mejanya — nomor meja tetap dibaca dari
+    URL dan tetap terkunci di keranjang, persis sama dengan pindaian sungguhan.
+  */
+  const demo = modeDemo(searchParams);
+
+  /*
     `mode=tambah` datang dari popup hasil scan QR. Bedanya bukan cuma kata-kata:
     pelanggan yang menambah perlu melihat tagihan meja yang SUDAH berjalan,
     supaya jelas tambahannya menempel ke situ dan bukan tagihan baru.
@@ -73,6 +81,30 @@ export default async function MenuPage({ params, searchParams }) {
   return (
     <div className="bg-slate-50 pb-28 pt-8 sm:pt-12 lg:pb-14">
       <Container>
+        {/*
+          Banner mode demo — TIPIS, dan ditaruh paling atas.
+
+          Yang membacanya juri atau calon mitra yang menekan "Simulasi Scan QR"
+          dari beranda outlet. Tanpa keterangan ini, satu-satunya kesimpulan
+          yang bisa ia tarik dari layar ini adalah bahwa nomor meja memang
+          ditentukan aplikasi — persis kebalikan dari prinsip yang sedang
+          diperagakan.
+
+          Kalimatnya menyebut dua hal sekaligus: apa yang barusan terjadi
+          (meja dipilihkan) dan apa yang terjadi sesungguhnya (terbaca dari QR,
+          tidak bisa diubah). Yang kedua yang penting — itu fiturnya.
+        */}
+        {demo && (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3">
+            <span aria-hidden="true" className="text-base leading-none">🔳</span>
+            <p className="text-xs leading-snug text-slate-500">
+              <span className="font-bold text-slate-700">Mode Demo</span> — meja{' '}
+              {defaultTable || '—'} dipilih otomatis. Pada penggunaan nyata, nomor meja terbaca
+              dari QR di meja dan tidak bisa diubah.
+            </p>
+          </div>
+        )}
+
         <FlowSteps current="menu" tableNo={defaultTable} fromScan={fromScan} className="mb-8" />
 
         <header className="mb-8">

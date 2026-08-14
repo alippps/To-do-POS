@@ -3,9 +3,11 @@ import FlowSteps from '@/components/pos/FlowSteps';
 import ReceiptPaper from '@/components/pos/ReceiptPaper';
 import OrderStatusCard from '@/components/pos/OrderStatusCard';
 import PrintReceiptBar from '@/components/pos/PrintReceiptBar';
+import LiveOrderStatus from '@/components/pos/LiveOrderStatus';
 import QrisPayment from '@/components/pos/QrisPayment';
 import { createClient, getSessionUser } from '@/lib/supabase/server';
 import { STAFF_ROLES } from '@/lib/access';
+import { ORDER_ACTIVE_STATUSES } from '@/lib/tables';
 import { tenantPath } from '@/lib/tenant';
 import { requireTenant } from '@/lib/tenant.server';
 
@@ -20,8 +22,24 @@ const LANGKAH_BERIKUT = {
   pending: {
     title: 'Yang perlu kamu lakukan',
     steps: [
-      'Tunjukkan nomor pesanan di atas ke kasir.',
+      'Tunggu sebentar — pesanan sedang mengantre di dapur.',
       'Bayar dengan memindai QRIS di halaman ini, atau tunai di kasir.',
+      'Kasir menandai lunas, lalu mencetak struk resmi.',
+    ],
+  },
+  diproses: {
+    title: 'Pesananmu sedang dibuat',
+    steps: [
+      'Barista sudah mulai mengerjakannya.',
+      'Kamu bisa membayar sekarang lewat QRIS, atau nanti di kasir.',
+      'Halaman ini berganti sendiri begitu pesanannya siap.',
+    ],
+  },
+  siap: {
+    title: 'Pesananmu siap diantar',
+    steps: [
+      'Sebentar lagi diantar ke mejamu.',
+      'Selesaikan pembayaran lewat QRIS di halaman ini, atau tunai di kasir.',
       'Kasir menandai lunas, lalu mencetak struk resmi.',
     ],
   },
@@ -238,6 +256,31 @@ export default async function StrukPage({ params, searchParams }) {
       </div>
 
       <OrderStatusCard transaction={transaction} items={items} outlet={tenant} />
+
+      {/*
+        Ditaruh tepat di bawah kartu status, bukan di dasar halaman: yang
+        ditunggu pelanggan ada di kartu itu, jadi keterangan "ini memperbarui
+        sendiri" harus terbaca tanpa menggulir.
+
+        Syaratnya `ORDER_ACTIVE_STATUSES`, bukan `=== 'pending'`. Sejak ada
+        tahap dapur, pesanan yang mulai dimasak berhenti berstatus `pending` —
+        dan pemeriksaan lama akan mematikan pembaruan otomatis TEPAT pada saat
+        pelanggan paling ingin tahu kabarnya. Yang berhenti hanya keadaan
+        final: lunas dan batal tidak punya kelanjutan.
+      */}
+      <div className="mx-auto mt-4 w-full max-w-md">
+        <LiveOrderStatus
+          active={ORDER_ACTIVE_STATUSES.includes(transaction.status)}
+          label={
+            transaction.status === 'siap'
+              ? 'Pesanan siap — menunggu diantar'
+              : transaction.status === 'diproses'
+              ? 'Sedang dibuat barista'
+              : 'Menunggu antrean dapur'
+          }
+          doneLabel="Status pesanan ini sudah final."
+        />
+      </div>
 
       {pakaiQris && (
         <div className="mx-auto mt-6 w-full max-w-md">

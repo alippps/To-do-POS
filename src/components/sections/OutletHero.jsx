@@ -1,5 +1,6 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
+import { PARAM_DEMO } from '@/lib/demo';
 import { tenantPath, waLinkOf } from '@/lib/tenant';
 
 /*
@@ -18,7 +19,7 @@ import { tenantPath, waLinkOf } from '@/lib/tenant';
   Outlet diterima sebagai PROP, bukan lewat `useTenant()` — section ini
   komponen server, dan context hanya hidup di klien.
 */
-export default function OutletHero({ tenant }) {
+export default function OutletHero({ tenant, mejaSimulasi = null }) {
   return (
     <section className="relative overflow-hidden bg-white">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -47,28 +48,71 @@ export default function OutletHero({ tenant }) {
             </p>
           )}
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            {/*
-              Tombol utama mengarah ke denah meja, bukan langsung ke /menu.
+          {/*
+            "Pesan Sekarang" DICABUT, dan penggantinya bukan tombol.
 
-              Pesanan wajib punya nomor meja — `createOrder()` menolak yang
-              tanpa itu — dan pengunjung yang mendarat di /menu tanpa nomor
-              meja disambut kartu "Meja belum diketahui". Mengirimnya ke denah
-              lebih dulu membuat langkah itu terjadi di tempat yang memang
-              disediakan untuknya. Yang datang dari QR tidak pernah lewat sini:
-              nomor mejanya sudah terbaca sejak dipindai.
-            */}
-            <Button href={tenantPath(tenant.slug, '/meja')} size="lg">
-              Pesan Sekarang
-            </Button>
+            Tombol itu tidak pernah masuk akal bagi pelanggan sungguhan. Ia
+            mengarah ke denah meja — layar untuk MEMILIH meja — padahal
+            pelanggan tidak pernah memilih meja dari browser: ia sudah duduk di
+            salah satunya, dan QR di mejanya yang menentukan nomornya. Satu
+            tombol besar bertuliskan "Pesan Sekarang" di beranda mengajarkan
+            kebalikan dari cara sistem ini bekerja, lalu menyodorkan daftar meja
+            kepada orang yang mejanya sudah jelas.
+
+            Yang menggantikannya keterangan, bukan ajakan: yang perlu ia
+            lakukan memang bukan menekan sesuatu di layar ini.
+          */}
+          <div className="mt-9 flex items-start gap-4 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-card"
+            >
+              📱
+            </span>
+            <div className="min-w-0">
+              <p className="font-bold text-slate-900">Scan QR di meja Anda untuk memesan</p>
+              <p className="mt-1 text-sm leading-snug text-slate-600">
+                Nomor meja terbaca sendiri dari QR-nya — tidak perlu mengetik, tidak perlu
+                memanggil pelayan, dan tidak perlu membuat akun.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <Button href={tenantPath(tenant.slug, '/katalog')} variant="secondary" size="lg">
-              Lihat Menu
+              Lihat Daftar Harga
             </Button>
           </div>
 
-          <p className="mt-6 text-sm text-slate-400">
-            Sudah duduk di meja? Pindai QR di mejamu — nomornya terbaca sendiri.
-          </p>
+          {/*
+            Pintu untuk yang MENILAI sistem ini dari laptop, dan ia menyebut
+            dirinya apa adanya.
+
+            Menyamarkannya sebagai tombol pesan biasa akan mengembalikan persis
+            kekeliruan yang baru saja dicabut. Menghilangkannya sama sekali
+            membuat sistem ini mustahil dicoba tanpa mencetak QR lebih dulu.
+            Jadi ia ada, tampil lebih kecil daripada ajakan sungguhan, dan
+            menuliskan nomor mejanya di label — supaya jelas mejanya sudah
+            ditentukan, bukan dipilih oleh yang menekannya.
+          */}
+          {mejaSimulasi && (
+            <p className="mt-6 border-t border-slate-100 pt-5">
+              <a
+                href={tenantPath(
+                  tenant.slug,
+                  `/meja?meja=${encodeURIComponent(mejaSimulasi)}&src=qr&${PARAM_DEMO}=1`
+                )}
+                className="inline-flex items-center gap-2.5 rounded-xl border border-dashed border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+              >
+                <span aria-hidden="true">🔳</span>
+                Simulasi Scan QR — Meja {mejaSimulasi}
+              </a>
+              <span className="mt-2 block text-xs leading-snug text-slate-400">
+                Untuk mencoba dari laptop. Memperagakan hasil pindaian QR Meja {mejaSimulasi};
+                pada penggunaan nyata langkah ini terjadi di meja pelanggan.
+              </span>
+            </p>
+          )}
         </div>
 
         {/* Kartu informasi kedai */}

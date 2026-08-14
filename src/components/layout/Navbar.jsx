@@ -43,9 +43,24 @@ import { useTenantHref } from '@/components/tenant/TenantProvider';
   terbaca sebagai tujuan tersendiri — lalu mengundang orang yang sudah duduk di
   Meja 07 untuk memilih meja lagi.
 */
+/*
+  "Menu" dan "Pesan" bersebelahan adalah dua kata yang berarti sama.
+
+  Bagi kita bedanya jelas — yang satu katalog baca-saja, yang satu tempat
+  bertransaksi. Bagi pengunjung yang baru duduk, keduanya sama-sama berarti
+  "daftar yang dijual", dan yang bersebelahan justru terbaca sebagai satu
+  tautan yang tidak sengaja tertulis dua kali. Yang lalu terjadi: ia menekan
+  yang mana saja, lalu bingung kenapa yang satu punya keranjang dan yang lain
+  tidak.
+
+  "Daftar Harga" menghapus tumpang tindihnya tanpa perlu penjelasan: ia
+  menyebut ISI halamannya (harga), bukan kategorinya (menu). Kata kerja
+  "Pesan" jadi satu-satunya yang menjanjikan perbuatan, dan itu memang
+  satu-satunya halaman tempat perbuatan itu terjadi.
+*/
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/katalog', label: 'Menu' },
+  { href: '/katalog', label: 'Daftar Harga' },
   { href: '/menu', label: 'Pesan' },
   { href: '/about', label: 'About' },
   { href: '/kontak', label: 'Kontak' },

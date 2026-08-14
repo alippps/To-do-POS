@@ -1,5 +1,6 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
+import { tenantPath } from '@/lib/tenant';
 
 /*
   Angka di sini adalah angka PLATFORM, bukan angka satu kedai.
@@ -16,7 +17,7 @@ const STATS = [
   { value: '< 30 dtk', label: 'Rata-rata antrean' },
 ];
 
-export default function PlatformHero({ outletCount = 0 }) {
+export default function PlatformHero({ outletCount = 0, demo = null }) {
   return (
     <section className="relative overflow-hidden bg-white">
       {/* dekorasi latar */}
@@ -72,7 +73,22 @@ export default function PlatformHero({ outletCount = 0 }) {
             </span>
           </h1>
 
-          <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
+          {/*
+            Satu baris yang menyebut produknya apa, sebelum kalimat apa pun yang
+            menjelaskan cara kerjanya.
+
+            Judul di atas memakai kiasan ("modalnya selembar QR") — itu bagus
+            untuk diingat, tapi buruk untuk MENGENALI. Pengunjung baru mendarat
+            di sini tanpa tahu apakah alamat ini milik sebuah kedai atau milik
+            sistemnya, dan kiasan tidak menjawabnya. Kalimat datar ini yang
+            menjawab, dan sengaja berdiri sendiri di atas paragraf penjelas
+            supaya terbaca lebih dulu.
+          */}
+          <p className="mt-7 text-xl font-semibold leading-snug text-slate-800 sm:text-2xl">
+            Sistem kasir &amp; pemesanan QR untuk UMKM kuliner.
+          </p>
+
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-500">
             Pelanggan memindai QR di mejanya, memesan sendiri, dan membayar sekali di akhir.
             Kamu dapat dashboard omzet, stok, dan riwayat transaksinya — tanpa mesin kasir,
             tanpa aplikasi yang harus diunduh siapa pun.
@@ -83,16 +99,28 @@ export default function PlatformHero({ outletCount = 0 }) {
               Daftarkan UMKM Anda
             </Button>
             {/*
-              Ajakan kedua mengarah ke direktori, bukan ke demo buatan.
+              Ajakan kedua membuka satu kedai SUNGGUHAN, bukan demo buatan dan
+              bukan lagi lompatan ke daftar.
 
-              Outlet yang terdaftar di sistem ini adalah kedai sungguhan dengan
-              menu dan denah mejanya sendiri — membukanya memperlihatkan persis
-              apa yang akan dilihat pelanggan, dan itu bukti yang lebih kuat
-              daripada tangkapan layar mana pun.
+              Sebelumnya tombol ini menggulir ke `#outlet` — satu klik lagi
+              sebelum orang melihat apa pun. Padahal yang ingin dijawabnya cuma
+              "seperti apa jadinya?", dan jawaban itu ada di halaman kedainya,
+              bukan di daftar nama. Outlet yang terdaftar punya menu dan denah
+              meja sendiri: membukanya memperlihatkan persis apa yang dilihat
+              pelanggan mereka, dan itu bukti yang lebih kuat daripada tangkapan
+              layar mana pun.
             */}
-            <Button href="#outlet" variant="secondary" size="lg">
-              {outletCount > 0 ? `Lihat ${outletCount} outlet yang pakai` : 'Lihat outlet yang pakai'}
-            </Button>
+            {demo ? (
+              <Button href={tenantPath(demo.slug)} variant="secondary" size="lg">
+                Lihat contoh kedai
+              </Button>
+            ) : (
+              <Button href="#outlet" variant="secondary" size="lg">
+                {outletCount > 0
+                  ? `Lihat ${outletCount} outlet yang pakai`
+                  : 'Lihat outlet yang pakai'}
+              </Button>
+            )}
           </div>
 
           <dl className="mt-12 grid max-w-lg grid-cols-2 gap-6 border-t border-slate-200 pt-8 sm:grid-cols-3">

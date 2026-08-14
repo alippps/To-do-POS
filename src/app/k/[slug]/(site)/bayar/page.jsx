@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
+import Badge from '@/components/ui/Badge';
+import LiveOrderStatus from '@/components/pos/LiveOrderStatus';
 import { createClient } from '@/lib/supabase/server';
 import { rupiah, formatDate } from '@/lib/format';
-import { PAYMENT_LABEL } from '@/lib/tables';
+import { PAYMENT_LABEL, orderStatus } from '@/lib/tables';
 import { tenantPath } from '@/lib/tenant';
 import { requireTenant } from '@/lib/tenant.server';
 
@@ -118,9 +120,17 @@ export default async function BayarPage({ params, searchParams }) {
                         {o.customer_name} · {formatDate(o.created_at)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800">
-                      Belum dibayar
-                    </span>
+                    {/*
+                      Dulu tertulis tetap "Belum dibayar".
+
+                      Sekarang `get_table_bill` juga memulangkan pesanan yang
+                      sedang dimasak dan yang sudah siap, jadi satu label untuk
+                      tiga keadaan menyembunyikan justru yang paling ingin
+                      diketahui pelanggan: kopinya sudah dibuat atau belum.
+                      Semuanya memang sama-sama belum dibayar — itu sudah
+                      dinyatakan total tagihan di bawah.
+                    */}
+                    <Badge tone={orderStatus(o.status).tone}>{orderStatus(o.status).label}</Badge>
                   </div>
 
                   <ul className="mt-4 space-y-2">
@@ -168,6 +178,19 @@ export default async function BayarPage({ params, searchParams }) {
               <span className="text-2xl font-extrabold text-brand-700">{rupiah(total)}</span>
             </div>
           </div>
+
+          {/*
+            Halaman inilah yang paling sering ditinggal terbuka: pelanggan
+            membukanya untuk dicocokkan kasir, lalu meletakkan HP-nya di meja.
+            Begitu kasir menandai lunas, `get_table_bill` berhenti memulangkan
+            pesanan itu dan tagihannya menyusut sendiri sampai halaman berganti
+            jadi "Belum ada tagihan di meja ini".
+          */}
+          <LiveOrderStatus
+            active={orders.length > 0}
+            label="Menunggu kasir memproses pembayaran"
+            className="mt-5"
+          />
 
           <div className="card mt-6 p-6">
             <p className="text-[11px] font-bold uppercase tracking-widest text-brand-600">

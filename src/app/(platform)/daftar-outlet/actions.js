@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { slugValid } from '@/lib/tenant';
+import { lewatBatas } from '@/lib/antiSpam';
+import { BATAS, periksaPanjang } from '@/lib/limits';
 
 /*
   Pesan galat dari database dipulangkan APA ADANYA ke pemakai.
@@ -42,6 +44,23 @@ function pesanGagal(error) {
  * sana dan tidak boleh jadi satu-satunya yang memeriksa.
  */
 export async function daftarOutlet(payload) {
+  /*
+    Rate limit-nya lebih ketat daripada formulir lain: 3 per menit.
+
+    Yang benar mendaftarkan outlet melakukannya sekali seumur usaha, jadi jatah
+    kecil tidak pernah mengganggunya. Yang sedang MENEBAK kode undangan
+    melakukannya ribuan kali — dan tanpa penjaga ini, satu-satunya penghalang
+    adalah kecepatan jaringannya.
+  */
+  const batas = lewatBatas('daftar-outlet', { maks: 3 });
+  if (batas.lewat) {
+    return {
+      ok: false,
+      errors: {},
+      message: `Terlalu banyak percobaan pendaftaran. Coba lagi dalam ${batas.sisaDetik} detik.`,
+    };
+  }
+
   const nama = String(payload?.nama || '').trim();
   const slug = String(payload?.slug || '')
     .trim()
@@ -54,8 +73,19 @@ export async function daftarOutlet(payload) {
   const email = String(payload?.email || '').trim();
   const telepon = String(payload?.telepon || '').trim();
 
-  const errors = {};
-  if (nama.length < 3) errors.nama = 'Nama usaha minimal 3 karakter.';
+  const errors = periksaPanjang({
+    nama: [nama, BATAS.namaUsaha],
+    slug: [slug, BATAS.slug],
+    kode: [kode, BATAS.kodeUndangan],
+    tagline: [tagline, BATAS.tagline],
+    alamat: [alamat, BATAS.alamat],
+    jam: [jam, BATAS.jam],
+    wa: [wa, BATAS.telepon],
+    email: [email, BATAS.email],
+    telepon: [telepon, BATAS.telepon],
+  });
+
+  if (nama.length < 3 && !errors.nama) errors.nama = 'Nama usaha minimal 3 karakter.';
 
   if (!slug) {
     errors.slug = 'Alamat outlet wajib diisi.';
@@ -67,8 +97,9 @@ export async function daftarOutlet(payload) {
   if (!kode) errors.kode = 'Kode undangan wajib diisi.';
 
   // Kolom opsional — tapi begitu diisi harus benar-benar bisa dipakai.
-  // Aturannya disamakan dengan formulir kontak.
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  // Aturannya disamakan dengan formulir kontak. `!errors.email` menjaga galat
+  // panjang yang lebih spesifik tidak tertimpa "format tidak valid".
+  if (email && !errors.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.email = 'Format email tidak valid.';
   }
 

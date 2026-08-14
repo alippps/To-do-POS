@@ -331,6 +331,10 @@ Dua layar itu kini menyegarkan dirinya lewat [`useLiveRefresh()`](src/lib/useLiv
 | `/admin/transaksi` | `transactions` | Modal detail / konfirmasi hapus terbuka |
 | `/admin/kasir` | `cafe_tables`, `products` | Pesanan sedang dikirim |
 
+Halaman pelanggan ikut memperbarui dirinya lewat hook yang sama, tapi **tanpa
+Realtime** — alasannya bukan kelalaian, lihat [Sisi pelanggan ikut
+hidup](#sisi-pelanggan-ikut-hidup--tapi-tanpa-realtime-dan-itu-disengaja).
+
 **Dua pemicu, dan polling sengaja tidak dimatikan.** Supabase Realtime jadi jalur
 utama — perubahan didorong server, sampai dalam hitungan detik. Di belakangnya
 `router.refresh()` tetap berjalan tiap **10 detik**, turun jadi **60 detik** begitu
@@ -362,6 +366,41 @@ terlihat persis sama.** Karena itu keduanya memasang
 Angka yang terus bertambah tanpa pernah kembali ke nol berarti pembaruannya yang
 mati, bukan kedainya yang sepi. Tombol **Segarkan** tetap ada untuk yang tidak
 mau menunggu.
+
+### Sisi pelanggan ikut hidup — tapi tanpa Realtime, dan itu disengaja
+
+Pelanggan memegang HP-nya sambil menunggu kasir menandai lunas. Sampai v6 satu-satunya
+cara ia tahu statusnya berubah adalah menarik layar untuk memuat ulang — dan yang tidak
+terpikir melakukannya menatap **"Menunggu pembayaran"** pada pesanan yang sudah lunas
+beberapa menit lalu.
+
+| Halaman | Yang diperbarui | Berhenti saat |
+| --- | --- | --- |
+| `/k/<slug>/struk/<invoice>` | Status pesanan: pending → lunas / batal | Status bukan `pending` lagi |
+| `/k/<slug>/bayar?meja=07` | Tagihan berjalan meja itu | Tidak ada lagi pesanan berjalan |
+
+**Di sini Supabase Realtime tidak dipakai, dan bukan karena terlewat.** Tabel
+`transactions` memang tertutup untuk tamu — policy bacanya menuntut
+`is_staff_of(tenant_id) or user_id = auth.uid()`, dan itulah sebabnya kedua halaman ini
+mengambil datanya lewat RPC `SECURITY DEFINER` (`get_receipt`, `get_table_bill`), bukan
+dari tabelnya langsung.
+
+Realtime **mengevaluasi RLS untuk siapa pun yang berlangganan.** Pelanggan anonim tidak
+punya izin baca atas `transactions`, jadi langganan `postgres_changes` di halaman ini
+tidak akan pernah menerima satu event pun. Menyalakannya menuntut policy baca yang
+longgar — dan itu berarti setiap tamu yang membuka halaman struk bisa membaca pesanan
+seluruh tamu lain di kedai itu, lengkap dengan nama pemesannya. Layar yang lebih cepat
+satu-dua detik tidak sebanding dengan itu.
+
+Jadi polling di sisi pelanggan **bukan versi murahan dari Realtime, melainkan satu-satunya
+bentuk yang benar.** `router.refresh()` menempuh jalur yang sama dengan kunjungan biasa:
+lewat RPC, yang hanya memulangkan satu invoice atau tagihan satu meja.
+
+[`LiveOrderStatus`](src/components/pos/LiveOrderStatus.jsx) juga **berhenti sendiri**
+begitu tidak ada lagi yang ditunggu. Struk lunas yang tertinggal terbuka di HP tidak perlu
+menanyai server seumur hidup baterainya — itulah gunanya opsi `enabled` pada hook, yang
+berbeda dari `paused`: yang tertahan karena `paused` akan dijalankan begitu jedanya
+dibuka, sedangkan yang `enabled: false` memang tidak akan pernah berjalan.
 
 ### Menyalakan Realtime di database
 
@@ -525,6 +564,116 @@ yang tahu sudah dibayar atau belum.
 
 ---
 
+## 🧭 Empat titik yang dulu merusak prinsipnya sendiri
+
+Prinsipnya satu kalimat: **nomor meja selalu datang dari QR yang ditempel di meja, tidak
+pernah dipilih apalagi diketik pelanggan.** Itu bukan batasan teknis melainkan yang dijual.
+Tapi ada empat tempat di antarmuka yang mengajarkan kebalikannya, atau membuat pengunjung
+baru tersesat sebelum sampai ke sana.
+
+### 1. Landing platform tidak menyebut dirinya apa
+
+Judulnya memakai kiasan — *"modalnya selembar QR"*. Bagus untuk diingat, buruk untuk
+**mengenali**: pengunjung baru mendarat tanpa tahu apakah alamat ini milik sebuah kedai
+atau milik sistemnya, dan kiasan tidak menjawabnya.
+
+Sekarang ada satu baris datar tepat di bawah judul — **"Sistem kasir & pemesanan QR untuk
+UMKM kuliner."** — berdiri sendiri di atas paragraf penjelas supaya terbaca lebih dulu.
+
+**Direktori outlet naik dari section ketujuh ke kedua.** Urutan lama masuk akal untuk
+pembaca yang membaca dari atas ke bawah, dan tidak masuk akal untuk pelanggan yang mengetik
+domainnya begitu saja lalu mencari kedainya: ia harus melewati Layanan, Cara Kerja,
+Keunggulan, Portfolio, dan Testimoni — materi jualan software house — sebelum menemukan
+daftar kedai.
+
+Di kepala section itu berdiri kartu **"Lihat contoh kedai"** yang mengarah ke outlet demo.
+Daftar kartu yang seragam menuntut pengunjung memilih, dan yang baru mendarat belum punya
+dasar untuk memilih — semua namanya asing. Satu pintu yang jelas lebih menolong daripada
+menawarkan semuanya secara adil.
+
+### 2. "Menu" dan "Pesan" adalah dua kata yang berarti sama
+
+Bagi kita bedanya jelas: yang satu katalog baca-saja, yang satu tempat bertransaksi. Bagi
+pengunjung yang baru duduk, keduanya sama-sama berarti "daftar yang dijual" — dan yang
+bersebelahan di navbar justru terbaca sebagai satu tautan yang tidak sengaja tertulis dua
+kali. Yang terjadi: ia menekan yang mana saja, lalu bingung kenapa yang satu punya
+keranjang dan yang lain tidak.
+
+| | Sebelum | Sesudah |
+| --- | --- | --- |
+| `/katalog` | Menu | **Daftar Harga** |
+| `/menu` | Pesan | Pesan |
+
+"Daftar Harga" menyebut **isi** halamannya, bukan kategorinya. Kata kerja "Pesan" jadi
+satu-satunya yang menjanjikan perbuatan.
+
+Halaman katalog juga mendapat ajakan di **atas**, bukan cuma di dasar halaman. Katalognya
+panjang — dua belas menu dalam empat kategori, belasan kali gulir di HP — dan satu-satunya
+jalan menuju alur pesan ada di ujung bawah. Bentuknya sengaja baris tipis, bukan kartu
+besar: halaman ini memang untuk lihat-lihat, dan ajakan yang mendesak di atas mengubahnya
+jadi etalase yang memaksa.
+
+### 3. "Pesan Sekarang" mengajarkan cara yang salah
+
+Tombol itu mengarah ke denah meja — layar untuk **memilih** meja. Pelanggan sungguhan tidak
+pernah memilih meja dari browser: ia sudah duduk di salah satunya, dan QR di mejanya yang
+menentukan nomornya. Satu tombol besar di beranda mengajarkan kebalikan dari cara sistem
+ini bekerja, lalu menyodorkan daftar meja kepada orang yang mejanya sudah jelas.
+
+Penggantinya **keterangan, bukan ajakan** — *"Scan QR di meja Anda untuk memesan"* — sebab
+yang perlu ia lakukan memang bukan menekan sesuatu di layar itu.
+
+**Untuk juri, jalannya tetap ada, dan ia menyebut dirinya apa adanya:**
+
+```
+🔳 Simulasi Scan QR — Meja 07
+   → /k/<slug>/meja?meja=07&src=qr&demo=1
+```
+
+Tiga hal yang membuatnya jujur: labelnya menyebut kata "Simulasi", mejanya **tetap** (bukan
+acak, dan tidak ada dropdown untuk memilihnya), dan halaman pemesanannya memasang banner
+tipis yang mengaku:
+
+> **Mode Demo** — meja 07 dipilih otomatis. Pada penggunaan nyata, nomor meja terbaca dari
+> QR di meja dan tidak bisa diubah.
+
+Nomor mejanya **dibaca dari denah outlet itu**, bukan ditulis tetap `'07'` di komponen —
+Roti Bakar 88 cuma bernomor 01–06, dan tombol yang tetap menjanjikan Meja 07 di sana akan
+mendarat di layar "meja tidak terdaftar", peragaan yang gagal tepat di depan orang yang
+sedang menilai. Untuk satu outlet hasilnya selalu nomor yang sama.
+
+Penanda `demo=1` **hanya menyalakan label dan banner.** Ia tidak menyentuh penguncian nomor
+meja: `meja` tetap dibaca dari URL dan tetap terkunci di keranjang, persis sama dengan
+pindaian sungguhan. Seluruh aturan di [Nomor meja tidak bisa
+diketik](#-nomor-meja-tidak-bisa-diketik) berlaku tanpa perkecualian.
+
+### 4. Terlalu banyak keputusan untuk orang yang cuma mau memesan
+
+Sesudah memindai, pelanggan disambut popup berisi **dua kartu setara**, dan di belakangnya
+hub berisi **empat kartu** lagi. Enam pilihan, di layar pertama sesudah memindai, saat ia
+paling tidak sabar.
+
+| | Sebelum | Sesudah |
+| --- | --- | --- |
+| **Popup** | 2 kartu setara | 1 tombol + 1 tautan teks |
+| **Hub** | 4 kartu grid | 1 tombol besar + 3 tautan sebaris |
+
+Di popup, keduanya berakhir di halaman menu yang sama — yang membedakan cuma kalimat
+pengantarnya. Menyodorkannya sebagai dua kartu setara membuat pelanggan mengira ia sedang
+memilih dua **alur** berbeda, lalu berhenti menimbang mana yang benar untuknya: keputusan
+tanpa taruhan. Keadaan mejanya sudah cukup untuk menebak — meja bertagihan hampir pasti mau
+nambah, meja bersih hampir pasti baru mulai. Yang tertebak jadi tombol; yang tersisa tetap
+ada satu baris di bawah.
+
+Di hub, "daftar harga", "tagihan", dan "promo" adalah hal yang **mungkin** diinginkan
+pelanggan, bukan hal yang ia datangi. Ketiganya tidak dihapus — yang berubah bobotnya.
+
+Semuanya dijaga [`qr-scan.spec.js`](tests/e2e/qr-scan.spec.js) dan
+[`kriteria-halaman.spec.js`](tests/e2e/kriteria-halaman.spec.js), termasuk tuntutan
+**tepat satu** aksi dominan di masing-masing layar.
+
+---
+
 ## 🔒 Nomor meja tidak bisa diketik
 
 Satu barcode untuk satu meja: QR di meja 07 memuat `?meja=07`, dan nomor itu masuk ke
@@ -548,7 +697,105 @@ pada tampilan.
 
 ---
 
+## 👨‍🍳 Tahap dapur pada status pesanan
+
+Sampai v6 status pesanan cuma tiga — `pending`, `paid`, `cancelled` — dan itu berarti
+**seluruh pekerjaan dapur tidak terekam sama sekali.** Begitu pesanan masuk, tidak ada cara
+tahu apakah ia masih antre, sedang dimasak, atau sudah siap diantar. Yang tercatat hanya
+"belum dibayar", dan barista menutupi sisanya dengan ingatan.
+
+```
+pending  →  diproses  →  siap  →  paid
+   ↘           ↘          ↘
+        cancelled  (dari tahap mana pun sebelum lunas)
+```
+
+| Status | Label pelanggan | Badge admin | Tone |
+| --- | --- | --- | :---: |
+| `pending` | Menunggu diproses | Pending | amber |
+| `diproses` | Sedang dibuat | Diproses | blue |
+| `siap` | Siap diantar | Siap | **violet** |
+| `paid` | Lunas | Lunas | green |
+| `cancelled` | Dibatalkan | Batal | rose |
+
+Tone `violet` **ditambahkan** ke `Badge`. Empat tone lama tidak cukup untuk lima tahap:
+`green` sudah dipakai "Lunas", dan memakainya lagi untuk "Siap" membuat dua keadaan yang
+menuntut pekerjaan berbeda — antarkan vs tidak ada apa-apa lagi — terlihat sama sekilas.
+
+### Tombol menyatakan LANGKAH, badge menyatakan KEADAAN
+
+Kolom status dulu berupa `<select>` berisi seluruh status. Itu bukan cuma longgar,
+tapi menyesatkan: ia menawarkan lompatan yang tidak sah sebagai pilihan yang setara —
+`pending` langsung ke Lunas, atau Lunas dikembalikan jadi Pending — lalu ditolak setelah
+diklik. Menu yang memuat pilihan yang pasti gagal adalah cara paling halus membuat orang
+berhenti percaya pada layarnya.
+
+Sekarang tiap baris hanya menampilkan transisi yang sah dari tahapnya:
+**Mulai buat** → **Tandai siap** → **Tandai lunas**, dengan **Batalkan** tersedia sampai
+sebelum lunas.
+
+**`paid` dan `cancelled` tidak punya lanjutan.** Konsekuensinya harus disadari: pesanan
+yang terlanjur ditandai lunas tidak bisa dikembalikan dari layar kasir, dan pembetulannya
+lewat SQL Editor. Itu batas yang dipilih — status lunas menutup sebuah transaksi keuangan,
+dan tombol yang bisa membatalkannya diam-diam lebih berbahaya daripada kesalahan yang
+sesekali harus dibetulkan manual.
+
+Validasinya **ada di dua tempat, dan yang di server yang menentukan**. Server action bukan
+sekadar mengulang aturan tombol: ia endpoint HTTP yang bisa dipanggil langsung dengan status
+apa pun. Perubahannya juga bersyarat pada status lama (`.eq('status', …)`) — sejak layar
+transaksi menyegarkan dirinya sendiri, dua kasir bisa menekan tombol pada pesanan yang sama
+dalam hitungan detik, dan tanpa syarat itu keduanya berhasil dengan yang terakhir menang.
+
+### Filter "Belum selesai"
+
+Pertanyaan tersibuk kasir — *mana yang masih jadi pekerjaan?* — tidak bisa dijawab dengan
+memilih satu status. Filter `⏳ Belum selesai` menampilkan `pending` + `diproses` + `siap`
+sekaligus. Kartu **Belum Selesai** menggantikan "Menunggu Bayar" karena angka lama justru
+**mengecil** saat dapur mulai bekerja, dan berbunyi menenangkan pada saat paling salah.
+
+### Yang paling mudah terlewat: status meja
+
+`refresh_table_status()` menghitung meja terisi dari transaksi aktif. Sampai v6 "aktif"
+berarti `status = 'pending'` — satu nilai. Dibiarkan begitu, **meja akan terlihat kosong
+tepat saat makanannya sedang dimasak**, dan layar kasir menawarkannya ke tamu berikutnya.
+
+Lubang yang sama ada di `get_table_bill()`: pelanggan yang membuka `/bayar` sementara
+pesanannya digarap akan membaca "Belum ada tagihan di meja ini" — padahal ia jelas berutang.
+
+Keduanya kini menyaring `status in ('pending','diproses','siap')`, dan daftar itu harus
+sama persis dengan `ORDER_ACTIVE_STATUSES` di [`src/lib/tables.js`](src/lib/tables.js).
+Tiga tempat lain ikut memakainya: kartu dashboard, filter "Belum selesai", dan syarat
+`LiveOrderStatus` tetap menyegarkan halaman struk pelanggan.
+
+### Menjalankan migrasinya
+
+Tempel [`supabase/migration-status-fulfillment.sql`](supabase/migration-status-fulfillment.sql)
+ke SQL Editor Supabase lalu **Run**. Aman dijalankan berkali-kali, dan tidak ada satu pun
+baris transaksi yang nilainya diubah.
+
+Isinya sudah ikut tertanam di `schema.sql`, jadi pemasangan baru tidak perlu menjalankannya
+terpisah. Selama migrasi belum dijalankan, tombol tahap dapur akan ditolak database — dan
+server action menerjemahkan penolakan itu jadi pesan yang menyebut berkas ini, bukan
+`violates check constraint` yang tidak memberi tahu apa-apa.
+
+Langkah **4** pada migrasi menyelaraskan ulang status seluruh meja. Tanpa itu, meja yang
+statusnya terlanjur salah tidak akan tersentuh sampai ada pesanan berikutnya di meja itu —
+sebab fungsinya hanya berjalan lewat trigger.
+
+---
+
 ## ⚠️ Sudah pernah menjalankan schema versi lama? Jalankan ulang.
+
+**v7 menambah tahap dapur pada status pesanan.** Jalankan
+[`supabase/migration-status-fulfillment.sql`](supabase/migration-status-fulfillment.sql)
+— atau tempel ulang seluruh `schema.sql`, isinya sudah termasuk.
+
+| Tambahan v7 (tahap dapur) | Dipakai oleh |
+| --- | --- |
+| Check constraint menerima `diproses` & `siap` | Tombol transisi di `/admin/transaksi` |
+| `refresh_table_status()` menghitung 3 status aktif | Status meja — **wajib**, kalau tidak meja terlihat kosong saat masak |
+| `get_table_bill()` menyaring 3 status aktif | Halaman `/bayar` pelanggan |
+| Penyelarasan ulang status seluruh meja | Membetulkan meja yang terlanjur salah sebelum migrasi |
 
 **v7 menyalakan Realtime, dan ini satu-satunya tambahan yang TIDAK wajib.** Tanpa
 menjalankannya, `/admin/kasir` dan `/admin/transaksi` tetap menyegarkan dirinya —
@@ -787,7 +1034,7 @@ src/
 │  ├─ tables/                 # TableAvailability (grid meja pelanggan)
 │  ├─ pos/                    # ScanIntentDialog, ScanHub, FlowSteps, PosClient,
 │  │                          # ProductCard, CartPanel, ReceiptModal, ReceiptPaper,
-│  │                          # QrisPayment, PrintReceiptBar
+│  │                          # QrisPayment, PrintReceiptBar, LiveOrderStatus
 │  ├─ tenant/                 # TenantProvider — identitas outlet untuk sisi klien
 │  ├─ platform/               # Section & kerangka PLATFORM: PlatformNavbar, PlatformFooter,
 │  │                          # PlatformLogo, PlatformHero, Services, HowItWorks, Advantages,
@@ -804,6 +1051,11 @@ src/
 │  ├─ tenant.js               # tenantPath(), slugValid(), slugify(), storyParagraphs(),
 │  │                          # waLinkOf() — MURNI, boleh dipakai di klien
 │  ├─ tenant.server.js        # getTenant(), requireTenant(), listTenants() — server saja
+│  ├─ demo.js                 # Jalur simulasi scan QR: meja demo, penanda ?demo=1
+│  ├─ limits.js               # Batas panjang tiap teks — dipakai form DAN server action
+│  ├─ honeypot.js             # Nama kolom umpan + pemeriksanya (murni, boleh di klien)
+│  ├─ rateLimit.js            # Penghitung rate limit murni, `now` bisa disuntik
+│  ├─ antiSpam.js             # Alamat IP + perekat ke rateLimit — server saja
 │  ├─ site.js                 # Identitas PLATFORM (bukan identitas kedai)
 │  ├─ adminGuard.js           # Penjaga halaman & server action, selalu per outlet
 │  ├─ promo.js                # Aturan harga promo (dipakai semua halaman)
@@ -932,6 +1184,104 @@ alamat yang tidak cocok termasuk yang di luar `/k/<slug>`.
 
 ---
 
+## 🛡️ Anti-spam pada jalur tulis publik
+
+Empat jalur menulis ke database **tanpa login**, dan semuanya memang harus begitu:
+pelanggan yang memindai QR di meja tidak akan membuat akun dulu, dan pemilik warung yang
+mendaftar belum punya akun sama sekali. Karena itu penjagaannya tidak bisa bersandar pada
+identitas.
+
+| Jalur | Menulis ke | Umpan | Rate limit | Batas panjang |
+| --- | --- | :---: | :---: | :---: |
+| Kontak outlet `/kontak` | `contact_messages` | ✅ | 5/menit | ✅ |
+| Checkout `/menu` | `create_order` | — | 5/menit | ✅ |
+| Kontak platform `/` | `platform_messages` | ✅ | 5/menit | ✅ |
+| Daftar outlet `/daftar-outlet` | `create_tenant` | — | **3/menit** | ✅ |
+
+Jatah tiap jalur **terpisah**: pelanggan yang baru mengirim kritik tidak kehilangan jatah
+memesan. Pendaftaran outlet dibuat lebih ketat karena yang jujur melakukannya sekali seumur
+usaha, sedangkan yang sedang **menebak kode undangan** melakukannya ribuan kali.
+
+### Umpan (honeypot), dan kenapa ia berbohong
+
+Kolom `website` dirender di kedua formulir kontak, disembunyikan lewat **posisi**
+(`-left-[9999px]`) — bukan `display:none`, yang sudah dilewati sebagian pengisi otomatis.
+Tiga penjaga menemani supaya orang sungguhan tidak pernah tersandung: `aria-hidden` untuk
+pembaca layar, `tabIndex={-1}` untuk urutan Tab, dan `autoComplete="off"` supaya pengisi
+otomatis **browser** tidak ikut mengisinya.
+
+Yang terisi ditolak **diam-diam**: balasannya objek `BERHASIL` yang sama persis dengan
+kiriman yang benar-benar tersimpan. Pesan galat yang jujur akan memberi tahu penulis
+skripnya bahwa ada kolom yang harus dikosongkan, dan perangkapnya tidak berguna lagi pada
+percobaan kedua. Objeknya ditulis sekali dan dipakai dua kali supaya keduanya tidak mungkin
+menyimpang — perbedaan sekecil apa pun adalah petunjuk yang bisa dipakai mendeteksi
+perangkapnya.
+
+Kolomnya ditaruh sebagai anak **terakhir** di dalam form: `space-y-4` bekerja lewat
+`> * + *`, jadi anak pertama yang tak terlihat pun tetap membuat elemen sesudahnya
+mendapat margin atas.
+
+### Penghitungnya murni, adaptornya tipis
+
+[`lib/rateLimit.js`](src/lib/rateLimit.js) tidak tahu apa-apa soal Next.js — `now` bisa
+disuntik. Itu bukan kerapian: begitu penghitungnya menempel pada `headers()`, satu-satunya
+cara mengujinya adalah mengirim enam permintaan sungguhan, dan di formulir kontak
+permintaan yang lolos berarti **baris sungguhan di database**.
+[`lib/antiSpam.js`](src/lib/antiSpam.js) tinggal menyambungkan IP ke penghitung itu.
+
+**Dua batas yang harus diketahui sebelum dipercaya:**
+
+1. **Penghitungnya di memori proses.** Ia hilang saat server dimulai ulang dan tidak dibagi
+   antar-instance — pemasangan multi-instance punya batas efektif `5 × jumlah instance`.
+   Cukup untuk menahan skrip iseng dan klik ganda; tidak cukup untuk serangan sungguhan,
+   yang menuntut Redis atau rate limit di lapis CDN.
+2. **`x-forwarded-for` bisa dipalsukan.** Nilainya baru bisa dipercaya bila ada proxy
+   tepercaya di depan yang menimpanya — Vercel, Cloudflare, dan nginx yang dikonfigurasi
+   benar melakukan itu. Dijalankan telanjang tanpa proxy, penyerang cukup mengganti satu
+   header untuk mendapat jatah baru.
+
+### Batas panjang
+
+PostgreSQL `text` menerima satu megabyte dengan senang hati, dan sampai sekarang yang
+dijaga hanya panjang **minimal**. Nama pemesan sepuluh ribu karakter akan tersimpan utuh,
+lalu dicetak ke struk thermal 80mm dan dipanggil barista.
+
+[`lib/limits.js`](src/lib/limits.js) memegang angkanya untuk **kedua sisi**: `maxLength`
+pada input dan `periksaPanjang()` pada server action. Satu sumber, jadi tidak ada batas di
+layar yang diam-diam berbeda dengan batas di server. Galat panjang tidak pernah ditimpa
+galat bentuk — email 300 karakter juga gagal pemeriksaan formatnya, dan tanpa penjaga itu
+pengirimnya membaca "Format email tidak valid" lalu memperbaiki apa yang tidak rusak.
+
+---
+
+## 🖼️ Gambar produk
+
+`ProductCard` memakai **`next/image`**, bukan `<img>` dengan `eslint-disable`. Yang didapat
+bukan cuma lolos lint:
+
+- **`fill` di dalam kotak `aspect-[4/3]`.** Rasionya sudah ada sejak versi `<img>` dan
+  ia yang menahan layout shift — kotaknya punya tinggi sebelum gambarnya tiba, jadi harga
+  dan tombol di bawah tidak melompat. `fill` dipakai karena ukuran intrinsik gambarnya
+  tidak bisa diketahui di muka: `image_url` diisi admin sebagai URL bebas.
+- **`sizes` mengikuti grid** (1 kolom → 2 di `sm` → 3 di `lg`). Tanpa itu next/image
+  menganggap gambarnya selebar viewport dan mengunduh berkas 1200px untuk kartu yang di
+  layar cuma 380px — boros kuota pelanggan yang justru sedang memesan dari HP.
+- **Fallback untuk gambar yang gagal dimuat.** Tautan bisa mati atau salah ketik sejak
+  awal; `onError` menjatuhkannya ke lambang cangkir yang sama dengan produk yang memang
+  belum berfoto, jadi kartu tanpa gambar dan kartu bergambar rusak terlihat sama-sama
+  disengaja — bukan ikon rusak bawaan browser yang membuat pelanggan menyimpulkan
+  **menunya** yang bermasalah.
+- **`alt` berisi nama produk saja**, tanpa "Foto" di depannya: pembaca layar sudah
+  mengumumkan elemennya sebagai gambar. Lambang cangkir pengganti diberi `aria-hidden`
+  karena namanya sudah tertulis sebagai judul tepat di bawahnya.
+
+`remotePatterns` di [`next.config.mjs`](next.config.mjs) sudah mengizinkan
+`images.unsplash.com` dan `**.supabase.co`. **Host di luar itu akan ditolak optimizer** —
+admin yang menempel URL dari host lain akan melihat gambarnya gagal (dan jatuh ke
+fallback), jadi daftar itu perlu ditambah saat sumber gambar baru dipakai.
+
+---
+
 ## 🔐 Keamanan
 
 Akses admin diperiksa **empat lapis** — ringkasannya juga tampil di `/admin/akses`:
@@ -974,7 +1324,7 @@ dijalankan kapan saja, termasuk beberapa menit sebelum demo.
 |---|---|
 | `tests/e2e/kriteria-halaman.spec.js` | Seluruh halaman wajib lomba terbuka · navbar memuat semuanya · `/login` & `/register` ada tapi **tidak** ditautkan dari sisi publik · tiga halaman admin tertutup bagi yang belum masuk |
 | `tests/e2e/qr-scan.spec.js` | Popup niat mengenali nomor meja · layar hub tidak lagi menampilkan status ketersediaan · penanda `src=qr` terbawa ke `/menu` · **pemindai QR tidak disuruh memilih meja**, sedangkan yang datang dari denah tetap melihat langkah itu · QR tak terdaftar jatuh ke denah |
-| `tests/e2e/validasi-form.spec.js` | Validasi sisi klien form kontak & pendaftaran, termasuk pesan galat yang hilang begitu kolomnya diperbaiki |
+| `tests/e2e/validasi-form.spec.js` | Validasi sisi klien form kontak & pendaftaran, termasuk pesan galat yang hilang begitu kolomnya diperbaiki · **kolom umpan ada tapi tak terlihat, tak bisa di-Tab, dan tak dibacakan pembaca layar** · tiap kolom kontak punya `maxlength` |
 | `tests/e2e/pemisahan-platform.spec.js` | Batas landing sistem ↔ halaman kedai, dijaga **dari kedua arah**: enam section sistem wajib ada di `/` dan wajib TIDAK ada di `/k/<slug>` · navbar platform tidak menawarkan halaman outlet · footer outlet punya pintu staf, footer platform tidak |
 | `tests/e2e/daftar-outlet.spec.js` | Pendaftaran UMKM baru: slug terisi sendiri dari nama usaha tapi berhenti menimpa begitu disunting · pratinjau `/k/<slug>` ikut berubah · **kode undangan salah ditolak database dan outletnya benar-benar tidak terbuat** (dicek dengan meminta `/k/<slug>` dan menuntut 404) |
 | `tests/e2e/tautan-buntu.spec.js` | Tautan yang menuju alamat tidak ada: setiap tombol di halaman 404 **diikuti sampai tujuannya** dan dituntut membalas 200 · invoice tak terdaftar dijawab halaman penjelasan · `?mode=kasir` tidak membuka apa pun bagi yang belum masuk |

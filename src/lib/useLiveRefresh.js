@@ -43,17 +43,28 @@ const BACKOFF = 6;
 const DEBOUNCE_MS = 400;
 
 /**
+ * Dua tabel yang diawasi ini SELALU lewat Realtime + polling. Halaman
+ * pelanggan memakai hook yang sama dengan `tables: []` — bukan karena Realtime
+ * tidak diinginkan di sana, melainkan karena ia mustahil sampai; alasannya di
+ * `LiveOrderStatus`.
+ *
  * @param {object}   opsi
  * @param {string}   opsi.tenantId    id outlet — pembatas langganan Realtime.
  * @param {string[]} opsi.tables      tabel yang diawasi, mis. ['transactions'].
+ *                                    Kosongkan untuk polling saja.
  * @param {number}   [opsi.intervalMs]
- * @param {boolean}  [opsi.paused]    tahan pembaruan (mis. ada modal terbuka).
+ * @param {boolean}  [opsi.paused]    tahan pembaruan (mis. ada modal terbuka),
+ *                                    lalu jalankan begitu jedanya dibuka.
+ * @param {boolean}  [opsi.enabled]   matikan sama sekali — beda dari `paused`,
+ *                                    yang tertahan di sini memang tidak akan
+ *                                    pernah dijalankan.
  */
 export function useLiveRefresh({
   tenantId,
   tables = [],
   intervalMs = LIVE_INTERVAL_MS,
   paused = false,
+  enabled = true,
 } = {}) {
   const router = useRouter();
   // `useId()` memulangkan bentuk ber-titik-dua (`:r0:`) yang tidak enak dipakai
@@ -129,7 +140,7 @@ export function useLiveRefresh({
 
   /** POLLING */
   useEffect(() => {
-    if (typeof document === 'undefined') return undefined;
+    if (!enabled || typeof document === 'undefined') return undefined;
 
     const jeda = live ? intervalMs * BACKOFF : intervalMs;
     let timer = null;
@@ -166,14 +177,19 @@ export function useLiveRefresh({
       henti();
       document.removeEventListener('visibilitychange', saatBerubah);
     };
-  }, [live, intervalMs, minta]);
+  }, [enabled, live, intervalMs, minta]);
 
   /** REALTIME */
   const tableKey = tables.join(',');
 
   useEffect(() => {
     const daftar = tableKey ? tableKey.split(',') : [];
-    if (!tenantId || daftar.length === 0) return undefined;
+    if (!enabled || !tenantId || daftar.length === 0) {
+      // Penanda "Live" ikut padam — kalau tidak, layar mengaku tersambung
+      // padahal langganannya sudah dilepas.
+      setLive(false);
+      return undefined;
+    }
 
     const supabase = createClient();
     // `instanceId` menjaga dua komponen di halaman yang sama tidak berebut
@@ -202,7 +218,7 @@ export function useLiveRefresh({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tenantId, tableKey, instanceId, minta]);
+  }, [enabled, tenantId, tableKey, instanceId, minta]);
 
   return { syncedAt, live, pending, refresh: minta };
 }

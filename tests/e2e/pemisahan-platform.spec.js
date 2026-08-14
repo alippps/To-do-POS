@@ -42,11 +42,56 @@ test.describe('Landing platform (/)', () => {
     const direktori = page.locator('#outlet');
     await expect(direktori).toBeAttached();
 
-    const tautan = direktori.locator(`a[href="/k/${OUTLET}"]`);
-    await expect(tautan).toHaveCount(1);
+    /*
+      DUA tautan ke outlet yang sama, dan itu disengaja sejak v7.
 
-    await tautan.click();
+      Yang pertama kartu "Lihat contoh kedai" di kepala section; yang kedua
+      kartunya di dalam daftar. Daftar kartu yang seragam menuntut pengunjung
+      memilih, dan yang baru mendarat belum punya dasar untuk memilih — semua
+      namanya asing. Satu pintu yang jelas lebih menolong daripada menawarkan
+      semuanya secara adil.
+    */
+    const tautan = direktori.locator(`a[href="/k/${OUTLET}"]`);
+    await expect(tautan).toHaveCount(2);
+
+    await tautan.first().click();
     await expect(page).toHaveURL(url('/'));
+  });
+
+  /*
+    Direktori naik ke posisi kedua, tepat di bawah hero.
+
+    Sebelumnya ia section ketujuh — sesudah Layanan, Cara Kerja, Keunggulan,
+    Portfolio, dan Testimoni. Urutan itu masuk akal untuk pembaca yang membaca
+    dari atas ke bawah, dan tidak masuk akal untuk pelanggan yang mengetik
+    domainnya begitu saja lalu mencari kedainya: ia harus melewati lima section
+    materi jualan software house sebelum menemukan daftar kedai.
+  */
+  test('direktori berdiri sebelum seluruh materi jualan', async ({ page }) => {
+    await page.goto('/');
+
+    const posisi = async (pemilih) =>
+      (await page.locator(pemilih).first().boundingBox())?.y ?? Number.POSITIVE_INFINITY;
+
+    const outlet = await posisi('#outlet');
+    for (const id of ['#fitur', '#cara-kerja', '#keunggulan', '#portfolio', '#testimoni']) {
+      expect(await posisi(id), `${id} berdiri sebelum direktori outlet`).toBeGreaterThan(outlet);
+    }
+  });
+
+  /*
+    Kalimat pengenal produk di hero.
+
+    Judulnya memakai kiasan ("modalnya selembar QR") — bagus untuk diingat,
+    buruk untuk MENGENALI. Pengunjung baru mendarat tanpa tahu apakah alamat
+    ini milik sebuah kedai atau milik sistemnya, dan kiasan tidak menjawabnya.
+  */
+  test('hero menyebut produknya dalam satu baris datar', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(
+      page.getByText('Sistem kasir & pemesanan QR untuk UMKM kuliner.')
+    ).toBeVisible();
   });
 
   /*

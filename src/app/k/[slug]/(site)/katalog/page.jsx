@@ -21,7 +21,7 @@ import { requireTenant } from '@/lib/tenant.server';
 export const revalidate = 30;
 
 export const metadata = {
-  title: 'Katalog Menu',
+  title: 'Daftar Harga',
   description: 'Daftar lengkap menu beserta harganya. Lihat-lihat dulu, pesan kapan pun kamu siap.',
 };
 
@@ -76,8 +76,8 @@ export default async function KatalogPage({ params, searchParams }) {
           </Link>
         )}
 
-        <header className="mb-10 max-w-2xl">
-          <span className="eyebrow">Katalog</span>
+        <header className="mb-8 max-w-2xl">
+          <span className="eyebrow">Daftar Harga</span>
           <h1 className="mt-4 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Daftar menu lengkap
           </h1>
@@ -86,6 +86,50 @@ export default async function KatalogPage({ params, searchParams }) {
             tidak ada yang perlu diisi.
           </p>
         </header>
+
+        {/*
+          Ajakan memesan tidak lagi cuma di ujung halaman.
+
+          Katalog ini panjang — dua belas menu terbagi empat kategori, dan di
+          layar HP itu berarti belasan kali gulir. Satu-satunya jalan menuju
+          alur pesan berada di dasar halaman, jadi pengunjung yang sudah
+          menemukan pilihannya di kategori pertama harus melewati seluruh
+          sisanya untuk sampai ke sana — atau kembali ke navbar dan menebak
+          tautan mana yang benar. Justru kebingungan itu yang membuat "Menu"
+          dan "Pesan" bersebelahan jadi masalah.
+
+          Bentuknya sengaja BARIS, bukan kartu besar seperti yang di bawah:
+          halaman ini memang untuk lihat-lihat, dan ajakan yang terlalu
+          mendesak di atas mengubahnya jadi etalase yang memaksa.
+        */}
+        {products.length > 0 && (
+          <div className="mb-10 flex flex-col gap-3 rounded-2xl border border-brand-100 bg-brand-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-snug text-slate-600">
+              {meja ? (
+                <>
+                  Siap memesan? Kamu sedang di{' '}
+                  <span className="font-bold text-slate-900">Meja {meja}</span> — pesanannya
+                  langsung masuk ke kasir.
+                </>
+              ) : (
+                <>
+                  Halaman ini <span className="font-semibold text-slate-900">baca-saja</span>.
+                  Untuk memesan, pindai QR di mejamu.
+                </>
+              )}
+            </p>
+
+            <Link
+              href={tenantPath(
+                tenant.slug,
+                meja ? `/menu?meja=${encodeURIComponent(meja)}&src=qr` : '/menu'
+              )}
+              className="shrink-0 rounded-xl bg-brand-600 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-pop transition hover:bg-brand-700"
+            >
+              {meja ? `Pesan untuk Meja ${meja}` : 'Buka halaman Pesan'}
+            </Link>
+          </div>
+        )}
 
         {error && (
           <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
