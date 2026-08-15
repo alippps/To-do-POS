@@ -1,6 +1,7 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { initials } from '@/lib/format';
+import { Star, Quote } from 'lucide-react';
 
 const TESTIMONIALS = [
   {
@@ -12,30 +13,33 @@ const TESTIMONIALS = [
   {
     name: 'Dimas Prayoga',
     role: 'Store Manager, Roti Bakar 88',
-    text: 'Kasir baru cuma butuh 15 menit belajar. Tampilannya jelas dan tombolnya besar-besar, cocok buat jam sibuk.',
+    text: 'Kasir baru cuma butuh 15 menit belajar. Tampilannya jelas dan tombolnya besar-besar, sangat cocok buat jam sibuk.',
     rating: 5,
   },
   {
     name: 'Siti Aminah',
     role: 'Pelanggan setia',
-    text: 'Scan QR di meja, pilih menu, bayar. Nggak perlu antre lagi cuma buat pesan segelas latte.',
+    text: 'Scan QR di meja, pilih menu, bayar. Nggak perlu repot antre lagi cuma buat pesan segelas latte favorit.',
     rating: 5,
   },
   {
     name: 'Bayu Ardiansyah',
     role: 'Founder, Nusantara Catering',
-    text: 'Fitur pencarian transaksinya penyelamat waktu tutup buku. Cari invoice tinggal ketik nama klien.',
+    text: 'Fitur pencarian transaksinya benar-benar penyelamat waktu tutup buku. Cari invoice klien tinggal ketik nama.',
     rating: 5,
   },
 ];
 
+/*
+  Komponen Stars dipisahkan dan diekstrak menggunakan Lucide React.
+  Penggunaan fill-current memastikan warna bintang terisi penuh sesuai
+  dengan class warna teks pada container.
+*/
 function Stars({ count }) {
   return (
-    <div className="flex gap-0.5 text-amber-400">
+    <div className="flex gap-1 text-amber-400" aria-label={`Rating ${count} dari 5 bintang`}>
       {Array.from({ length: count }).map((_, i) => (
-        <svg key={i} className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="m12 2 2.9 6.26 6.85.72-5.1 4.6 1.44 6.72L12 16.9l-6.09 3.4 1.44-6.72-5.1-4.6 6.85-.72L12 2Z" />
-        </svg>
+        <Star key={i} className="h-4 w-4 fill-current" strokeWidth={1} />
       ))}
     </div>
   );
@@ -43,48 +47,63 @@ function Stars({ count }) {
 
 export default function Testimonials() {
   return (
-    <section id="testimoni" className="bg-slate-50/70 py-20 sm:py-24">
-      <Container>
+    <section id="testimoni" className="bg-slate-50/50 py-20 sm:py-24 relative overflow-hidden">
+      {/* Dekorasi Background Halus */}
+      <div className="absolute left-0 bottom-0 translate-y-1/3 -translate-x-1/3 w-[800px] h-[800px] bg-brand-50/60 rounded-full blur-3xl -z-10" />
+
+      <Container className="relative z-10">
         <SectionHeading
-          eyebrow="Testimoni"
+          // eyebrow="Testimoni"
           title="Kata mereka yang sudah pakai"
-          description="Ratusan cangkir kopi dan ribuan transaksi setiap bulan — ini pengalaman mereka."
+          description="Ratusan cangkir kopi dan ribuan transaksi setiap bulan — ini adalah pengalaman nyata dari mitra dan pelanggan kami."
         />
 
         {/*
-          Dua kolom, bukan empat. Kutipan sepanjang 2–3 baris butuh lebar baca
-          yang layak; dipaksa empat kolom teksnya jadi kolom sempit yang capek
-          dibaca. Padding kartu juga wajib ditulis di sini — kelas `.card`
-          hanya mengatur radius, border, dan bayangan.
+          Dua kolom dipertahankan untuk menjaga keterbacaan (readability).
+          Padding dan interaksi disuntikkan langsung via Tailwind.
         */}
-        <div className="mt-14 grid gap-6 sm:grid-cols-2">
+        <div className="mt-16 grid gap-6 md:grid-cols-2 lg:gap-8">
           {TESTIMONIALS.map((t) => (
             <figure
               key={t.name}
-              className="card relative flex h-full flex-col p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-pop sm:p-8"
+              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-900/5 sm:p-8"
             >
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-6 top-4 font-display text-6xl leading-none text-brand-100 select-none"
-              >
-                &rdquo;
-              </span>
+              {/* 
+                Icon Quote Transparan di Background
+                Diganti menggunakan Lucide Icon agar presisi dan elegan.
+              */}
+              <Quote 
+                className="absolute right-6 top-6 h-16 w-16 rotate-12 text-brand-50 transition-transform duration-500 group-hover:rotate-0 group-hover:scale-110 group-hover:text-brand-100/70" 
+                strokeWidth={1} 
+                aria-hidden="true" 
+              />
 
-              <Stars count={t.rating} />
+              <div className="relative z-10 flex-1 flex flex-col">
+                <Stars count={t.rating} />
 
-              <blockquote className="relative mt-5 flex-1 text-base leading-relaxed text-slate-700">
-                {t.text}
-              </blockquote>
+                <blockquote className="mt-6 flex-1">
+                  <p className="text-base italic leading-relaxed text-slate-700 transition-colors duration-300 group-hover:text-slate-900">
+                    {t.text}
+                  </p>
+                </blockquote>
 
-              <figcaption className="mt-7 flex items-center gap-3.5 border-t border-slate-100 pt-5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-pop">
-                  {initials(t.name)}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-bold text-slate-900">{t.name}</span>
-                  <span className="block truncate text-xs text-slate-500">{t.role}</span>
-                </span>
-              </figcaption>
+                <figcaption className="mt-8 flex items-center gap-4 border-t border-slate-100 pt-6">
+                  {/* Avatar Inisial */}
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-bold text-white shadow-sm ring-2 ring-white transition-transform duration-300 group-hover:scale-110">
+                    {initials(t.name)}
+                  </span>
+                  
+                  {/* Info Reviewer */}
+                  <div className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-slate-900">
+                      {t.name}
+                    </span>
+                    <span className="block truncate text-xs font-medium text-slate-500">
+                      {t.role}
+                    </span>
+                  </div>
+                </figcaption>
+              </div>
             </figure>
           ))}
         </div>

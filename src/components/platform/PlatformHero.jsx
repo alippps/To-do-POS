@@ -1,115 +1,90 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
 import { tenantPath } from '@/lib/tenant';
+import { 
+  TrendingUp, 
+  CheckCircle2, 
+  Activity, 
+  Store, 
+  Timer,
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
 
 /*
-  Angka di sini adalah angka PLATFORM, bukan angka satu kedai.
-
-  Sampai v5 hero ini berdiri di landing tiap outlet dan menuliskan "12.400+
-  transaksi/bulan" seolah itu capaian warung yang sedang dibuka pengunjung —
-  klaim yang tidak pernah benar untuk outlet yang baru mendaftar kemarin.
-  Setelah pindah ke halaman platform, satuannya jadi jujur dengan sendirinya:
-  yang dihitung adalah seluruh outlet yang memakai sistem ini.
+  Data STATS diperbarui dengan penambahan Icon untuk memperkuat
+  komunikasi visual (Visual Anchor) bagi pengunjung yang melakukan 'scanning'.
 */
 const STATS = [
-  { value: '12.400+', label: 'Transaksi / bulan' },
-  { value: '38', label: 'Outlet mitra' },
-  { value: '< 30 dtk', label: 'Rata-rata antrean' },
+  { value: '12.400+', label: 'Transaksi / bulan', icon: Activity },
+  { value: '38', label: 'Outlet mitra', icon: Store },
+  { value: '< 30 dtk', label: 'Rata-rata antrean', icon: Timer },
 ];
 
 export default function PlatformHero({ outletCount = 0, demo = null }) {
   return (
     <section className="relative overflow-hidden bg-white">
-      {/* dekorasi latar */}
+      {/* 
+        Dekorasi Latar Belakang (Grid & Glow)
+        Diperhalus agar tidak mendistraksi konten utama.
+      */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="absolute -right-24 top-24 h-[360px] w-[360px] rounded-full bg-brand-50 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0ebe4_1px,transparent_1px),linear-gradient(to_bottom,#f0ebe4_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+        <div className="absolute -left-32 -top-40 h-[500px] w-[500px] rounded-full bg-brand-100/40 blur-[100px]" />
+        <div className="absolute right-0 top-1/4 h-[400px] w-[400px] rounded-full bg-brand-50/60 blur-[100px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-60" />
       </div>
 
-      <Container className="grid items-center gap-14 py-16 lg:grid-cols-2 lg:py-24">
-        <div className="animate-fade-up">
-          <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700">
-            <span className="relative flex h-2 w-2">
+      <Container className="grid items-center gap-16 py-20 lg:grid-cols-2 lg:gap-8 lg:py-28">
+        
+        {/* KOLOM KIRI: Copywriting & CTA */}
+        <div className="animate-fade-up flex flex-col items-start">
+          
+          {/* Badge Promo / Status */}
+          {/* <span className="group inline-flex items-center gap-2.5 rounded-full border border-brand-200/60 bg-brand-50/50 px-4 py-1.5 text-xs font-semibold text-brand-700 shadow-sm backdrop-blur-sm transition-all hover:bg-brand-50">
+            <span className="relative flex h-2.5 w-2.5 items-center justify-center">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-600" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-600" />
             </span>
-            UMKM Goes Digital — satu pemasangan, banyak UMKM
-          </span>
+            <span className="flex items-center gap-1.5">
+              UMKM Goes Digital <Sparkles className="h-3 w-3 text-brand-500" />
+            </span>
+          </span> */}
 
-          {/*
-            Frasa yang digarisbawahi sengaja PENDEK, dan garisnya bertinggi tetap.
-
-            Dua hal yang membuat versi sebelumnya rusak, dan keduanya baru
-            muncul setelah frasanya diperpanjang jadi "modalnya selembar QR":
-
-            (1) `whitespace-nowrap` pada frasa sepanjang itu melebihi lebar
-                kolom kiri grid, jadi teksnya meluber menimpa mockup dashboard
-                di sebelahnya — dan `overflow-hidden` di section memotongnya.
-            (2) SVG-nya `w-full` tanpa tinggi, jadi tingginya ikut rasio
-                200:12 terhadap lebar frasa. Frasa dua kali lebih panjang =
-                garis dua kali lebih tinggi, dan `-bottom-2` mendorongnya naik
-                menyilang di tengah huruf alih-alih di bawahnya.
-
-            Tingginya kini dikunci `h-[10px]`, jadi garisnya tetap setipis itu
-            sepanjang apa pun frasanya — `preserveAspectRatio="none"` memang
-            dipasang supaya ia boleh direntang tanpa mempertahankan rasio.
-            `pb-3` menyediakan ruang di bawah baris terakhir supaya garisnya
-            tidak terpotong batas h1.
-          */}
-          <h1 className="mt-6 pb-3 text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+          {/* Headline Utama */}
+          <h1 className="mt-8 pb-4 text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.5rem]">
             Kasir digital untuk UMKM kuliner, modalnya{' '}
             <span className="relative inline-block whitespace-nowrap text-brand-600">
               selembar QR
               <svg
-                className="absolute -bottom-1.5 left-0 h-[10px] w-full text-brand-200"
+                className="absolute -bottom-2 left-0 h-[10px] w-full text-brand-300/70"
                 viewBox="0 0 200 12"
                 fill="none"
                 preserveAspectRatio="none"
                 aria-hidden="true"
               >
-                <path d="M2 9c40-6 120-9 196-3" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+                <path d="M2 9c40-6 120-9 196-3" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
               </svg>
             </span>
           </h1>
 
-          {/*
-            Satu baris yang menyebut produknya apa, sebelum kalimat apa pun yang
-            menjelaskan cara kerjanya.
-
-            Judul di atas memakai kiasan ("modalnya selembar QR") — itu bagus
-            untuk diingat, tapi buruk untuk MENGENALI. Pengunjung baru mendarat
-            di sini tanpa tahu apakah alamat ini milik sebuah kedai atau milik
-            sistemnya, dan kiasan tidak menjawabnya. Kalimat datar ini yang
-            menjawab, dan sengaja berdiri sendiri di atas paragraf penjelas
-            supaya terbaca lebih dulu.
-          */}
-          <p className="mt-7 text-xl font-semibold leading-snug text-slate-800 sm:text-2xl">
-            Sistem kasir &amp; pemesanan QR untuk UMKM kuliner.
+          {/* Sub-headline */}
+          <p className="mt-6 text-xl font-semibold leading-snug text-slate-800 sm:text-2xl">
+            Sistem kasir &amp; pemesanan QR untuk UMKM.
           </p>
 
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-500">
-            Pelanggan memindai QR di mejanya, memesan sendiri, dan membayar sekali di akhir.
-            Kamu dapat dashboard omzet, stok, dan riwayat transaksinya — tanpa mesin kasir,
-            tanpa aplikasi yang harus diunduh siapa pun.
+          <p className="mt-4 max-w-lg text-lg leading-relaxed text-slate-600">
+            Pelanggan memindai QR di meja, memesan sendiri, dan bayar di akhir.
+            Anda pantau omzet dan stok dari mana saja — tanpa mesin kasir mahal, 
+            tanpa aplikasi tambahan.
           </p>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button href="/daftar-outlet" size="lg">
+          {/* Call to Actions (CTA) */}
+          <div className="mt-10 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center">
+            <Button href="/daftar-outlet" size="lg" className="group flex items-center justify-center gap-2">
               Daftarkan UMKM Anda
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            {/*
-              Ajakan kedua membuka satu kedai SUNGGUHAN, bukan demo buatan dan
-              bukan lagi lompatan ke daftar.
-
-              Sebelumnya tombol ini menggulir ke `#outlet` — satu klik lagi
-              sebelum orang melihat apa pun. Padahal yang ingin dijawabnya cuma
-              "seperti apa jadinya?", dan jawaban itu ada di halaman kedainya,
-              bukan di daftar nama. Outlet yang terdaftar punya menu dan denah
-              meja sendiri: membukanya memperlihatkan persis apa yang dilihat
-              pelanggan mereka, dan itu bukti yang lebih kuat daripada tangkapan
-              layar mana pun.
-            */}
+            
             {demo ? (
               <Button href={tenantPath(demo.slug)} variant="secondary" size="lg">
                 Lihat contoh kedai
@@ -117,86 +92,122 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
             ) : (
               <Button href="#outlet" variant="secondary" size="lg">
                 {outletCount > 0
-                  ? `Lihat ${outletCount} outlet yang pakai`
-                  : 'Lihat outlet yang pakai'}
+                  ? `Lihat ${outletCount} outlet mitra`
+                  : 'Lihat outlet mitra'}
               </Button>
             )}
           </div>
 
-          <dl className="mt-12 grid max-w-lg grid-cols-2 gap-6 border-t border-slate-200 pt-8 sm:grid-cols-3">
-            {STATS.map((s) => (
-              <div key={s.label}>
-                <dt className="text-xl font-extrabold text-slate-900 sm:whitespace-nowrap sm:text-3xl">
-                  {s.value}
-                </dt>
-                <dd className="mt-1 text-xs leading-snug text-slate-500 sm:text-sm">{s.label}</dd>
-              </div>
-            ))}
+          {/* Statistik (Social Proof) */}
+          <dl className="mt-14 grid w-full max-w-xl grid-cols-2 gap-8 border-t border-slate-200/80 pt-8 sm:grid-cols-3">
+            {STATS.map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className="flex flex-col gap-1">
+                  <dt className="flex items-center gap-2 text-2xl font-black text-slate-900 sm:text-3xl">
+                    {s.value}
+                  </dt>
+                  <dd className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                    <Icon className="h-4 w-4 text-brand-500 opacity-70" strokeWidth={2.5} />
+                    {s.label}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </div>
 
-        {/* Mockup dashboard */}
-        <div className="relative animate-fade-up lg:pl-6">
-          <div className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-brand-600/10 via-brand-200/20 to-transparent blur-2xl" />
+        {/* KOLOM KANAN: Mockup Dashboard Dinamis */}
+        <div className="relative animate-fade-up lg:pl-10 mt-10 lg:mt-0">
+          {/* Efek Glow di belakang mockup */}
+          <div className="absolute -inset-4 -z-10 rounded-[3rem] bg-gradient-to-tr from-brand-600/20 via-brand-300/20 to-transparent blur-3xl opacity-70" />
 
-          <div className="card overflow-hidden p-0">
-            <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-5 py-3.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              <span className="ml-3 truncate text-xs font-medium text-slate-400">
+          {/* Browser Window / Dashboard Wrapper */}
+          <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/60 shadow-2xl shadow-slate-900/10 backdrop-blur-xl transition-transform duration-500 hover:-translate-y-2">
+            
+            {/* Browser Header */}
+            <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/90 px-6 py-4">
+              <div className="flex gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-rose-400 shadow-sm" />
+                <span className="h-3 w-3 rounded-full bg-amber-400 shadow-sm" />
+                <span className="h-3 w-3 rounded-full bg-emerald-400 shadow-sm" />
+              </div>
+              <div className="ml-4 flex h-6 flex-1 items-center rounded-md bg-white px-3 text-[11px] font-medium text-slate-400 shadow-sm ring-1 ring-slate-100">
                 /k/warung-anda/admin
-              </span>
+              </div>
             </div>
 
-            <div className="space-y-5 p-5 sm:p-6">
-              <div className="flex items-center justify-between">
+            {/* Dashboard Content */}
+            <div className="space-y-6 p-6 sm:p-8">
+              
+              {/* Top Stats Widget */}
+              <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-medium text-slate-400">Pendapatan hari ini</p>
-                  <p className="text-2xl font-extrabold text-slate-900">Rp 4.820.000</p>
+                  <p className="text-sm font-semibold text-slate-500">Pendapatan hari ini</p>
+                  <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">Rp 4.820.000</p>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-600">
-                  ↑ 18,2%
+                <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-100/80 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                  <TrendingUp className="h-3.5 w-3.5" strokeWidth={3} />
+                  18,2%
                 </span>
               </div>
 
-              <div className="flex h-32 items-end gap-2.5">
-                {[42, 58, 35, 72, 61, 88, 76].map((h, i) => (
-                  <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                    <div
-                      className={`w-full rounded-t-lg ${i === 5 ? 'bg-brand-600' : 'bg-brand-100'}`}
-                      style={{ height: `${h}%` }}
-                    />
-                    <span className="text-[10px] text-slate-400">
-                      {['S', 'S', 'R', 'K', 'J', 'S', 'M'][i]}
-                    </span>
-                  </div>
-                ))}
+              {/* Chart Widget */}
+              <div className="flex h-36 items-end gap-3">
+                {[42, 58, 35, 72, 61, 88, 76].map((h, i) => {
+                  const isToday = i === 5;
+                  return (
+                    <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end gap-2 relative">
+                      {/* Tooltip sederhana saat hover di bar chart */}
+                      <span className="absolute -top-8 hidden rounded bg-slate-800 px-2 py-1 text-[10px] font-bold text-white group-hover:block">
+                        {h}%
+                      </span>
+                      <div
+                        className={`w-full rounded-t-lg transition-all duration-300 group-hover:opacity-80 ${isToday ? 'bg-gradient-to-t from-brand-500 to-brand-400 shadow-sm' : 'bg-slate-200/70'}`}
+                        style={{ height: `${h}%` }}
+                      />
+                      <span className={`text-xs font-bold ${isToday ? 'text-brand-600' : 'text-slate-400'}`}>
+                        {['S', 'S', 'R', 'K', 'J', 'S', 'M'][i]}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="space-y-2.5 rounded-2xl bg-slate-50 p-4">
+              {/* Top Selling Items List */}
+              <div className="space-y-3 rounded-2xl border border-slate-100 bg-white/80 p-5 shadow-sm">
                 {[
                   ['Kopi Susu Gula Aren', '32 cup', 'Rp 800.000'],
                   ['Roti Bakar Cokelat', '24 porsi', 'Rp 528.000'],
                   ['Indomie Rebus Telur', '19 porsi', 'Rp 342.000'],
                 ].map(([name, qty, total]) => (
-                  <div key={name} className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">{name}</span>
-                    <span className="text-xs text-slate-400">{qty}</span>
-                    <span className="font-semibold text-slate-900">{total}</span>
+                  <div key={name} className="flex items-center justify-between border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-bold text-slate-700">{name}</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-400">{qty} terjual</p>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900">{total}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="absolute -bottom-6 -left-2 hidden rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-pop sm:flex sm:items-center sm:gap-3 lg:-left-6">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">✓</span>
-            <div>
-              <p className="text-xs font-semibold text-slate-900">Pesanan #INV-0421 selesai</p>
-              <p className="text-[11px] text-slate-400">Meja 07 · 2 detik lalu</p>
+          {/* Floating Toast Notification (Micro-interaction UI) */}
+          <div className="absolute -bottom-8 -left-4 z-20 hidden animate-fade-up rounded-2xl border border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/50 sm:flex sm:items-center sm:gap-4 lg:-left-12 lg:-bottom-10" style={{ animationDelay: '500ms' }}>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div className="pr-2">
+              <p className="text-sm font-bold text-slate-900">Pesanan #INV-0421 Selesai</p>
+              <div className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">Meja 07</span>
+                <span>•</span>
+                <span>Baru saja</span>
+              </div>
             </div>
           </div>
+          
         </div>
       </Container>
     </section>

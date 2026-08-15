@@ -1,88 +1,122 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
-import Card from '@/components/ui/Card';
+import { 
+  Receipt, 
+  PackageSearch, 
+  LineChart, 
+  QrCode, 
+  Users, 
+  Store,
+  CheckCircle2
+} from 'lucide-react';
 
+/*
+  1. Ikon diganti menggunakan Lucide untuk konsistensi UI.
+  2. Jargon teknis ('CRUD', 'Row Level Security', 'Level Database') 
+     dihapus dan diganti dengan bahasa manfaat bisnis (Business Value).
+*/
 const SERVICES = [
   {
-    icon: '🧾',
+    icon: Receipt,
     title: 'Kasir Digital (POS)',
-    text: 'Proses pesanan dalam hitungan detik: pilih produk, hitung otomatis, cetak struk, stok langsung terpotong.',
+    text: 'Proses pesanan dalam hitungan detik: pilih produk, hitung otomatis, cetak struk, dan stok langsung terpotong.',
     points: ['Multi metode bayar', 'Struk digital', 'Stok real-time'],
   },
   {
-    icon: '📦',
-    title: 'Manajemen Produk',
-    text: 'CRUD lengkap untuk menu: tambah, ubah, hapus, dan cari produk dengan filter kategori dan status.',
+    icon: PackageSearch,
+    title: 'Manajemen Menu',
+    text: 'Kelola daftar menu dengan mudah: tambah produk baru, ubah harga, atau sembunyikan menu yang sedang habis seketika.',
     points: ['Kategori & harga', 'Kontrol stok', 'Pencarian instan'],
   },
   {
-    icon: '📊',
+    icon: LineChart,
     title: 'Laporan Penjualan',
-    text: 'Pantau omzet harian, produk terlaris, dan riwayat transaksi lengkap dari dashboard admin.',
+    text: 'Pantau omzet harian, produk terlaris, dan riwayat transaksi lengkap langsung dari dashboard pemilik.',
     points: ['Omzet harian', 'Produk terlaris', 'Riwayat transaksi'],
   },
   {
-    icon: '📱',
+    icon: QrCode,
     title: 'Pemesanan via QR',
-    text: 'Pelanggan scan QR di meja, pilih menu sendiri, pesanan langsung masuk ke sistem. Antrean berkurang drastis.',
-    points: ['Tanpa aplikasi', 'Nomor meja otomatis', 'Menu selalu update'],
+    text: 'Pelanggan scan QR di meja, pilih menu sendiri, pesanan langsung masuk ke sistem. Antrean di kasir berkurang drastis.',
+    points: ['Tanpa instal aplikasi', 'Nomor meja otomatis', 'Menu selalu update'],
   },
   {
-    icon: '🔐',
+    icon: Users,
     title: 'Multi User & Role',
     /*
-      Pelanggan tidak punya akun sama sekali di sistem ini — itu justru
-      nilai jualnya. Kalimat lama ("akun pelanggan dan admin terpisah") ikut
-      menyebut role yang sudah tidak lengkap sejak `kasir` ditambahkan.
+      Pelanggan tidak butuh akun (frictionless). 
+      Sedangkan untuk internal, kita ganti "RLS" dengan "proteksi keamanan ketat".
     */
-    text: 'Pelanggan memesan tanpa akun sama sekali. Akun hanya untuk tim Anda, dengan hak akses berjenjang dan proteksi Row Level Security.',
-    points: ['Role Admin & Kasir', 'Pelanggan tanpa login', 'Sesi aman'],
+    text: 'Pelanggan memesan tanpa akun sama sekali. Akun hanya untuk tim Anda, dengan hak akses berjenjang dan proteksi keamanan ketat.',
+    points: ['Role Admin & Kasir', 'Pelanggan tanpa login', 'Akses data aman'],
   },
   {
-    icon: '🏪',
-    title: 'Multi-Outlet',
+    icon: Store,
+    title: 'Sistem Multi-Outlet',
     /*
-      Kartu keenam dulu berbunyi "Katering & Event — coffee bar untuk kantor,
-      seminar, dan pernikahan". Itu jasa sebuah kedai kopi, bukan kemampuan
-      perangkat lunak, dan ia masuk akal selama halaman ini masih jadi landing
-      satu coffee shop. Setelah pindah ke halaman platform, kalimat itu
-      menjanjikan barista kepada pemilik warung yang datang mencari kasir.
+      Penghapusan istilah "terpisah sampai level database".
+      Fokus pada kemudahan mengelola banyak cabang dari satu tempat.
     */
-    text: 'Satu pemasangan melayani banyak UMKM sekaligus. Tiap outlet punya alamat, menu, denah meja, dan datanya sendiri — terpisah sampai level database.',
-    points: ['Alamat sendiri /k/<slug>', 'Menu & meja terpisah', 'Admin tidak lintas outlet'],
+    text: 'Satu platform melayani banyak cabang sekaligus. Tiap outlet punya alamat, menu, denah meja, dan laporan keuangannya masing-masing.',
+    points: ['Link khusus /k/<slug>', 'Menu & meja terpisah', 'Laporan tiap cabang'],
   },
 ];
 
 export default function Services() {
   return (
-    <section id="fitur" className="scroll-mt-20 bg-slate-50/70 py-20 sm:py-24">
-      <Container>
+    <section id="fitur" className="scroll-mt-20 bg-white py-20 sm:py-24 relative overflow-hidden">
+      {/* 
+        Garis batas pemisah halus dengan section sebelumnya 
+        jika memiliki background yang mirip.
+      */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+      <Container className="relative z-10">
         <SectionHeading
-          eyebrow="Layanan Utama"
+          // eyebrow="Layanan Utama"
           title="Semua yang dibutuhkan UMKM kuliner"
           description="Dari secangkir kopi di meja pelanggan sampai laporan penjualan di layar pemilik — satu sistem, semua beres. Tanpa biaya lisensi mahal dan tanpa perlu tim IT."
         />
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICES.map((s) => (
-            <Card key={s.title} hover className="flex flex-col">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">
-                {s.icon}
-              </span>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">{s.title}</h3>
-              <p className="mt-2.5 flex-1 text-sm leading-relaxed text-slate-500">{s.text}</p>
-              <ul className="mt-5 space-y-2 border-t border-slate-100 pt-4">
-                {s.points.map((p) => (
-                  <li key={p} className="flex items-center gap-2 text-sm text-slate-600">
-                    <svg className="h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {SERVICES.map((s) => {
+            const Icon = s.icon;
+            
+            return (
+              <div 
+                key={s.title} 
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-900/5"
+              >
+                {/* Efek Gradient Background saat di-hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-50/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                
+                <div className="relative z-10 flex flex-col h-full">
+                  {/* Container Ikon */}
+                  <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-slate-600 transition-all duration-300 group-hover:bg-brand-600 group-hover:text-white group-hover:shadow-md group-hover:scale-105">
+                    <Icon className="h-7 w-7" strokeWidth={1.5} />
+                  </span>
+                  
+                  {/* Judul & Deskripsi */}
+                  <h3 className="mt-6 text-lg font-bold text-slate-900 transition-colors group-hover:text-brand-800">
+                    {s.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
+                    {s.text}
+                  </p>
+                  
+                  {/* Daftar Fitur Utama (Points) */}
+                  <ul className="mt-6 space-y-3 border-t border-slate-100 pt-5 transition-colors group-hover:border-brand-100">
+                    {s.points.map((p) => (
+                      <li key={p} className="flex items-start gap-3 text-sm font-medium text-slate-700">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-brand-500 transition-transform duration-300 group-hover:scale-110" />
+                        <span className="mt-0.5">{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Container>
     </section>
