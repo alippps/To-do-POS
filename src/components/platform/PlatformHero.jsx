@@ -8,7 +8,6 @@ import {
   Store, 
   Timer,
   ArrowRight,
-  Sparkles
 } from 'lucide-react';
 
 /*

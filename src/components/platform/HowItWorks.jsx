@@ -54,7 +54,7 @@ export default function HowItWorks() {
           />
 
           <ol className="relative grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-            {STEPS.map((step, index) => {
+            {STEPS.map((step, _index) => {
               const Icon = step.icon;
               
               return (
