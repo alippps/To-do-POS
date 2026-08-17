@@ -1,10 +1,297 @@
-# To Do POS — Sistem Point of Sale multi-UMKM (CRUDS)
+<div align="center">
 
-Sistem **Point of Sale** modern untuk UMKM kuliner, lengkap dengan **Create, Read, Update, Delete, Search**.
-Dibangun dengan **Next.js App Router + Tailwind CSS + Supabase**.
+# ☕ To Do POS
 
-> **Pelanggan tidak perlu login.** Scan QR di meja → nomor meja terbaca sendiri → pilih menu → pesan → struk terbit.
-> Akun hanya dibutuhkan oleh **staf/admin** untuk membuka dashboard.
+**Pesan dari meja, tanpa antre, tanpa unduh aplikasi, tanpa bikin akun.**
+
+Pindai QR di meja → menu terbuka → pesan → struk terbit.
+Satu pemasangan melayani banyak UMKM sekaligus, masing-masing terisolasi sampai level database.
+
+*Dibuat untuk lomba **UMKM Goes Digital***
+
+</div>
+
+---
+
+## 🚀 Coba Sekarang — Tanpa Instalasi
+
+> **Untuk Juri:** seluruh sistem sudah daring. Tidak perlu clone, tidak perlu pasang apa pun.
+
+| Akses | Tautan / Kredensial |
+|---|---|
+| 🌐 **Situs utama** | `ISI_URL_VERCEL` |
+| 📱 **Simulasi Scan QR (Meja 07)** | `ISI_URL_VERCEL/k/to-do/meja?meja=07&demo=1` |
+| 🏪 **Outlet kedua** *(bukti isolasi data)* | `ISI_URL_VERCEL/k/ISI_SLUG_OUTLET_2` |
+| 🔑 **Akun Admin** | `ISI_EMAIL_ADMIN` / `ISI_PASSWORD_ADMIN` |
+| 💵 **Akun Kasir** | `ISI_EMAIL_KASIR` / `ISI_PASSWORD_KASIR` |
+
+### 🧪 Alur uji 3 menit
+
+Empat langkah ini menunjukkan seluruh nilai sistem. Idealnya langkah 1 dibuka dari HP.
+
+**1️⃣ Jadi pelanggan.** Buka tautan *Simulasi Scan QR* → pesan 2 item → struk digital terbit.
+Perhatikan: **nomor meja sudah terisi dan tidak bisa diubah.** Itu bukan keterbatasan, itu fiturnya.
+
+**2️⃣ Jadi kasir.** Login akun kasir → pesanan tadi **sudah muncul sendiri**, tanpa menekan refresh.
+Gerakkan melalui tahapannya: `pending → diproses → siap → lunas`. Meja otomatis kosong kembali.
+
+**3️⃣ Jadi admin.** Login akun admin → **Daftar Produk** → tambah produk baru.
+Produk langsung tampil di menu pelanggan. Di halaman ini pula seluruh **CRUDS** dapat diuji.
+
+**4️⃣ Uji isolasinya.** Buka outlet kedua. Menu, meja, dan transaksinya berdiri sendiri.
+Admin outlet pertama **tidak dapat membaca data ini sama sekali** — bukan karena disaring aplikasi,
+melainkan karena ditolak PostgreSQL lewat Row Level Security.
+
+---
+
+## 📸 Tampilan
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/scan-qr.png" alt="Halaman setelah scan QR"><br><sub><b>Pelanggan</b> — setelah memindai QR meja</sub></td>
+<td width="50%"><img src="docs/screenshots/dashboard.png" alt="Dashboard admin"><br><sub><b>Admin</b> — dashboard ringkasan</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/menu.png" alt="Menu dan keranjang"><br><sub><b>Pelanggan</b> — memilih menu &amp; keranjang</sub></td>
+<td><img src="docs/screenshots/produk.png" alt="Kelola produk"><br><sub><b>Admin</b> — kelola produk (CRUDS)</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/struk.png" alt="Struk digital"><br><sub><b>Pelanggan</b> — struk digital</sub></td>
+<td><img src="docs/screenshots/kasir.png" alt="Layar kasir"><br><sub><b>Kasir</b> — pesanan masuk otomatis</sub></td>
+</tr>
+</table>
+
+---
+
+## ✅ Kesesuaian Ketentuan Lomba
+
+| Ketentuan | ✔ | Bukti tercepat |
+|---|:--:|---|
+| Bertema UMKM & transformasi digital | ✅ | Digitalisasi pemesanan, produk, transaksi, dan operasional UMKM kuliner |
+| **CRUDS** — Create, Read, Update, Delete, Search | ✅ | `/k/<slug>/admin/produk` memuat kelimanya dalam satu halaman |
+| Halaman **Login** | ✅ | `/k/<slug>/login` |
+| Halaman **Register** | ✅ | `/k/<slug>/register` — tertaut dari bawah halaman Login |
+| User: **Home** | ✅ | `/k/<slug>` |
+| User: **Fitur Utama (jual beli)** | ✅ | `/k/<slug>/menu` — keranjang, checkout, struk |
+| User: **Kontak + form sederhana** | ✅ | `/k/<slug>/kontak` |
+| User: **About** | ✅ | `/k/<slug>/about` |
+| Admin: **Dashboard** | ✅ | `/k/<slug>/admin` |
+| Admin: **Daftar Produk** | ✅ | `/k/<slug>/admin/produk` |
+| Admin: **Daftar Transaksi** | ✅ | `/k/<slug>/admin/transaksi` |
+| Stack tercantum di dokumentasi | ✅ | [Tech Stack](#-tech-stack) |
+| Validasi input | ✅ | Berlapis: klien (kenyamanan) + Server Action (pengaman) + batasan database |
+| Keamanan dasar | ✅ | Empat lapis: middleware → layout → server action → Row Level Security |
+| Bebas bug utama | ✅ | Playwright E2E pada dua ukuran layar, `npm run build` bersih |
+
+> **Halaman lain yang juga tersedia:** `/katalog` (daftar harga), `/promo`, `/fitur`, `/bayar`,
+> `/admin/kasir`, `/admin/meja`, `/admin/akses`, `/admin/profil`, `/daftar-outlet`.
+
+---
+
+## 💡 Yang Membuatnya Berbeda
+
+**🏢 Satu pemasangan, banyak UMKM.**
+Tiap outlet punya alamat, menu, denah meja, dan admin sendiri. Isolasinya bukan sekadar
+penyaringan di aplikasi, melainkan *Row Level Security* PostgreSQL — admin outlet A tidak dapat
+membaca data outlet B meskipun memanggil API secara langsung.
+
+**🚪 UMKM baru bisa bergabung sendiri.**
+Lewat `/daftar-outlet` dengan kode undangan. Tanpa developer, tanpa SQL, tanpa deploy ulang.
+Inilah yang membuatnya melayani *UMKM* — bukan satu kedai saja.
+
+**🔒 Nomor meja tidak bisa diketik.**
+Terbaca dari QR dan terkunci. Ini menghapus kesalahan paling mahal di kedai: pesanan nyasar ke
+meja lain. Halaman pemesanan tanpa QR pun tetap menolak menerima nomor meja bebas.
+
+**🧾 Pesan berkali-kali, bayar sekali.**
+Tagihan berjalan per meja. Pelanggan menambah pesanan sepanjang duduk; kasir menutup sekali di akhir.
+
+**👨‍🍳 Dapur ikut terekam.**
+Status pesanan bertahap: `pending → diproses → siap → paid`. Kasir tahu mana yang sedang dimasak
+dan mana yang menunggu diantar — bukan sekadar "sudah bayar atau belum".
+
+**⚡ Layar kasir hidup sendiri.**
+Pesanan dari meja muncul tanpa refresh, lewat Supabase Realtime, dengan polling sebagai jaring
+pengaman bila sambungan putus diam-diam.
+
+**🧪 Diuji otomatis.**
+Playwright E2E pada desktop dan Pixel 7 — termasuk satu berkas uji yang khusus menjaga agar
+ketentuan lomba ini tetap terpenuhi: `tests/e2e/kriteria-halaman.spec.js`.
+
+---
+
+## 📊 Diagram Sistem
+
+### Use Case
+
+![Use Case Diagram](docs/diagram/usecase-todo-pos.png)
+
+### Alur Pemesanan (Activity)
+
+![Activity Diagram](docs/diagram/activity-todo-pos.png)
+
+### Jalur Teknis Checkout (Sequence)
+
+![Sequence Diagram](docs/diagram/sequence-todo-pos.png)
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "punya profil"
+    AUTH_USERS ||--o{ TRANSACTIONS : "dicatat oleh"
+
+    TENANTS ||--o{ PROFILES : "mempekerjakan"
+    TENANTS ||--o{ PRODUCTS : "memiliki"
+    TENANTS ||--o{ CAFE_TABLES : "memiliki"
+    TENANTS ||--o{ TRANSACTIONS : "memiliki"
+    TENANTS ||--o{ CONTACT_MESSAGES : "menerima"
+
+    CAFE_TABLES ||--o{ TRANSACTIONS : "menampung"
+    TRANSACTIONS ||--|{ TRANSACTION_ITEMS : "berisi"
+    PRODUCTS ||--o{ TRANSACTION_ITEMS : "dipesan sebagai"
+
+    AUTH_USERS {
+        uuid id PK "dikelola Supabase Auth"
+        text email
+    }
+    TENANTS {
+        uuid id PK
+        text slug UK "dipakai di URL, tercetak di QR"
+        text name
+        text tagline
+        text address
+        text phone
+        text email
+        text hours
+        text wa_number
+        boolean is_active
+        timestamptz created_at
+    }
+    PROFILES {
+        uuid id PK_FK "= auth.users.id"
+        uuid tenant_id FK "null = pelanggan umum"
+        text full_name
+        text phone
+        text role "user | kasir | admin"
+    }
+    PRODUCTS {
+        uuid id PK
+        uuid tenant_id FK
+        text name
+        text category
+        numeric price
+        numeric promo_price
+        integer stock "cek stock >= 0"
+        text description
+        text image_url
+        boolean is_active
+    }
+    CAFE_TABLES {
+        uuid id PK
+        uuid tenant_id FK
+        text table_no "unik per tenant"
+        text label
+        text area
+        integer capacity
+        text status "available | occupied | reserved"
+        boolean is_active
+    }
+    TRANSACTIONS {
+        uuid id PK
+        uuid tenant_id FK
+        uuid table_id FK "null bila non-meja"
+        uuid user_id FK "null bila tanpa akun"
+        text invoice_no UK
+        text customer_name
+        text table_no "snapshot nomor meja"
+        text channel "qr | kasir"
+        text payment_method "cash | qris"
+        text status "pending, diproses, siap, paid, cancelled"
+        numeric total
+        timestamptz created_at
+    }
+    TRANSACTION_ITEMS {
+        uuid id PK
+        uuid transaction_id FK "cascade"
+        uuid product_id FK "set null bila produk dihapus"
+        text product_name "snapshot nama"
+        numeric price "snapshot harga"
+        integer qty "cek qty > 0"
+        numeric subtotal
+    }
+    CONTACT_MESSAGES {
+        uuid id PK
+        uuid tenant_id FK
+        text name
+        text email
+        text phone
+        text message
+        boolean is_read
+    }
+    PLATFORM_MESSAGES {
+        uuid id PK
+        text name
+        text email
+        text business
+        text message
+    }
+    PLATFORM_SETTINGS {
+        text key PK "mis. invite_code"
+        text value
+    }
+```
+
+**Tiga keputusan desain yang terlihat di ERD:**
+
+1. **`tenant_id` sebagai poros isolasi.** Lima tabel menggantung ke `tenants`. RLS menegakkannya di
+   database, bukan di aplikasi.
+2. **Snapshot pada `transaction_items`.** Nama dan harga produk disalin saat pemesanan, sehingga
+   struk lama tetap benar walau produk berubah harga atau dihapus.
+3. **Dua tabel platform tanpa `tenant_id`.** `platform_messages` dan `platform_settings` milik
+   platform, bukan outlet — di sanalah kode undangan pendaftaran disimpan.
+
+---
+
+## 🧰 Tech Stack
+
+| Lapisan | Teknologi |
+|---|---|
+| **Framework** | Next.js 14 (App Router) — Server Component, Server Action, middleware |
+| **UI** | React 18 + Tailwind CSS 3.4 — komponen ditulis sendiri, tanpa library komponen seperti MUI/shadcn |
+| **Ikon** | lucide-react |
+| **Database** | Supabase — PostgreSQL 15 + Row Level Security |
+| **Autentikasi** | Supabase Auth (`@supabase/ssr`) |
+| **Realtime** | Supabase Realtime (publikasi WAL pada tabel transaksi) |
+| **QR Code** | `qrcode` — generator kartu meja siap cetak |
+| **Testing** | Playwright E2E — Chrome desktop + Pixel 7 |
+| **Bahasa** | JavaScript (JSX) + SQL / PL-pgSQL |
+| **Deployment** | Vercel (aplikasi) + Supabase Cloud (database) |
+
+---
+
+## 📝 Catatan Jujur & Batasan
+
+Dituliskan terbuka, karena sistem yang mengaku sempurna biasanya belum diuji cukup keras.
+
+- **QRIS-nya simulasi.** Kode QR pada struk berisi teks keterangan, bukan muatan EMVCo. Ini
+  disengaja agar tidak ada yang mengira sudah membayar padahal belum. Integrasi sungguhan hanya
+  perlu mengganti fungsi pembangkit muatannya.
+- **Rate limit tersimpan di memori proses.** Cukup sebagai mitigasi dasar; pada beberapa instance
+  server, hitungannya tidak dibagi. Produksi berskala besar memerlukan Redis.
+- **E2E test bersifat baca-saja terhadap database.** Yang terbukti otomatis adalah alur dan
+  antarmuka; checkout sungguhan diverifikasi manual.
+- **Belum ada dasbor pemilik platform.** Pesan yang masuk ke `platform_messages` masih dibaca
+  lewat SQL Editor Supabase.
+- **Kitchen Display belum ada.** Tahap dapur sudah terekam pada status pesanan dan dioperasikan
+  dari layar kasir; layar khusus dapur ada pada rencana pengembangan.
+
+---
+
+<details>
+<summary><h2>📖 Dokumentasi Teknis Lengkap — arsitektur, keamanan, alur, cara menjalankan (klik untuk membuka)</h2></summary>
+
+<br>
 
 ## 🏪 Satu pemasangan, banyak UMKM
 
@@ -1364,3 +1651,13 @@ sebagai **error** dengan kode keluar bukan-nol.
 
 Cakupannya `src` dan `tests` (diatur lewat `eslint.dirs` di `next.config.mjs`) — `next lint`
 bawaan tidak menyentuh folder test.
+
+</details>
+
+---
+
+<div align="center">
+
+**To Do POS** · Lomba *UMKM Goes Digital* · 2026
+
+</div>
