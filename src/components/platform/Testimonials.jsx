@@ -68,14 +68,14 @@ export default function Testimonials() {
               key={t.name}
               className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-900/5 sm:p-8"
             >
-              {/* 
+              {/*
                 Icon Quote Transparan di Background
                 Diganti menggunakan Lucide Icon agar presisi dan elegan.
               */}
-              <Quote 
-                className="absolute right-6 top-6 h-16 w-16 rotate-12 text-brand-50 transition-transform duration-500 group-hover:rotate-0 group-hover:scale-110 group-hover:text-brand-100/70" 
-                strokeWidth={1} 
-                aria-hidden="true" 
+              <Quote
+                className="absolute right-6 top-6 h-16 w-16 rotate-12 text-brand-50 transition-transform duration-500 group-hover:rotate-0 group-hover:scale-110 group-hover:text-brand-100/70"
+                strokeWidth={1}
+                aria-hidden="true"
               />
 
               <div className="relative z-10 flex-1 flex flex-col">
@@ -92,7 +92,7 @@ export default function Testimonials() {
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-bold text-white shadow-sm ring-2 ring-white transition-transform duration-300 group-hover:scale-110">
                     {initials(t.name)}
                   </span>
-                  
+
                   {/* Info Reviewer */}
                   <div className="min-w-0">
                     <span className="block truncate text-sm font-bold text-slate-900">

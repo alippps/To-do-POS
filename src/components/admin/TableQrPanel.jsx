@@ -73,9 +73,18 @@ function drawTableCard({ qrDataUrl, tableNo, outlet }) {
       ctx.fillText('Pindai untuk memesan', CARD_W / 2, 888);
       ctx.fillText('dari meja ini', CARD_W / 2, 938);
 
+      /*
+        "Bayar di akhir", bukan "bayar di kasir".
+
+        Kalimat ini tercetak permanen di atas kertas dan menempel di meja
+        berbulan-bulan, jadi ia tidak boleh menyebut satu metode saja: sejak
+        QRIS jadi pilihan, sebagian pelanggan menyelesaikan pembayaran dari
+        layarnya sendiri dan tidak pernah mendatangi kasir. Yang benar untuk
+        keduanya adalah KAPAN-nya, bukan di mana.
+      */
       ctx.fillStyle = MUTED;
       ctx.font = `400 26px ${FONT}`;
-      ctx.fillText('Tanpa aplikasi · tanpa akun · bayar di kasir', CARD_W / 2, 998);
+      ctx.fillText('Tanpa aplikasi · tanpa akun · bayar di akhir', CARD_W / 2, 998);
 
       resolve(canvas.toDataURL('image/png'));
     };

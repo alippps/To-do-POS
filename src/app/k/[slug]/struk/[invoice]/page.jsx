@@ -221,9 +221,9 @@ export default async function StrukPage({ params, searchParams }) {
 
         <ReceiptPaper transaction={transaction} items={items} outlet={tenant} />
 
-        {/* `backHref` relatif terhadap outlet — PrintReceiptBar yang memasang
-            awalan `/k/<slug>`. Ditulis mentah, tautannya menuju /admin/transaksi
-            yang memang tidak ada dan berakhir 404. */}
+        {/* `backHref` sengaja RELATIF terhadap outlet — awalan `/k/<slug>`-nya
+            dipasang di dalam PrintReceiptBar, bukan di sini. Alasan
+            penempatannya ada di komponen itu. */}
         <PrintReceiptBar auto={searchParams?.auto === '1'} backHref="/admin/transaksi" />
       </main>
     );

@@ -14,7 +14,7 @@ export default function PlatformLogo({ dark = false }) {
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md shadow-brand-600/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-brand-600/30">
         <Coffee className="h-5 w-5" strokeWidth={2.5} />
       </span>
-      
+
       {/* Tipografi Logo */}
       <span className="flex min-w-0 flex-col leading-none">
         <span

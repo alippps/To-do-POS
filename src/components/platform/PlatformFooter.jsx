@@ -13,10 +13,10 @@ export default function PlatformFooter({ outlets = [] }) {
     <footer className="mt-24 border-t border-slate-200 bg-slate-50 relative overflow-hidden">
       {/* Dekorasi Aksent Halus */}
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-      
+
       <div className="container-page py-16 sm:py-20">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-          
+
           {/* Brand Info */}
           <div className="lg:col-span-2 pr-8">
             <PlatformLogo />
@@ -39,8 +39,8 @@ export default function PlatformFooter({ outlets = [] }) {
                 { href: '/#kontak', label: 'Kontak' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link 
-                    href={link.href} 
+                  <Link
+                    href={link.href}
                     className="group inline-flex items-center text-slate-500 transition-colors hover:text-brand-600"
                   >
                     <ArrowRight className="mr-2 h-3 w-3 -translate-x-2 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
@@ -51,8 +51,8 @@ export default function PlatformFooter({ outlets = [] }) {
                 </li>
               ))}
               <li className="pt-2">
-                <Link 
-                  href="/daftar-outlet" 
+                <Link
+                  href="/daftar-outlet"
                   className="inline-flex items-center text-brand-600 transition-colors hover:text-brand-700"
                 >
                   Daftarkan UMKM <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -72,8 +72,8 @@ export default function PlatformFooter({ outlets = [] }) {
               <ul className="space-y-3.5 text-sm font-medium">
                 {outlets.slice(0, 6).map((o) => (
                   <li key={o.id}>
-                    <Link 
-                      href={tenantPath(o.slug)} 
+                    <Link
+                      href={tenantPath(o.slug)}
                       className="group inline-flex items-center text-slate-500 transition-colors hover:text-brand-600"
                     >
                       <ArrowRight className="mr-2 h-3 w-3 -translate-x-2 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />

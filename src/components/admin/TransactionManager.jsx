@@ -418,9 +418,10 @@ export default function TransactionManager({ transactions = [], canDelete = fals
                   >
                     Detail
                   </button>
-                  {/* `hrefOutlet()` — kembarannya di tabel desktop memakainya,
-                      yang di sini terlewat dan menuju /struk/… tanpa awalan
-                      outlet, jadi tombol Cetak dari HP mendarat di 404. */}
+                  {/* Lewat `hrefOutlet()`, sama seperti kembarannya di tabel
+                      desktop. Ditulis mentah sebagai `/struk/…`, tautannya
+                      kehilangan awalan `/k/<slug>` dan mendarat di 404 — dan
+                      hanya di HP, jadi luput dari pengujian di layar lebar. */}
                   <a
                     href={hrefOutlet(`/struk/${encodeURIComponent(t.invoice_no)}?auto=1`)}
                     target="_blank"

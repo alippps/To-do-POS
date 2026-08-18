@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireStaffAction } from '@/lib/adminGuard';
+import { BATAS } from '@/lib/limits';
 import { PAYMENT_METHOD_VALUES } from '@/lib/tables';
 import { tenantPath } from '@/lib/tenant';
 
@@ -37,17 +38,41 @@ export async function createCashierOrder(slug, payload) {
     "Guest" masih bisa dipanggil. Pemesanan lewat QR tidak punya kemewahan itu
     dan mewajibkan namanya (lihat (site)/menu/actions.js).
   */
+  const customerName = String(payload?.customerName || '').trim();
+  const note = String(payload?.note || '').trim();
+
   const paymentMethod = String(payload?.paymentMethod || 'cash').trim();
   if (!PAYMENT_METHOD_VALUES.includes(paymentMethod)) {
     return { ok: false, error: 'Metode pembayaran tidak dikenali.' };
   }
 
+  /*
+    Batas ATAS ketiga teksnya — sama persis dengan jalur pelanggan.
+
+    Sampai sekarang aksi ini tidak memeriksa panjang sama sekali, jadi seluruh
+    penjagaan `BATAS` bisa dilewati hanya dengan memesan dari layar kasir alih-
+    alih dari QR meja. Kolomnya sama, struk thermalnya sama, dan layar transaksi
+    yang terdorong keluar layar oleh catatan sepuluh ribu karakter juga sama —
+    jadi batasnya tidak boleh berbeda hanya karena pintu masuknya berbeda.
+  */
+  if (customerName.length > BATAS.namaPemesan) {
+    return { ok: false, error: `Nama pelanggan maksimal ${BATAS.namaPemesan} karakter.` };
+  }
+
+  if (tableNo.length > BATAS.nomorMeja) {
+    return { ok: false, error: 'Nomor meja tidak dikenali. Pilih ulang dari denah di atas.' };
+  }
+
+  if (note.length > BATAS.catatan) {
+    return { ok: false, error: `Catatan maksimal ${BATAS.catatan} karakter.` };
+  }
+
   const { data, error } = await supabase.rpc('create_order', {
     p_tenant_slug: slug,
-    p_customer_name: String(payload?.customerName || '').trim() || 'Guest',
+    p_customer_name: customerName || 'Guest',
     p_table_no: tableNo,
     p_payment_method: paymentMethod,
-    p_note: String(payload?.note || '').trim() || null,
+    p_note: note || null,
     p_items: items,
   });
 

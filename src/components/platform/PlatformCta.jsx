@@ -16,20 +16,20 @@ export default function PlatformCta() {
   return (
     <section className="py-20 sm:py-24">
       <Container>
-        {/* 
+        {/*
           CTA Container:
-          Menggunakan group-hover pada wadah utama untuk memicu 
+          Menggunakan group-hover pada wadah utama untuk memicu
           animasi cahaya/glow di latar belakang saat disentuh kursor.
         */}
         <div className="group relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-6 py-16 text-center shadow-2xl shadow-brand-900/20 sm:px-12 sm:py-20">
-          
+
           {/* Latar Belakang & Dekorasi */}
           <div className="pointer-events-none absolute inset-0">
             {/* Efek Cahaya (Glow) yang bereaksi pada hover */}
             <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-white/10 blur-[80px] transition-transform duration-700 group-hover:scale-110" />
             <div className="absolute -bottom-24 -right-10 h-80 w-80 rounded-full bg-brand-400/20 blur-[80px] transition-transform duration-700 group-hover:scale-110" />
-            
-            {/* 
+
+            {/*
               Pattern Radial Halus
               Menambahkan kesan teknis/platform digital pada background
             */}
@@ -38,7 +38,7 @@ export default function PlatformCta() {
 
           {/* Konten Utama */}
           <div className="relative z-10 mx-auto max-w-2xl">
-            
+
             {/* Badge Eksklusivitas (Glassmorphism) */}
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold tracking-wide text-white shadow-sm backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-brand-200" strokeWidth={2.5} />
@@ -56,14 +56,14 @@ export default function PlatformCta() {
 
             {/* Tombol CTA */}
             <div className="mt-10 flex justify-center">
-              {/* 
-                Pastikan prop size="lg" atau size="xl" (jika ada) digunakan 
+              {/*
+                Pastikan prop size="lg" atau size="xl" (jika ada) digunakan
                 agar tombol terlihat sangat jelas (prominent).
               */}
-              <Button 
-                href="/daftar-outlet" 
-                variant="inverse" 
-                size="lg" 
+              <Button
+                href="/daftar-outlet"
+                variant="inverse"
+                size="lg"
                 className="group/btn flex items-center gap-2 shadow-lg transition-all hover:shadow-xl hover:shadow-brand-900/30"
               >
                 Daftarkan UMKM Anda
@@ -75,16 +75,16 @@ export default function PlatformCta() {
             <ul className="mt-12 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-brand-100">
               {PERKS.map((p) => (
                 <li key={p} className="flex items-center gap-2.5">
-                  <CheckCircle2 
-                    className="h-5 w-5 text-brand-300" 
-                    strokeWidth={2.5} 
-                    aria-hidden="true" 
+                  <CheckCircle2
+                    className="h-5 w-5 text-brand-300"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
                   />
                   {p}
                 </li>
               ))}
             </ul>
-            
+
           </div>
         </div>
       </Container>

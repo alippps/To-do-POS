@@ -45,8 +45,8 @@ export default function PlatformNavbar() {
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        scrolled 
-          ? 'border-b border-slate-200/60 bg-white/80 backdrop-blur-lg shadow-sm shadow-slate-900/5' 
+        scrolled
+          ? 'border-b border-slate-200/60 bg-white/80 backdrop-blur-lg shadow-sm shadow-slate-900/5'
           : 'border-b border-transparent bg-white/0'
       }`}
     >
@@ -89,7 +89,7 @@ export default function PlatformNavbar() {
         </button>
       </div>
 
-      {/* 
+      {/*
         Menu Mobile (Dropdown)
         Menggunakan grid-rows transition untuk efek slide-down yang mulus.
       */}

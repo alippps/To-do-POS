@@ -1,18 +1,18 @@
 import Container from '@/components/ui/Container';
 import TenantSignupForm from '@/components/platform/TenantSignupForm';
-import { 
-  QrCode, 
-  Receipt, 
-  MonitorSmartphone, 
-  LineChart, 
-  Users, 
-  ShieldCheck, 
-  KeyRound 
+import {
+  QrCode,
+  Receipt,
+  MonitorSmartphone,
+  LineChart,
+  Users,
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 
 /*
   Halaman PLATFORM, bukan halaman outlet.
-  Berada di luar `/k/[slug]` karena pengunjung di sini belum memiliki 
+  Berada di luar `/k/[slug]` karena pengunjung di sini belum memiliki
   outlet dan sedang dalam proses pembuatan.
 */
 export const metadata = {
@@ -29,7 +29,7 @@ export default function DaftarOutletPage() {
       <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
 
       <Container className="py-14 sm:py-20 relative z-10">
-        
+
         {/* HEADER / HERO SECTION */}
         <header className="mx-auto max-w-2xl text-center animate-fade-up">
           <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-700">
@@ -45,7 +45,7 @@ export default function DaftarOutletPage() {
         </header>
 
         <div className="mx-auto mt-14 grid max-w-[1100px] gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
-          
+
           {/* KOLOM KIRI: Form Pendaftaran (Client Component) */}
           <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
             <TenantSignupForm />
@@ -53,7 +53,7 @@ export default function DaftarOutletPage() {
 
           {/* KOLOM KANAN: Sidebar Edukasi & Social Proof */}
           <aside className="space-y-5 lg:sticky lg:top-28 animate-fade-up" style={{ animationDelay: '200ms' }}>
-            
+
             {/* Kartu 1: Fitur Ringkas */}
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
@@ -93,9 +93,9 @@ export default function DaftarOutletPage() {
               </ul>
             </div>
 
-            {/* 
+            {/*
               Kartu 2: Keamanan (Jargon Translated)
-              Menggunakan bahasa keamanan bisnis (Business Value), 
+              Menggunakan bahasa keamanan bisnis (Business Value),
               bukan bahasa backend database.
             */}
             <div className="group rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white p-6 shadow-sm transition-colors hover:border-emerald-200">
@@ -106,7 +106,7 @@ export default function DaftarOutletPage() {
                 </p>
               </div>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                Menu, data transaksi, dan total omzet Anda dienkripsi secara ketat. 
+                Menu, data transaksi, dan total omzet Anda dienkripsi secara ketat.
                 Sistem kami memastikan <strong className="font-semibold text-slate-900">tidak ada admin dari kedai kompetitor lain</strong> yang bisa mengakses atau mengintip data dapur bisnis Anda.
               </p>
             </div>

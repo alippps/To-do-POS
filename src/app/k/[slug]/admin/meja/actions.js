@@ -119,8 +119,10 @@ export async function deleteTable(slug, id) {
  * membebaskan meja setelah tamu pulang).
  *
  * Catatan: status juga disinkronkan otomatis oleh trigger di database —
- * meja jadi "occupied" saat ada pesanan pending, dan bebas lagi begitu
- * pesanannya dilunasi atau dibatalkan.
+ * meja jadi "occupied" selama ada pesanan yang belum selesai (`pending`,
+ * `diproses`, atau `siap` — lihat ORDER_ACTIVE_STATUSES), dan bebas lagi begitu
+ * semuanya dilunasi atau dibatalkan. Meja yang sengaja ditandai `reserved` di
+ * sini TIDAK ikut dibebaskan trigger itu.
  */
 export async function setTableStatus(slug, id, status) {
   const { supabase, tenantId, error: authError } = await requireAdminAction(slug);

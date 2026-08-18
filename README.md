@@ -19,11 +19,11 @@ Satu pemasangan melayani banyak UMKM sekaligus, masing-masing terisolasi sampai 
 
 | Akses | Tautan / Kredensial |
 |---|---|
-| 🌐 **Situs utama** | `ISI_URL_VERCEL` |
+| 🌐 **Situs utama** | `https://to-do-pos.vercel.app/` |
 | 📱 **Simulasi Scan QR (Meja 07)** | `ISI_URL_VERCEL/k/to-do/meja?meja=07&demo=1` |
 | 🏪 **Outlet kedua** *(bukti isolasi data)* | `ISI_URL_VERCEL/k/ISI_SLUG_OUTLET_2` |
-| 🔑 **Akun Admin** | `ISI_EMAIL_ADMIN` / `ISI_PASSWORD_ADMIN` |
-| 💵 **Akun Kasir** | `ISI_EMAIL_KASIR` / `ISI_PASSWORD_KASIR` |
+| 🔑 **Akun Admin** | `adminTodo@gmail.com  /  adminRoti@gmail.com ` / `12345678` |  
+| 💵 **Akun Kasir** | `kasirTodo@gmail.com / adminRoti@gmail.com  ` / `12345678` |
 
 ### 🧪 Alur uji 3 menit
 

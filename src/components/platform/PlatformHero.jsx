@@ -1,11 +1,11 @@
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
 import { tenantPath } from '@/lib/tenant';
-import { 
-  TrendingUp, 
-  CheckCircle2, 
-  Activity, 
-  Store, 
+import {
+  TrendingUp,
+  CheckCircle2,
+  Activity,
+  Store,
   Timer,
   ArrowRight,
 } from 'lucide-react';
@@ -23,7 +23,7 @@ const STATS = [
 export default function PlatformHero({ outletCount = 0, demo = null }) {
   return (
     <section className="relative overflow-hidden bg-white">
-      {/* 
+      {/*
         Dekorasi Latar Belakang (Grid & Glow)
         Diperhalus agar tidak mendistraksi konten utama.
       */}
@@ -34,10 +34,10 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
       </div>
 
       <Container className="grid items-center gap-16 py-20 lg:grid-cols-2 lg:gap-8 lg:py-28">
-        
+
         {/* KOLOM KIRI: Copywriting & CTA */}
         <div className="animate-fade-up flex flex-col items-start">
-          
+
           {/* Badge Promo / Status */}
           {/* <span className="group inline-flex items-center gap-2.5 rounded-full border border-brand-200/60 bg-brand-50/50 px-4 py-1.5 text-xs font-semibold text-brand-700 shadow-sm backdrop-blur-sm transition-all hover:bg-brand-50">
             <span className="relative flex h-2.5 w-2.5 items-center justify-center">
@@ -73,7 +73,7 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
 
           <p className="mt-4 max-w-lg text-lg leading-relaxed text-slate-600">
             Pelanggan memindai QR di meja, memesan sendiri, dan bayar di akhir.
-            Anda pantau omzet dan stok dari mana saja — tanpa mesin kasir mahal, 
+            Anda pantau omzet dan stok dari mana saja — tanpa mesin kasir mahal,
             tanpa aplikasi tambahan.
           </p>
 
@@ -83,7 +83,7 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
               Daftarkan UMKM Anda
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            
+
             {demo ? (
               <Button href={tenantPath(demo.slug)} variant="secondary" size="lg">
                 Lihat contoh kedai
@@ -123,7 +123,7 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
 
           {/* Browser Window / Dashboard Wrapper */}
           <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/60 shadow-2xl shadow-slate-900/10 backdrop-blur-xl transition-transform duration-500 hover:-translate-y-2">
-            
+
             {/* Browser Header */}
             <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/90 px-6 py-4">
               <div className="flex gap-1.5">
@@ -138,7 +138,7 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
 
             {/* Dashboard Content */}
             <div className="space-y-6 p-6 sm:p-8">
-              
+
               {/* Top Stats Widget */}
               <div className="flex items-end justify-between">
                 <div>
@@ -206,7 +206,7 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
               </div>
             </div>
           </div>
-          
+
         </div>
       </Container>
     </section>

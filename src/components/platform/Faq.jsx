@@ -45,8 +45,8 @@ function Item({ faq, isOpen, onToggle }) {
   return (
     <div
       className={`group overflow-hidden rounded-2xl border transition-all duration-300 ${
-        isOpen 
-          ? 'border-brand-200 bg-brand-50/50 shadow-md shadow-brand-900/5' 
+        isOpen
+          ? 'border-brand-200 bg-brand-50/50 shadow-md shadow-brand-900/5'
           : 'border-slate-200 bg-white hover:border-brand-200 hover:shadow-sm'
       }`}
     >
@@ -57,29 +57,29 @@ function Item({ faq, isOpen, onToggle }) {
         /* focus-visible memastikan outline hanya muncul saat navigasi via keyboard, bukan klik mouse */
         className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset sm:py-6"
       >
-        <span 
+        <span
           className={`text-base font-bold transition-colors duration-300 ${
             isOpen ? 'text-brand-900' : 'text-slate-800 group-hover:text-brand-700'
           }`}
         >
           {faq.q}
         </span>
-        
+
         {/* Ikon Plus yang berputar 45deg menjadi 'X' saat isOpen */}
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-500 ${
-            isOpen 
-              ? 'rotate-45 bg-brand-600 text-white shadow-sm' 
+            isOpen
+              ? 'rotate-45 bg-brand-600 text-white shadow-sm'
               : 'bg-slate-50 text-slate-400 group-hover:bg-brand-100 group-hover:text-brand-600'
           }`}
         >
           <Plus className="h-5 w-5" strokeWidth={2.5} />
         </span>
       </button>
-      
-      {/* 
+
+      {/*
         Trik Animasi CSS Grid:
-        Mengubah grid-template-rows dari 0fr ke 1fr memungkinkan browser 
+        Mengubah grid-template-rows dari 0fr ke 1fr memungkinkan browser
         menganimasikan tinggi elemen meskipun kita tidak tahu tinggi pastinya (height: auto).
       */}
       <div

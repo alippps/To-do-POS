@@ -1,0 +1,27 @@
+# ============================================================
+#  Normalisasi akhir baris
+#
+#  Sebelum berkas ini ada, repo memuat dua gaya sekaligus: 22 berkas
+#  CRLF dan 105 berkas LF. Campuran itu bukan soal selera — ia membuat
+#  `git diff` sesekali menandai SELURUH isi berkas sebagai berubah
+#  padahal yang disunting cuma satu baris, dan review jadi mustahil.
+#
+#  Penyebabnya `core.autocrlf` yang nilainya berbeda di tiap mesin.
+#  Menyetelnya satu per satu tidak menyelesaikan apa pun untuk orang
+#  berikutnya yang meng-clone; aturan yang ikut di dalam repo iya.
+#
+#  `text=auto eol=lf` berarti: git menyimpan semuanya sebagai LF, dan
+#  itulah yang dilihat semua orang, di sistem operasi mana pun.
+# ============================================================
+* text=auto eol=lf
+
+# Berkas biner — jangan pernah disentuh normalisasi.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff  binary
+*.woff2 binary

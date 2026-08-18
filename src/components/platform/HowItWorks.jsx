@@ -44,19 +44,19 @@ export default function HowItWorks() {
         />
 
         <div className="relative mt-16">
-          {/* 
+          {/*
             Garis penghubung background (Hanya muncul di desktop).
             Berfungsi sebagai 'visual cue' bahwa ini adalah sebuah alur proses.
           */}
-          <div 
-            className="absolute top-10 left-0 hidden h-[2px] w-full bg-gradient-to-r from-slate-200 via-brand-200 to-slate-200 lg:block" 
-            aria-hidden="true" 
+          <div
+            className="absolute top-10 left-0 hidden h-[2px] w-full bg-gradient-to-r from-slate-200 via-brand-200 to-slate-200 lg:block"
+            aria-hidden="true"
           />
 
           <ol className="relative grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
             {STEPS.map((step, _index) => {
               const Icon = step.icon;
-              
+
               return (
                 <li key={step.num} className="group relative">
                   {/* Container Ikon & Nomor */}
@@ -64,10 +64,10 @@ export default function HowItWorks() {
                     <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/60 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md group-hover:ring-brand-500/30">
                       {/* Gradient Badge Background */}
                       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      
+
                       {/* Icon */}
                       <Icon className="h-8 w-8 text-slate-700 transition-colors duration-300 group-hover:text-brand-600 relative z-10" strokeWidth={1.5} />
-                      
+
                       {/* Nomor Langkah (Badge Kecil) */}
                       <span className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white shadow-sm ring-4 ring-white">
                         {step.num}
@@ -98,9 +98,9 @@ export default function HowItWorks() {
           </ol>
         </div>
 
-        {/* 
+        {/*
           Bantahan Keberatan (Objection Handling)
-          Desain diperhalus menjadi bentuk alert/note yang lebih profesional 
+          Desain diperhalus menjadi bentuk alert/note yang lebih profesional
           daripada sekadar paragraf teks biasa.
         */}
         {/* <div className="mx-auto mt-20 max-w-2xl rounded-2xl bg-brand-50/50 p-6 text-center ring-1 ring-brand-100/50">

@@ -26,9 +26,10 @@ const CARA_BAYAR = [
  * Tagihan berjalan sebuah meja.
  *
  * Datanya lewat RPC `get_table_bill` (SECURITY DEFINER) karena tabel
- * `transactions` tertutup untuk tamu. RPC itu hanya mengembalikan pesanan
- * berstatus `pending`, jadi tamu berikutnya di meja yang sama tidak melihat
- * riwayat tamu sebelumnya.
+ * `transactions` tertutup untuk tamu. Yang dikembalikannya hanya pesanan yang
+ * BELUM SELESAI — `pending`, `diproses`, dan `siap` (ORDER_ACTIVE_STATUSES) —
+ * jadi tamu berikutnya di meja yang sama tidak melihat riwayat tamu sebelumnya,
+ * sementara pesanan yang sedang dimasak tetap terhitung sebagai tagihan.
  */
 export default async function BayarPage({ params, searchParams }) {
   const tenant = await requireTenant(params.slug);

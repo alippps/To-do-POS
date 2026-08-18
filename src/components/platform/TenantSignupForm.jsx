@@ -7,12 +7,12 @@ import { Input, Wajib } from '@/components/ui/Field';
 import { slugify, slugValid, tenantPath } from '@/lib/tenant';
 import { BATAS } from '@/lib/limits';
 import { daftarOutlet } from '@/app/(platform)/daftar-outlet/actions';
-import { 
-  AlertTriangle, 
-  PartyPopper, 
-  ArrowLeft, 
-  Loader2, 
-  Store, 
+import {
+  AlertTriangle,
+  PartyPopper,
+  ArrowLeft,
+  Loader2,
+  Store,
   ArrowRight,
   ShieldAlert
 } from 'lucide-react';
@@ -102,9 +102,9 @@ export default function TenantSignupForm() {
   if (jadi) return <Berhasil tenant={jadi} />;
 
   return (
-    <form 
-      onSubmit={handleSubmit} 
-      className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/50 sm:p-10 transition-all" 
+    <form
+      onSubmit={handleSubmit}
+      className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/50 sm:p-10 transition-all"
       noValidate
     >
       <div className="space-y-6">
@@ -127,7 +127,7 @@ export default function TenantSignupForm() {
           hint="Terisi otomatis dari nama usaha. Boleh diubah secara manual."
         />
 
-        {/* 
+        {/*
           Warning Box (Slug)
           Desain dipertegas karena ini menyangkut fisik (QR Code tercetak)
         */}
@@ -255,7 +255,7 @@ function Berhasil({ tenant }) {
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-500/30">
         <PartyPopper className="h-10 w-10" strokeWidth={2} />
       </div>
-      
+
       <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-900">
         Berhasil, {tenant.name}!
       </h2>

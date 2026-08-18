@@ -1,15 +1,15 @@
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { platform } from '@/lib/site';
-import { 
-  TrendingUp, 
-  Coffee, 
-  Store, 
-  UtensilsCrossed 
+import {
+  TrendingUp,
+  Coffee,
+  Store,
+  UtensilsCrossed
 } from 'lucide-react';
 
 /*
-  Data ditambahkan properti 'icon' spesifik untuk F&B guna memperkuat 
+  Data ditambahkan properti 'icon' spesifik untuk F&B guna memperkuat
   identitas masing-masing studi kasus.
 */
 const PROJECTS = [
@@ -58,23 +58,23 @@ export default function Portfolio() {
         <div className="mt-16 grid gap-8 md:grid-cols-3">
           {PROJECTS.map((p) => {
             const Icon = p.icon;
-            
+
             return (
               <article
                 key={p.name}
                 className="group relative flex flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white transition-all duration-300 hover:-translate-y-1.5 hover:border-brand-300 hover:shadow-2xl hover:shadow-brand-900/10"
               >
-                {/* 
+                {/*
                   HEADER KARTU (Colored Gradient)
                   Diberi efek pattern dan zoom saat di-hover untuk kesan dinamis.
                 */}
                 <div className={`relative h-40 bg-gradient-to-br ${p.color} p-6 overflow-hidden`}>
                   {/* Efek Lingkaran Cahaya (Glow) di Pojok */}
                   <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-white/20 blur-2xl transition-transform duration-700 group-hover:scale-150" />
-                  
+
                   {/* Pattern Titik Halus (Memanfaatkan CSS Radial Gradient Tailwind) */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:12px_12px] opacity-50 transition-opacity duration-500 group-hover:opacity-100" />
-                  
+
                   <div className="relative z-10 flex items-start justify-between">
                     <div>
                       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-white/80">
@@ -88,7 +88,7 @@ export default function Portfolio() {
                   </div>
                 </div>
 
-                {/* 
+                {/*
                   OVERLAPPING KPI BADGE
                   Ditarik ke atas sebesar margin-top negatif (-mt-5).
                   Fokus utama mata pembaca akan otomatis jatuh ke sini.
@@ -105,12 +105,12 @@ export default function Portfolio() {
                   <p className="flex-1 text-sm leading-relaxed text-slate-600">
                     {p.text}
                   </p>
-                  
+
                   {/* Tags / Fitur yang Dipakai */}
                   <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-5">
                     {p.tags.map((t) => (
-                      <span 
-                        key={t} 
+                      <span
+                        key={t}
                         className="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 ring-1 ring-inset ring-slate-200/60 transition-colors group-hover:bg-slate-100 group-hover:text-slate-700"
                       >
                         {t}

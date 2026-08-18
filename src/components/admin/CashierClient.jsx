@@ -11,8 +11,9 @@ import { Input, Select, Textarea } from '@/components/ui/Field';
 import LiveIndicator from './LiveIndicator';
 import Toast from './Toast';
 import { rupiah } from '@/lib/format';
+import { BATAS } from '@/lib/limits';
 import { promoInfo } from '@/lib/promo';
-import { tableStatus } from '@/lib/tables';
+import { PAYMENT_METHOD_LIST, tableStatus } from '@/lib/tables';
 import { useLiveRefresh } from '@/lib/useLiveRefresh';
 import { useTenant, useTenantHref } from '@/components/tenant/TenantProvider';
 import { createCashierOrder } from '@/app/k/[slug]/admin/kasir/actions';
@@ -389,27 +390,55 @@ export default function CashierClient({ products = [], tables = [], categories =
           </div>
 
           <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+            {/*
+              `maxLength` disamakan dengan keranjang pelanggan (BATAS).
+
+              Kedua jalur menulis ke kolom yang sama dan dicetak ke struk
+              thermal yang sama; batas yang hanya dipasang di salah satunya
+              berarti nama sepanjang satu paragraf tetap bisa masuk — cukup
+              lewat layar kasir.
+            */}
             <Input
               label="Nama pelanggan"
               value={customerName}
+              maxLength={BATAS.namaPemesan}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Kosongkan untuk “Guest”"
               hint="Dipakai barista saat memanggil pesanan."
             />
 
+            {/*
+              Pilihannya dibaca dari `PAYMENT_METHOD_LIST`, bukan ditulis ulang
+              di sini.
+
+              Daftar yang ditulis tangan sempat memuat "Transfer Bank" — metode
+              yang sudah dicabut dari `PAYMENT_METHOD` dan karena itu selalu
+              ditolak `createCashierOrder` dengan "Metode pembayaran tidak
+              dikenali". Kasir baru mengetahuinya sesudah seluruh keranjang
+              tersusun dan tombolnya ditekan, di depan pelanggan yang menunggu.
+              Menawarkan pilihan yang pasti gagal lebih buruk daripada tidak
+              menawarkannya sama sekali.
+
+              Labelnya pun ikut satu sumber: layar pelanggan menyebut "Bayar di
+              kasir", jadi layar kasir tidak boleh menyebutnya "Tunai" untuk
+              transaksi yang sama.
+            */}
             <Select
               label="Metode pembayaran"
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
-              <option value="cash">Tunai</option>
-              <option value="qris">QRIS</option>
-              <option value="transfer">Transfer Bank</option>
+              {PAYMENT_METHOD_LIST.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
             </Select>
 
             <Textarea
               label="Catatan (opsional)"
               value={note}
+              maxLength={BATAS.catatan}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Contoh: less sugar"
               className="min-h-[64px]"

@@ -9,12 +9,12 @@ import { platform } from '@/lib/site';
 import { UMPAN } from '@/lib/honeypot';
 import { BATAS } from '@/lib/limits';
 import { kirimPesanPlatform } from '@/app/(platform)/actions';
-import { 
-  MessageCircle, 
-  CheckCircle2, 
-  ArrowRight, 
-  Send, 
-  Loader2 
+import {
+  MessageCircle,
+  CheckCircle2,
+  ArrowRight,
+  Send,
+  Loader2
 } from 'lucide-react';
 
 const KOSONG = { name: '', email: '', phone: '', business: '', message: '', [UMPAN]: '' };
@@ -83,11 +83,11 @@ export default function PlatformContact() {
         />
 
         <div className="mx-auto mt-16 grid max-w-6xl gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-          
+
           {/* KIRI: Formulir Tertulis */}
-          <form 
-            onSubmit={handleSubmit} 
-            className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/50 sm:p-10" 
+          <form
+            onSubmit={handleSubmit}
+            className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/50 sm:p-10"
             noValidate
           >
             {/* Header Form Internal (Opsional, memperjelas konteks) */}
@@ -203,17 +203,17 @@ export default function PlatformContact() {
 
           {/* KANAN: Sidebar Kontak */}
           <div className="space-y-6">
-            
+
             {/* Kartu WhatsApp CTA */}
             {waLink && (
               <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 text-white shadow-xl shadow-emerald-900/10 transition-transform duration-300 hover:-translate-y-1">
                 {/* Ikon Latar Transparan (Watermark) */}
-                <MessageCircle 
-                  className="absolute -right-8 -bottom-8 h-48 w-48 text-emerald-400/30 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12" 
-                  aria-hidden="true" 
+                <MessageCircle
+                  className="absolute -right-8 -bottom-8 h-48 w-48 text-emerald-400/30 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12"
+                  aria-hidden="true"
                   strokeWidth={1}
                 />
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
@@ -221,12 +221,12 @@ export default function PlatformContact() {
                     </span>
                     <h3 className="text-xl font-bold">Mau ngobrol langsung?</h3>
                   </div>
-                  
+
                   <p className="mt-2 text-sm leading-relaxed text-emerald-50">
                     Untuk pertanyaan yang lebih enak dijawab sambil bolak-balik — soal harga, soal
                     alur di warungmu — WhatsApp adalah jalur paling cepat.
                   </p>
-                  
+
                   <Button
                     as="a"
                     href={waLink}
@@ -244,7 +244,7 @@ export default function PlatformContact() {
             {/* Kartu "Sebelum Bertanya" */}
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
               <h3 className="text-lg font-bold text-slate-900 mb-5">Sebelum bertanya</h3>
-              
+
               <ul className="space-y-4 text-sm leading-relaxed text-slate-600">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-brand-500 mt-0.5" strokeWidth={2.5} />
@@ -259,7 +259,7 @@ export default function PlatformContact() {
                   <span>Sudah yakin dan ingin langsung mencoba sistemnya? Lewati formulir ini.</span>
                 </li>
               </ul>
-              
+
               <div className="mt-8 border-t border-slate-200/80 pt-6">
                 <Button href="/daftar-outlet" variant="secondary" className="w-full group flex items-center justify-center gap-2">
                   Daftarkan UMKM Anda

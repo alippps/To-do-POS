@@ -2,11 +2,11 @@ import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { tenantPath } from '@/lib/tenant';
-import { 
-  Store, 
-  MapPin, 
-  Clock, 
-  ArrowRight, 
+import {
+  Store,
+  MapPin,
+  Clock,
+  ArrowRight,
   ExternalLink,
   Sparkles,
   TerminalSquare
@@ -26,7 +26,7 @@ export default function OutletDirectory({ outlets = [], demo = null }) {
           description="Bukan sekadar tangkapan layar. Buka salah satunya — menu, denah meja, dan alur pemesanannya nyata, persis seperti yang dilihat pelanggan mereka."
         />
 
-        {/* 
+        {/*
           KARTU DEMO (Spotlight)
           Didesain lebih menonjol dengan gradien dan padding ekstra
           untuk mengundang klik dari pengunjung yang ragu.
@@ -50,12 +50,12 @@ export default function OutletDirectory({ outlets = [], demo = null }) {
                   Coba tanpa mendaftar
                 </span>
               </div>
-              
+
               <div className="mt-2 flex items-center gap-2 text-xl font-extrabold text-slate-900 sm:text-2xl transition-colors group-hover:text-brand-700">
                 Lihat contoh kedai
                 <ArrowRight className="h-5 w-5 text-brand-500 transition-transform duration-300 group-hover:translate-x-1.5" strokeWidth={2.5} />
               </div>
-              
+
               <p className="mt-2 block text-sm leading-relaxed text-slate-600">
                 Buka <span className="font-semibold text-slate-900">{demo.name}</span> — menu,
                 denah meja, dan alur pemesanannya berjalan sungguhan. Tersedia tombol
@@ -65,7 +65,7 @@ export default function OutletDirectory({ outlets = [], demo = null }) {
           </Link>
         )}
 
-        {/* 
+        {/*
           KONDISI KOSONG (Empty State)
           Desain diperhalus menyerupai UI dashboard profesional.
         */}
@@ -85,9 +85,9 @@ export default function OutletDirectory({ outlets = [], demo = null }) {
             </p>
           </div>
         ) : (
-          /* 
+          /*
             GRID DIREKTORI
-            Menggunakan 3 kolom sejak 'lg'. Kartu didesain mandiri dengan 
+            Menggunakan 3 kolom sejak 'lg'. Kartu didesain mandiri dengan
             utility classes murni (tanpa kelas .card external).
           */
           <div className="mx-auto mt-14 grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,10 +128,10 @@ export default function OutletDirectory({ outlets = [], demo = null }) {
                   )}
                 </dl>
 
-                {/* 
-                  Slug Badge 
-                  Menunjukkan kepada calon mitra bahwa tiap outlet 
-                  dapat URL/domain khususnya sendiri. 
+                {/*
+                  Slug Badge
+                  Menunjukkan kepada calon mitra bahwa tiap outlet
+                  dapat URL/domain khususnya sendiri.
                 */}
                 <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100/80 px-2.5 py-1.5 font-mono text-[11px] font-semibold text-slate-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-600">

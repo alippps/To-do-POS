@@ -26,8 +26,8 @@ const RIWAYAT_TERBACA = 200;
 
 export default async function DashboardPage({ params }) {
   const { tenant } = await requirePageAccess(params.slug, '/admin');
-  // Sengaja BUKAN 	: daftar di bawah memakai 	 sebagai satu baris
-  // transaksi di dalam .map(), dan nama yang sama akan tertutup di sana.
+  // Sengaja BUKAN `t`: daftar di bawah memakai `t` sebagai satu baris
+  // transaksi di dalam `.map()`, dan nama yang sama akan tertutup di sana.
   const hrefOutlet = (path) => tenantPath(tenant.slug, path);
   const supabase = createClient();
 
