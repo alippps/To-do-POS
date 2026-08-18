@@ -50,7 +50,7 @@ export default function PlatformNavbar() {
           : 'border-b border-transparent bg-white/0'
       }`}
     >
-      <div className="container-page flex h-16 items-center justify-between gap-4 sm:h20">
+      <div className="container-page flex h-16 items-center justify-between gap-4 sm:h-20">
         <PlatformLogo />
 
         {/* Menu Desktop */}
