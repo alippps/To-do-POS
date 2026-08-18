@@ -14,10 +14,14 @@ import {
   Data STATS diperbarui dengan penambahan Icon untuk memperkuat
   komunikasi visual (Visual Anchor) bagi pengunjung yang melakukan 'scanning'.
 */
-const STATS = [
-  { value: '12.400+', label: 'Transaksi / bulan', icon: Activity },
-  { value: '38', label: 'Outlet mitra', icon: Store },
-  { value: '< 30 dtk', label: 'Rata-rata antrean', icon: Timer },
+const buatStats = (outletCount) => [
+  { value: 'Realtime', label: 'Pesanan masuk seketika', icon: Activity },
+  {
+    value: outletCount > 0 ? `${outletCount} outlet` : 'Multi-outlet',
+    label: 'Berjalan di satu sistem',
+    icon: Store,
+  },
+  { value: 'Tanpa antre', label: 'Pesan langsung dari meja', icon: Timer },
 ];
 
 export default function PlatformHero({ outletCount = 0, demo = null }) {
@@ -98,12 +102,13 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
           </div>
 
           {/* Statistik (Social Proof) */}
-          <dl className="mt-14 grid w-full max-w-xl grid-cols-2 gap-8 border-t border-slate-200/80 pt-8 sm:grid-cols-3">
-            {STATS.map((s) => {
+          {}
+          <dl className="mt-14 grid w-full max-w-xl grid-cols-2 gap-x-6 gap-y-8 border-t border-slate-200/80 pt-8 sm:grid-cols-3">
+            {buatStats(outletCount).map((s) => {
               const Icon = s.icon;
               return (
                 <div key={s.label} className="flex flex-col gap-1">
-                  <dt className="flex items-center gap-2 text-2xl font-black text-slate-900 sm:text-3xl">
+                  <dt className="flex items-center gap-2 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
                     {s.value}
                   </dt>
                   <dd className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
