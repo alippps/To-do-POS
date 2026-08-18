@@ -19,9 +19,9 @@ Satu pemasangan melayani banyak UMKM sekaligus, masing-masing terisolasi sampai 
 
 | Akses | Tautan / Kredensial |
 |---|---|
-| 🌐 **Situs utama** | `https://to-do-pos.vercel.app/` |
-| 📱 **Simulasi Scan QR (Meja 07)** | ``https://to-do-pos.vercel.app/k/to-do/meja?meja=07&demo=1` |
-| 🏪 **Outlet kedua** *(bukti isolasi data)* |  `https://to-do-pos.vercel.app/k/roti-88` |
+| 🌐 **Situs utama** | [to-do-pos.vercel.app](https://to-do-pos.vercel.app) |
+| 📱 **Simulasi Scan QR (Meja 07)** | [Buka halaman meja 07 →](https://to-do-pos.vercel.app/k/to-do/meja?meja=07&demo=1) |
+| 🏪 **Outlet kedua** *(bukti isolasi data)* | [Buka Roti Bakar 88 →](https://to-do-pos.vercel.app/k/roti-88) |
 | 🔑 **Admin — outlet To Do** | `adminTodo@gmail.com` · `12345678` |
 | 💵 **Kasir — outlet To Do** | `kasirTodo@gmail.com` · `12345678` |
 | 🔑 **Admin — outlet Roti Bakar 88** | `adminRoti@gmail.com` · `12345678` |
