@@ -64,25 +64,36 @@ melainkan karena ditolak PostgreSQL lewat Row Level Security.
 
 ---
 
-## ✅ Kesesuaian Ketentuan Lomba
+## ✅ Peta Fitur
 
-| Ketentuan | ✔ | Bukti tercepat |
-|---|:--:|---|
-| Bertema UMKM & transformasi digital | ✅ | Digitalisasi pemesanan, produk, transaksi, dan operasional UMKM kuliner |
-| **CRUDS** — Create, Read, Update, Delete, Search | ✅ | `/k/<slug>/admin/produk` memuat kelimanya dalam satu halaman |
-| Halaman **Login** | ✅ | `/k/<slug>/login` |
-| Halaman **Register** | ✅ | `/k/<slug>/register` — tertaut dari bawah halaman Login |
-| User: **Home** | ✅ | `/k/<slug>` |
-| User: **Fitur Utama (jual beli)** | ✅ | `/k/<slug>/menu` — keranjang, checkout, struk |
-| User: **Kontak + form sederhana** | ✅ | `/k/<slug>/kontak` |
-| User: **About** | ✅ | `/k/<slug>/about` |
-| Admin: **Dashboard** | ✅ | `/k/<slug>/admin` |
-| Admin: **Daftar Produk** | ✅ | `/k/<slug>/admin/produk` |
-| Admin: **Daftar Transaksi** | ✅ | `/k/<slug>/admin/transaksi` |
-| Stack tercantum di dokumentasi | ✅ | [Tech Stack](#-tech-stack) |
-| Validasi input | ✅ | Berlapis: klien (kenyamanan) + Server Action (pengaman) + batasan database |
-| Keamanan dasar | ✅ | Empat lapis: middleware → layout → server action → Row Level Security |
-| Bebas bug utama | ✅ | Playwright E2E pada dua ukuran layar, `npm run build` bersih |
+Ringkasan kemampuan sistem beserta rute untuk mencobanya langsung.
+
+| Kemampuan | Rute | Keterangan |
+|---|---|---|
+| **Beranda outlet** | `/k/<slug>` | Profil, menu unggulan, jam buka |
+| **Pemesanan mandiri** | `/k/<slug>/menu` | Keranjang, checkout, struk digital |
+| **Pemesanan lewat QR meja** | `/k/<slug>/meja?meja=07` | Nomor meja terkunci dari QR |
+| **Daftar harga** | `/k/<slug>/katalog` | Katalog baca-saja untuk pengunjung |
+| **Tagihan berjalan** | `/k/<slug>/bayar` | Pesan berkali-kali, bayar sekali |
+| **Kontak** | `/k/<slug>/kontak` | Form pesan masuk ke kotak masuk admin |
+| **Tentang usaha** | `/k/<slug>/about` | Cerita dan identitas outlet |
+| **Masuk staf** | `/k/<slug>/login` | Tertaut ke pendaftaran akun baru |
+| **Pendaftaran akun** | `/k/<slug>/register` | Untuk staf outlet |
+| **Dasbor** | `/k/<slug>/admin` | Omzet, transaksi, produk terlaris |
+| **Kelola produk** | `/k/<slug>/admin/produk` | Tambah, ubah, hapus, cari, arsipkan |
+| **Kelola transaksi** | `/k/<slug>/admin/transaksi` | Riwayat, filter status, pelunasan |
+| **Layar kasir** | `/k/<slug>/admin/kasir` | Pesanan di konter dan takeaway |
+| **Denah meja & QR** | `/k/<slug>/admin/meja` | Kelola meja, cetak kartu QR |
+| **Akses staf** | `/k/<slug>/admin/akses` | Atur peran admin dan kasir |
+| **Profil outlet** | `/k/<slug>/admin/profil` | Identitas, jam buka, kontak |
+| **Pendaftaran outlet baru** | `/daftar-outlet` | UMKM bergabung secara mandiri |
+
+**Yang menjaga sistem tetap aman dan konsisten:**
+
+- **Validasi berlapis** — di peramban demi kenyamanan, di server sebagai pengaman sesungguhnya, dan batasan di basis data sebagai jaring terakhir
+- **Empat lapis kendali akses** — middleware, layout, server action, hingga Row Level Security PostgreSQL
+- **Pembatasan laju dan honeypot** pada seluruh form publik
+- **Uji otomatis Playwright** pada tampilan desktop dan ponsel
 
 > **Halaman lain yang juga tersedia:** `/katalog` (daftar harga), `/promo`, `/fitur`, `/bayar`,
 > `/admin/kasir`, `/admin/meja`, `/admin/akses`, `/admin/profil`, `/daftar-outlet`.
@@ -170,7 +181,7 @@ erDiagram
         timestamptz created_at
     }
     PROFILES {
-        uuid id PK_FK "= auth.users.id"
+        uuid id PK "sama dengan auth.users.id"
         uuid tenant_id FK "null = pelanggan umum"
         text full_name
         text phone
