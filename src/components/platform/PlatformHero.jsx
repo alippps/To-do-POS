@@ -197,8 +197,18 @@ export default function PlatformHero({ outletCount = 0, demo = null }) {
             </div>
           </div>
 
-          {/* Floating Toast Notification (Micro-interaction UI) */}
-          <div className="absolute -bottom-8 -left-4 z-20 hidden animate-fade-up rounded-2xl border border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/50 sm:flex sm:items-center sm:gap-4 lg:-left-12 lg:-bottom-10" style={{ animationDelay: '500ms' }}>
+          {/*
+            Floating Toast Notification (Micro-interaction UI)
+
+            Offset kirinya di lg dulu -left-12, dan itu menabrak kolom kiri.
+            Begitu hero pecah jadi dua kolom, -48px membawa kartu ini melewati
+            tepi kolom kanan lalu menimpa statistik ketiga ('Tanpa antre') —
+            jarak antar kolom sendiri cuma 32px, jadi offset sebesar itu pasti
+            meluber. Sekarang left-0: kartunya berhenti di tepi kolom, tetap
+            menggantung di sudut mockup karena mockup-nya sendiri sudah masuk
+            40px oleh lg:pl-10, tanpa memakan ruang kolom kiri.
+          */}
+          <div className="absolute -bottom-8 -left-4 z-20 hidden animate-fade-up rounded-2xl border border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/50 sm:flex sm:items-center sm:gap-4 lg:left-0 lg:-bottom-10" style={{ animationDelay: '500ms' }}>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
             </div>
