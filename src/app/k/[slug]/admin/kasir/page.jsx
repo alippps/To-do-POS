@@ -39,8 +39,8 @@ export default async function AdminKasirPage({ params }) {
   return (
     <>
       <PageHeader
-        title="Kasir"
-        description="Buat pesanan untuk pelanggan yang memesan di konter. Pilih meja kosong dulu, lalu masukkan pesanannya — mejanya langsung tertandai terisi dan pelanggan bisa menambah sendiri lewat QR di meja."
+      title="Pesan Di Kasir"
+      description="Jalur cadangan untuk pelanggan yang memesan langsung ke kasir — takeaway, atau yang tidak memindai QR. Pesanan lewat QR sudah membawa nomor mejanya sendiri dan tidak perlu diinput di sini."
       />
 
       {(productsRes.error || tablesRes.error) && (
