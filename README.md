@@ -280,26 +280,6 @@ erDiagram
 | **Bahasa** | JavaScript (JSX) + SQL / PL-pgSQL |
 | **Deployment** | Vercel (aplikasi) + Supabase Cloud (database) |
 
----
-
-## 📝 Catatan Jujur & Batasan
-
-Dituliskan terbuka, karena sistem yang mengaku sempurna biasanya belum diuji cukup keras.
-
-- **QRIS-nya simulasi.** Kode QR pada struk berisi teks keterangan, bukan muatan EMVCo. Ini
-  disengaja agar tidak ada yang mengira sudah membayar padahal belum. Integrasi sungguhan hanya
-  perlu mengganti fungsi pembangkit muatannya.
-- **Rate limit tersimpan di memori proses.** Cukup sebagai mitigasi dasar; pada beberapa instance
-  server, hitungannya tidak dibagi. Produksi berskala besar memerlukan Redis.
-- **E2E test bersifat baca-saja terhadap database.** Yang terbukti otomatis adalah alur dan
-  antarmuka; checkout sungguhan diverifikasi manual.
-- **Belum ada dasbor pemilik platform.** Pesan yang masuk ke `platform_messages` masih dibaca
-  lewat SQL Editor Supabase.
-- **Kitchen Display belum ada.** Tahap dapur sudah terekam pada status pesanan dan dioperasikan
-  dari layar kasir; layar khusus dapur ada pada rencana pengembangan.
-
----
-
 <details>
 <summary><h2>📖 Dokumentasi Teknis Lengkap — arsitektur, keamanan, alur, cara menjalankan (klik untuk membuka)</h2></summary>
 
