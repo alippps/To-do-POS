@@ -25,6 +25,7 @@ Satu pemasangan melayani banyak UMKM sekaligus, masing-masing terisolasi sampai 
 | 🔑 **Admin — outlet To Do** | `adminTodo@gmail.com` · `12345678` |
 | 💵 **Kasir — outlet To Do** | `kasirTodo@gmail.com` · `12345678` |
 | 🔑 **Admin — outlet Roti Bakar 88** | `adminRoti@gmail.com` · `12345678` |
+| 💵 **Kasir — outlet Roti Bakar 88** | `kasirRoti@gmail.com` · `12345678` |
 
 ### 🧪 Alur uji 3 menit
 
