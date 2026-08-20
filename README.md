@@ -15,7 +15,7 @@ Satu pemasangan melayani banyak UMKM sekaligus, masing-masing terisolasi sampai 
 
 ## 🚀 Coba Sekarang — Tanpa Instalasi
 
-> **Untuk Juri:** seluruh sistem sudah daring. Tidak perlu clone, tidak perlu pasang apa pun.
+> seluruh sistem sudah daring. Tidak perlu clone, tidak perlu pasang apa pun.
 
 | Akses | Tautan / Kredensial |
 |---|---|
